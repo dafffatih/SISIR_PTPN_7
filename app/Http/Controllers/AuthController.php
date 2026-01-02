@@ -12,11 +12,11 @@ class AuthController extends Controller
      */
     public function showLogin()
     {
-        // Jika user sudah login, langsung lempar ke dashboard
+        // Jika sudah login, arahkan sesuai role
         if (Auth::check()) {
-            return redirect()->intended('dashboard');
+            return $this->redirectByRole(Auth::user()->role);
         }
-        
+
         return view('auth.login');
     }
 
@@ -34,20 +34,21 @@ class AuthController extends Controller
             'password.required' => 'Password tidak boleh kosong.',
         ]);
 
-        // 2. Ambil data remember me
+        // 2. Remember me
         $remember = $request->has('remember');
 
         // 3. Proses login
         if (Auth::attempt($credentials, $remember)) {
-            // Jika berhasil, buat ulang session untuk keamanan
             $request->session()->regenerate();
 
-            // Arahkan ke dashboard atau halaman yang dituju sebelumnya
-            return redirect()->intended('dashboard');
+            // 4. Redirect sesuai role
+            return $this->redirectByRole(Auth::user()->role);
         }
 
-        // 4. Jika gagal, balikkan ke login dengan pesan error
-        return back()->with('error', 'Username atau password salah!')->withInput();
+        // 5. Jika gagal
+        return back()
+            ->with('error', 'Username atau password salah!')
+            ->withInput();
     }
 
     /**
@@ -57,10 +58,25 @@ class AuthController extends Controller
     {
         Auth::logout();
 
-        // Hapus session dan buat token baru
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return redirect('/login');
+    }
+
+    /**
+     * Redirect berdasarkan role user
+     */
+    private function redirectByRole(string $role)
+    {
+        switch ($role) {
+            case 'admin':
+            case 'staff':
+            case 'viewer':
+                return redirect('/dashboard');
+            default:
+                Auth::logout();
+                return redirect('/login')->with('error', 'Role tidak dikenali.');
+        }
     }
 }

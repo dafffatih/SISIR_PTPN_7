@@ -1,30 +1,39 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AuthController;
 
-// Halaman awal: Jika belum login ke halaman login, jika sudah ke dashboard
+// Halaman awal
 Route::get('/', function () {
-    return auth()->check() ? redirect('/dashboard') : redirect('/login');
+    return Auth::check() ? redirect('/dashboard') : redirect('/login');
 });
 
-// Auth Route
+// Auth Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Dashboard & Fitur Lain (Semua bisa akses setelah login)
-Route::middleware('auth')->group(function () {
-    
+// Semua fitur harus login
+Route::middleware(['auth'])->group(function () {
+
+    // Semua role boleh akses dashboard
     Route::get('/dashboard', function () {
-        return view('dashboard.dashboard'); // Kita akan buat file ini
-    })->name('dashboard');
+        return view('dashboard.dashboard');
+    })->name('dashboard')->middleware('role:admin,staff,viewer');
 
-    Route::get('/pemasaran', function () {
-        return "Halaman Data Pemasaran";
-    });
+    // Admin + Staff boleh akses Manajemen Kontrak
+    Route::get('/kontrak', function () {
+        return view('dashboard.kontrak');
+    })->name('kontrak')->middleware('role:admin,staff');
 
+    // Admin only boleh akses User Management
     Route::get('/users', function () {
-        return "Halaman Manajemen User";
-    });
+        return view('dashboard.users');
+    })->name('users')->middleware('role:admin');
+
+    // Admin + Staff boleh akses Upload & Export
+    Route::get('/upload-export', function () {
+        return view('dashboard.upload_export');
+    })->name('upload.export')->middleware('role:admin,staff');
 });
