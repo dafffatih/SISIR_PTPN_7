@@ -200,21 +200,102 @@
     const openModal = (id) => document.getElementById(id)?.classList.add('show');
     const closeModal = (id) => document.getElementById(id)?.classList.remove('show');
 
-    // open tambah
-    const btnTambah = document.getElementById('btnOpenTambah');
-    if (btnTambah) btnTambah.addEventListener('click', () => openModal('modalTambah'));
-
-    // open by data-open
+    // Klik tombol dengan data-open (Detail & Edit)
     document.querySelectorAll('[data-open]').forEach(btn => {
-      btn.addEventListener('click', () => openModal(btn.getAttribute('data-open')));
+      btn.addEventListener('click', () => {
+        const modalId = btn.getAttribute('data-open');
+        const rawData = btn.getAttribute('data-json');
+        
+        if (rawData) {
+          const data = JSON.parse(rawData);
+          fillModalData(modalId, data);
+        }
+        
+        openModal(modalId);
+      });
     });
 
-    // close by data-close
+    // Fungsi untuk mengisi data ke modal (MENGGUNAKAN VARIABEL HURUF)
+    function fillModalData(modalId, data) {
+      if (modalId === 'modalDetail') {
+        const modal = document.getElementById('modalDetail');
+        modal.querySelector('.m-subtitle').innerText = data.I; // Nomor Kontrak (I)
+
+        const cells = modal.querySelectorAll('.m-kv td:last-child');
+        if(cells.length > 0) {
+            // Urutan sesuai struktur modal-detail Anda
+            cells[0].innerText = data.H;  // LO/EX
+            cells[1].innerText = data.I;  // Nomor Kontrak
+            cells[2].innerText = data.J;  // Nama Pembeli
+            cells[3].innerText = data.K;  // Tanggal Kontrak
+            cells[4].innerText = data.L + ' Kg'; // Volume
+            cells[5].innerText = 'Rp ' + data.M; // Harga
+            cells[6].innerText = 'Rp ' + data.N; // Nilai
+            cells[7].innerText = data.O;  // Inc PPN
+            cells[8].innerText = data.P;  // Tanggal Bayar
+            cells[9].innerText = data.Q;  // Unit
+            cells[10].innerText = data.R; // Mutu
+            cells[11].innerText = data.V; // Kontrak SAP
+            cells[12].innerText = data.W; // DP SAP
+            cells[13].innerText = data.X; // SO SAP
+            cells[14].innerText = data.Z + ' Kg'; // Sisa Awal
+
+            // Bagian Pengiriman
+            cells[15].innerText = data.S;  // Nomor DO/SI
+            cells[16].innerText = data.T;  // Tanggal DO/SI
+            cells[17].innerText = data.U;  // Port
+            cells[18].innerText = data.AA + ' Kg'; // Total Dilayani
+            cells[19].innerText = data.AB + ' Kg'; // Sisa Akhir
+        }
+      }
+
+      if (modalId === 'modalEdit') {
+        const modal = document.getElementById('modalEdit');
+        const form = modal.querySelector('form');
+        
+        // Mengisi hidden input untuk baris (row index) agar Controller tahu baris mana yang diupdate
+        if (!form.querySelector('[name="row_index"]')) {
+            const inputRow = document.createElement('input');
+            inputRow.type = 'hidden';
+            inputRow.name = 'row_index';
+            form.appendChild(inputRow);
+        }
+        form.querySelector('[name="row_index"]').value = data.row;
+
+        // Mengisi field input berdasarkan name (sesuaikan name di modal-edit Anda)
+        form.querySelector('[name="loex"]').value = data.H;
+        form.querySelector('[name="nomor_kontrak"]').value = data.I;
+        form.querySelector('[name="nama_pembeli"]').value = data.J;
+        form.querySelector('[name="tgl_kontrak"]').value = data.K;
+        form.querySelector('[name="volume"]').value = data.L;
+        form.querySelector('[name="harga"]').value = data.M;
+        form.querySelector('[name="nilai"]').value = data.N;
+        form.querySelector('[name="unit"]').value = data.Q;
+        form.querySelector('[name="mutu"]').value = data.R;
+        form.querySelector('[name="nomor_dosi"]').value = data.S;
+        form.querySelector('[name="port"]').value = data.U;
+        form.querySelector('[name="sisa_awal"]').value = data.Z;
+        form.querySelector('[name="total_dilayani"]').value = data.AA;
+        form.querySelector('[name="sisa_akhir"]').value = data.AB;
+      }
+    }
+
+    // Tombol Tambah (Membersihkan form)
+    const btnTambah = document.getElementById('btnOpenTambah');
+    if (btnTambah) {
+        btnTambah.addEventListener('click', () => {
+            const form = document.getElementById('modalTambah').querySelector('form');
+            form.reset();
+            openModal('modalTambah');
+        });
+    }
+
+    // Close buttons logic
     document.querySelectorAll('[data-close]').forEach(btn => {
       btn.addEventListener('click', () => closeModal(btn.getAttribute('data-close')));
     });
 
-    // click outside -> close
+    // Close on overlay click
     document.querySelectorAll('.m-overlay').forEach(ov => {
       ov.addEventListener('click', (e) => {
         if (e.target === ov) ov.classList.remove('show');

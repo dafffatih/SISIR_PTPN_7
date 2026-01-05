@@ -2,37 +2,89 @@
 
 namespace App\Services;
 
-use Google\Client;
-use Google\Service\Sheets;
+use Google_Client;
+use Google_Service_Sheets;
+use Google_Service_Sheets_ValueRange;
 
 class GoogleSheetService
 {
-    protected $client;
     protected $service;
+    protected $spreadsheetId;
 
     public function __construct()
     {
-        $this->client = new Client();
-        // Mengambil path file json dari folder storage
-        $this->client->setAuthConfig(storage_path('app/google/service-account.json'));
-        $this->client->addScope(Sheets::SPREADSHEETS);
-        
-        $this->service = new Sheets($this->client);
+        $client = new Google_Client();
+        $client->setAuthConfig(storage_path('app/google/service-account.json'));
+        $client->addScope(Google_Service_Sheets::SPREADSHEETS);
+
+        $this->service = new Google_Service_Sheets($client);
+        $this->spreadsheetId = env('GOOGLE_SHEET_ID');
     }
 
-    public function readSheet($spreadsheetId, $range)
+    // Mengambil data dari sheet tertentu
+    public function getData($range = "'SC Sudah Bayar'!A2:BA")
     {
-        $response = $this->service->spreadsheets_values->get($spreadsheetId, $range);
-        return $response->getValues();
+        $response = $this->service->spreadsheets_values->get($this->spreadsheetId, $range);
+        return $response->getValues() ?? [];
     }
 
-    public function updateSheet($spreadsheetId, $range, $values)
+    // Update data berdasarkan nomor baris
+    public function updateData($row, $data, $sheetName = 'SC Sudah Bayar')
     {
-        $body = new Sheets\ValueRange([
-            'values' => $values
+        $body = new Google_Service_Sheets_ValueRange([
+            'values' => [$data]
         ]);
-        $params = ['valueInputOption' => 'RAW'];
 
-        return $this->service->spreadsheets_values->update($spreadsheetId, $range, $body, $params);
+        $params = ['valueInputOption' => 'USER_ENTERED'];
+        $range = "'{$sheetName}'!A{$row}:BA{$row}";
+
+        $this->service->spreadsheets_values->update(
+            $this->spreadsheetId,
+            $range,
+            $body,
+            $params
+        );
+    }
+
+    // Tambah data baru (Append)
+    public function storeData($data, $sheetName = 'SC Sudah Bayar')
+    {
+        $body = new Google_Service_Sheets_ValueRange([
+            'values' => [$data]
+        ]);
+
+        $params = ['valueInputOption' => 'USER_ENTERED'];
+        $range = "'{$sheetName}'!A:BA";
+
+        $this->service->spreadsheets_values->append(
+            $this->spreadsheetId,
+            $range,
+            $body,
+            $params
+        );
+    }
+
+    public function deleteData($row)
+    {
+        $sheetId = 2061910826; // GANTI dengan GID tab 'SC Sudah Bayar' Anda
+
+        $requests = [
+            new \Google_Service_Sheets_Request([
+                'deleteDimension' => [
+                    'range' => [
+                        'sheetId' => $sheetId,
+                        'dimension' => 'ROWS',
+                        'startIndex' => $row - 1,
+                        'endIndex' => $row
+                    ]
+                ]
+            ])
+        ];
+
+        $batchUpdateRequest = new \Google_Service_Sheets_BatchUpdateSpreadsheetRequest([
+            'requests' => $requests
+        ]);
+
+        $this->service->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
     }
 }

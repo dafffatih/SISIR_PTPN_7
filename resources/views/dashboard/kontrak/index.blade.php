@@ -159,7 +159,6 @@
                       </option>
                   @endforeach
               </select> 
-              
               <button type="submit" style="display:none"></button>
           </form>
 
@@ -184,34 +183,42 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($data as $r)
-                        <tr>
-                            <td>
-                                <a href="#" style="color:#7c3aed; font-weight:700; text-decoration:none;">{{ $r['no_kontrak'] }}</a>
-                                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">{{ $r['unit'] }} / {{ $r['mutu'] }}</div>
-                            </td>
-                            <td style="font-weight:600;">{{ $r['pembeli'] }}</td>
-                            <td style="color:#64748b;">{{ $r['tgl_kontrak'] }}</td>
-                            <td style="font-weight:700;">{{ number_format((float)$r['volume'], 0, ',', '.') }} Kg</td>
-                            <td>Rp {{ number_format((float)$r['harga'], 0, ',', '.') }}</td>
-                            <td><span class="k-badge k-badge-green">{{ number_format((float)$r['total_layan'], 0, ',', '.') }} Kg</span></td>
-                            <td><span class="k-badge k-badge-orange">{{ number_format((float)($r['sisa_akhir'] ?? 0), 0, ',', '.') }} Kg</span></td>
-                            <td style="color:#64748b;">{{ $r['jatuh_tempo'] }}</td>
-                            <td style="text-align:center;">
-                                <button class="k-btn-icon" title="Lihat">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                </button>
-                                <button class="k-btn-icon" title="Edit">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="9" style="text-align:center; padding: 40px; color:#94a3b8;">Data kontrak tidak ditemukan.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
+                  @forelse($data as $index => $r)
+                      <tr>
+                          <td>
+                              <a href="javascript:void(0)" class="k-link" 
+                                data-open="modalDetail" 
+                                data-row="{{ json_encode($r) }}">{{ $r['no_kontrak'] }}</a>
+                              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">{{ $r['unit'] }} / {{ $r['mutu'] }}</div>
+                          </td>
+                          <td style="font-weight:600;">{{ $r['pembeli'] }}</td>
+                          <td style="color:#64748b;">{{ $r['tgl_kontrak'] }}</td>
+                          <td style="font-weight:700;">{{ number_format((float)$r['volume'], 0, ',', '.') }} Kg</td>
+                          <td>Rp {{ number_format((float)$r['harga'], 0, ',', '.') }}</td>
+                          <td><span class="k-badge k-badge-green">{{ number_format((float)$r['total_layan'], 0, ',', '.') }} Kg</span></td>
+                          <td><span class="k-badge k-badge-orange">{{ number_format((float)($r['sisa_akhir'] ?? 0), 0, ',', '.') }} Kg</span></td>
+                          <td style="color:#64748b;">{{ $r['jatuh_tempo'] }}</td>
+                          <td style="text-align:center;">
+                              <div class="k-actions" style="justify-content:center; display:flex; gap:8px;">
+                                  <button class="k-btn-icon" title="Lihat" 
+                                          data-open="modalDetail" 
+                                          data-json="{{ json_encode($r) }}">
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                  </button>
+                                  <button class="k-btn-icon" title="Edit" 
+                                          data-open="modalEdit" 
+                                          data-json="{{ json_encode($r) }}">
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                  </button>
+                              </div>
+                          </td>
+                      </tr>
+                  @empty
+                      <tr>
+                          <td colspan="9" style="text-align:center; padding: 40px; color:#94a3b8;">Data kontrak tidak ditemukan.</td>
+                      </tr>
+                  @endforelse
+              </tbody>
             </table>
         </div>
 

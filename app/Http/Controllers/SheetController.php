@@ -15,63 +15,133 @@ class SheetController extends Controller
         $this->googleSheetService = $googleSheetService;
     }
 
-    public function index(Request $request)
+    public function index(Request $request, GoogleSheetService $sheetService)
     {
-        $spreadsheetId = '19CsFz8MQ9XvPX9VYqKtRfy1ZT04gNJgyvS3oQC4ijaw';
-        $range = "'SC Sudah Bayar'!H1:BA";
+        $allData = $sheetService->getData();
         $search = $request->input('search');
-        
-        // Ambil input per_page dari user, default ke 10
-        $perPage = $request->input('per_page', 10);
+        $perPage = (int) $request->input('per_page', 10);
 
         $filteredData = [];
 
-        try {
-            $rawData = $this->googleSheetService->readSheet($spreadsheetId, $range);
-            if ($rawData) {
-                foreach ($rawData as $index => $row) {
-                    if ($index < 3) continue; 
-                    if (empty($row[1])) continue; 
+        foreach ($allData as $index => $row) {
+            $realRowIndex = $index + 2; // Karena mulai dari A2
 
-                    $rowDataMapped = [
-                        'no_kontrak'   => $row[1] ?? '-',
-                        'pembeli'      => $row[2] ?? '-',
-                        'tgl_kontrak'  => $row[3] ?? '-',
-                        'volume'       => $row[4] ?? 0,
-                        'harga'        => $row[5] ?? 0,
-                        'unit'         => $row[9] ?? '-',
-                        'mutu'         => $row[10] ?? '-',
-                        'total_layan'  => $row[19] ?? 0,
-                        'sisa_akhir'   => $row[20] ?? 0,
-                        'jatuh_tempo'  => $row[45] ?? '-',
-                    ];
+            // Mapping Kolom A sampai BA ke variabel huruf
+            // Index array dimulai dari 0 (A=0, B=1, dst)
+            $A = $row[0] ?? '';   $B = $row[1] ?? '';   $C = $row[2] ?? '';
+            $D = $row[3] ?? '';   $E = $row[4] ?? '';   $F = $row[5] ?? '';
+            $G = $row[6] ?? '';   $H = $row[7] ?? '';   $I = $row[8] ?? ''; // Nomor Kontrak
+            $J = $row[9] ?? '';   $K = $row[10] ?? '';  $L = $row[11] ?? ''; // Volume
+            $M = $row[12] ?? '';  $N = $row[13] ?? '';  $O = $row[14] ?? '';
+            $P = $row[15] ?? '';  $Q = $row[16] ?? '';  $R = $row[17] ?? '';
+            $S = $row[18] ?? '';  $T = $row[19] ?? '';  $U = $row[20] ?? '';
+            $V = $row[21] ?? '';  $W = $row[22] ?? '';  $X = $row[23] ?? '';
+            $Y = $row[24] ?? '';  $Z = $row[25] ?? '';  $AA = $row[26] ?? ''; // Total Dilayani
+            $AB = $row[27] ?? ''; // Sisa Akhir
+            
+            // BA adalah index ke-52
+            $BA = $row[52] ?? ''; // Jatuh Tempo
 
-                    if ($search) {
-                        if (!str_contains(strtolower($rowDataMapped['no_kontrak']), strtolower($search)) && 
-                            !str_contains(strtolower($rowDataMapped['pembeli']), strtolower($search))) {
-                            continue;
-                        }
-                    }
-                    $filteredData[] = $rowDataMapped;
+            // Skip jika Nomor Kontrak (I) kosong
+            if (empty($I)) continue;
+
+            $rowDataMapped = [
+                'row' => $realRowIndex,
+                'A' => $A, 'B' => $B, 'C' => $C, 'D' => $D, 'E' => $E, 'F' => $F,
+                'G' => $G, 'H' => $H, 'I' => $I, 'J' => $J, 'K' => $K, 'L' => $L,
+                'M' => $M, 'N' => $N, 'O' => $O, 'P' => $P, 'Q' => $Q, 'R' => $R,
+                'S' => $S, 'T' => $T, 'U' => $U, 'V' => $V, 'W' => $W, 'X' => $X,
+                'Y' => $Y, 'Z' => $Z, 'AA' => $AA, 'AB' => $AB, 'BA' => $BA,
+                // Properti alias untuk memudahkan di Blade
+                'no_kontrak'  => $I,
+                'pembeli'     => $J,
+                'tgl_kontrak' => $K,
+                'volume'      => $L,
+                'harga'       => $M,
+                'total_layan' => $AA,
+                'sisa_akhir'  => $AB,
+                'jatuh_tempo' => $BA,
+                'unit'        => $Q,
+                'mutu'        => $R,
+            ];
+
+            if ($search) {
+                if (!str_contains(strtolower($I), strtolower($search)) && 
+                    !str_contains(strtolower($J), strtolower($search))) {
+                    continue;
                 }
             }
-        } catch (\Exception $e) {
-            session()->flash('error', $e->getMessage());
+
+            $filteredData[] = $rowDataMapped;
         }
 
-        // Pagination Manual
-        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $currentPage = (int) $request->get('page', 1);
         $itemCollection = collect($filteredData);
-        
-        // Gunakan variabel $perPage yang dinamis
-        $currentPageItems = $itemCollection->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
+        $currentPageItems = $itemCollection->slice(($currentPage - 1) * $perPage, $perPage)->all();
 
         $data = new LengthAwarePaginator($currentPageItems, $itemCollection->count(), $perPage);
-        
-        // Penting: appends agar filter search dan per_page tidak hilang saat pindah halaman
         $data->setPath($request->url());
-        $data->appends($request->all()); 
+        $data->appends($request->all());
 
         return view('dashboard.kontrak.index', compact('data'));
+    }
+
+    // Menambah Data Baru (A-BA)
+    public function store(Request $request, GoogleSheetService $sheetService)
+    {
+        // Susun array 53 kolom (Index 0-52) sesuai urutan A-BA
+        $data = [
+            $request->A ?? "", $request->B ?? "", $request->C ?? "", 
+            $request->D ?? "", $request->E ?? "", $request->F ?? "", 
+            $request->G ?? "", 
+            $request->loex ?? "",           // H (Index 7)
+            $request->nomor_kontrak ?? "",  // I (Index 8)
+            $request->nama_pembeli ?? "",   // J
+            $request->tgl_kontrak ?? "",    // K
+            $request->volume ?? "",         // L
+            $request->harga ?? "",          // M
+            $request->nilai ?? "",          // N
+            "",                             // O
+            "",                             // P
+            $request->unit ?? "",           // Q
+            $request->mutu ?? "",           // R
+            $request->nomor_dosi ?? "",     // S
+            "",                             // T
+            $request->port ?? "",           // U
+            "",                             // V
+            "",                             // W
+            "",                             // X
+            "",                             // Y
+            $request->sisa_awal ?? "",      // Z
+            $request->total_dilayani ?? "", // AA
+            $request->sisa_akhir ?? "",     // AB
+            // ... teruskan sampai index 52 (BA)
+        ];
+
+        try {
+            $sheetService->storeData($data);
+            return back()->with('success', 'Kontrak berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menambah data: ' . $e->getMessage());
+        }
+    }
+
+    // Memperbarui Data Berdasarkan Nomor Baris
+    public function update(Request $request, GoogleSheetService $sheetService)
+    {
+        $row = $request->row_index; // Diambil dari hidden input modal edit
+
+        $data = [
+            $request->A ?? "", $request->B ?? "", // ... petakan semua kolom A-BA
+            $request->loex, $request->nomor_kontrak, $request->nama_pembeli,
+            // ... (urutan harus sama persis dengan fungsi store)
+        ];
+
+        try {
+            $sheetService->updateData($row, $data);
+            return back()->with('success', 'Kontrak berhasil diperbarui.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
+        }
     }
 }
