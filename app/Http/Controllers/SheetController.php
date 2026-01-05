@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\GoogleSheetService;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class SheetController extends Controller
 {
@@ -14,45 +15,63 @@ class SheetController extends Controller
         $this->googleSheetService = $googleSheetService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $spreadsheetId = '1Vii1HvHtMB-zKf1xzpdkx-5R1eoNvhaC';
-        $range = "'SC Sudah Bayar'!H1:BA"; // Mengambil sampai baris paling akhir
+        $spreadsheetId = '19CsFz8MQ9XvPX9VYqKtRfy1ZT04gNJgyvS3oQC4ijaw';
+        $range = "'SC Sudah Bayar'!H1:BA";
+        $search = $request->input('search');
+        
+        // Ambil input per_page dari user, default ke 10
+        $perPage = $request->input('per_page', 10);
+
+        $filteredData = [];
 
         try {
             $rawData = $this->googleSheetService->readSheet($spreadsheetId, $range);
+            if ($rawData) {
+                foreach ($rawData as $index => $row) {
+                    if ($index < 3) continue; 
+                    if (empty($row[1])) continue; 
 
-            if (!$rawData) {
-                return view('dashboard.upload_export', ['data' => []]);
-            }
+                    $rowDataMapped = [
+                        'no_kontrak'   => $row[1] ?? '-',
+                        'pembeli'      => $row[2] ?? '-',
+                        'tgl_kontrak'  => $row[3] ?? '-',
+                        'volume'       => $row[4] ?? 0,
+                        'harga'        => $row[5] ?? 0,
+                        'unit'         => $row[9] ?? '-',
+                        'mutu'         => $row[10] ?? '-',
+                        'total_layan'  => $row[19] ?? 0,
+                        'sisa_akhir'   => $row[20] ?? 0,
+                        'jatuh_tempo'  => $row[45] ?? '-',
+                    ];
 
-            $filteredData = [];
-
-            foreach ($rawData as $row) {
-                // Kita gunakan array_filter atau pengecekan sederhana 
-                // agar baris yang benar-benar kosong tidak ikut masuk ke tampilan
-                if (empty(array_filter($row))) {
-                    continue; 
+                    if ($search) {
+                        if (!str_contains(strtolower($rowDataMapped['no_kontrak']), strtolower($search)) && 
+                            !str_contains(strtolower($rowDataMapped['pembeli']), strtolower($search))) {
+                            continue;
+                        }
+                    }
+                    $filteredData[] = $rowDataMapped;
                 }
-
-                $filteredData[] = [
-                    'H' => $row[0] ?? '', 'I' => $row[1] ?? '', 'J' => $row[2] ?? '',
-                    'K' => $row[3] ?? '', 'L' => $row[4] ?? '', 'M' => $row[5] ?? '',
-                    'Q' => $row[9] ?? '', 'R' => $row[10] ?? '', 'S' => $row[11] ?? '',
-                    'U' => $row[13] ?? '', 'V' => $row[14] ?? '', 'W' => $row[15] ?? '', 'X' => $row[16] ?? '',
-                    'Z' => $row[18] ?? '', 'AA' => $row[19] ?? '',
-                    'AM' => $row[31] ?? '', 'AN' => $row[32] ?? '', 'AO' => $row[33] ?? '',
-                    'AP' => $row[34] ?? '', 'AQ' => $row[35] ?? '', 'AR' => $row[36] ?? '',
-                    'AS' => $row[37] ?? '', 'AT' => $row[38] ?? '', 'AU' => $row[39] ?? '',
-                    'AV' => $row[40] ?? '',
-                    'BA' => $row[45] ?? '',
-                ];
             }
-
-            return view('dashboard.upload_export', ['data' => $filteredData]);
-
         } catch (\Exception $e) {
-            return view('dashboard.upload_export')->with('error', 'Gagal: ' . $e->getMessage());
+            session()->flash('error', $e->getMessage());
         }
+
+        // Pagination Manual
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $itemCollection = collect($filteredData);
+        
+        // Gunakan variabel $perPage yang dinamis
+        $currentPageItems = $itemCollection->slice(($currentPage * $perPage) - $perPage, $perPage)->all();
+
+        $data = new LengthAwarePaginator($currentPageItems, $itemCollection->count(), $perPage);
+        
+        // Penting: appends agar filter search dan per_page tidak hilang saat pindah halaman
+        $data->setPath($request->url());
+        $data->appends($request->all()); 
+
+        return view('dashboard.kontrak.index', compact('data'));
     }
 }

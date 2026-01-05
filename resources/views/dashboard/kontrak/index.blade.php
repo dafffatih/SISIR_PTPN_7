@@ -5,324 +5,245 @@
 
 @section('content')
 <style>
-  /* ===== Page (Kontrak) Only ===== */
-  .k-page-title { font-size: 24px; font-weight: 800; color:#0f172a; margin:0 0 6px; }
-  .k-page-subtitle { margin:0 0 18px; color:#64748b; font-size: 14px; }
+    /* Container & Wrapper */
+    .k-container { padding: 20px; font-family: 'Inter', sans-serif; }
+    .k-header { margin-bottom: 24px; }
+    .k-title { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; }
+    .k-subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
 
-  .k-card {
-    background:#fff;
-    border:1px solid #e2e8f0;
-    border-radius: 14px;
-    box-shadow: 0 1px 2px rgba(15,23,42,.06);
-    overflow:hidden;
-  }
+    /* Card Style */
+    .k-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
 
-  .k-toolbar {
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    padding:16px;
-    border-bottom:1px solid #f1f5f9;
-    flex-wrap:wrap;
-  }
+    /* Toolbar Section */
+    .k-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        background: #ffffff;
+        border-bottom: 1px solid #f1f5f9;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
 
-  .k-search {
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:10px 12px;
-    border:1px solid #e2e8f0;
-    border-radius: 12px;
-    min-width: 260px;
-    max-width: 520px;
-    width: 100%;
-    background:#fff;
-  }
-  .k-search input{
-    border:none;
-    outline:none;
-    width:100%;
-    font-size:14px;
-    color:#0f172a;
-  }
-  .k-search input::placeholder{ color:#94a3b8; }
+    /* Search Input */
+    .k-search-box {
+        display: flex;
+        align-items: center;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 8px 12px;
+        width: 100%;
+        max-width: 400px;
+        transition: all 0.2s;
+    }
+    .k-search-box:focus-within { border-color: #7c3aed; background: #fff; box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+    .k-search-box input {
+        border: none;
+        background: transparent;
+        outline: none;
+        margin-left: 8px;
+        font-size: 14px;
+        width: 100%;
+        color: #1e293b;
+    }
 
-  .k-btn-primary{
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    border:none;
-    cursor:pointer;
-    padding:10px 14px;
-    border-radius: 12px;
-    background:#16a34a;
-    color:#fff;
-    font-weight:700;
-    font-size:14px;
-    box-shadow: 0 6px 16px rgba(22,163,74,.16);
-    transition:.18s ease;
-    white-space:nowrap;
-  }
-  .k-btn-primary:hover{ transform: translateY(-1px); filter:brightness(.98); }
+    /* Primary Button */
+    .k-btn-add {
+        background: #10b981;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+    }
+    .k-btn-add:hover { background: #059669; transform: translateY(-1px); }
 
-  .k-table-wrap{ width:100%; overflow:auto; }
-  .k-table{
-    width:100%;
-    border-collapse: separate;
-    border-spacing:0;
-    min-width: 980px;
-  }
-  .k-table thead th{
-    text-align:left;
-    font-size: 11px;
-    letter-spacing:.06em;
-    text-transform: uppercase;
-    color:#64748b;
-    background:#f8fafc;
-    padding:12px 14px;
-    border-bottom:1px solid #e2e8f0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-  }
-  .k-table tbody td{
-    padding:14px;
-    border-bottom:1px solid #f1f5f9;
-    font-size: 13px;
-    color:#0f172a;
-    vertical-align: top;
-  }
-  .k-table tbody tr:hover td{ background:#fcfcff; }
+    /* Table Style */
+    .k-table-responsive { width: 100%; overflow-x: auto; }
+    .k-table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+    .k-table thead { background: #f8fafc; }
+    .k-table th {
+        text-align: left;
+        padding: 12px 16px;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #64748b;
+        font-weight: 700;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .k-table td { padding: 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; vertical-align: middle; }
+    .k-table tr:hover { background-color: #fcfcff; }
 
-  .k-link{
-    color:#7c3aed;
-    font-weight:700;
-    text-decoration:none;
-  }
-  .k-link:hover{ text-decoration: underline; }
+    /* Badge Styles */
+    .k-badge { padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 11px; }
+    .k-badge-green { background: #dcfce7; color: #16a34a; }
+    .k-badge-orange { background: #ffedd5; color: #ea580c; }
 
-  .k-muted{ color:#64748b; font-size:12px; margin-top:2px; }
+    /* Action Buttons */
+    .k-btn-icon {
+        width: 32px;
+        height: 32px;
+        display: inline-grid;
+        place-items: center;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        cursor: pointer;
+        transition: 0.2s;
+        color: #64748b;
+    }
+    .k-btn-icon:hover { background: #f8fafc; color: #7c3aed; border-color: #7c3aed; }
 
-  .k-badge{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding:6px 10px;
-    border-radius: 999px;
-    font-weight:800;
-    font-size: 12px;
-    line-height: 1;
-    white-space:nowrap;
-  }
-  .k-badge.green{ background:#dcfce7; color:#16a34a; }
-  .k-badge.orange{ background:#ffedd5; color:#ea580c; }
-
-  .k-actions{
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  .k-action-btn{
-    width:32px; height:32px;
-    border-radius:10px;
-    border:1px solid #e2e8f0;
-    background:#fff;
-    display:grid;
-    place-items:center;
-    cursor:pointer;
-    transition:.15s ease;
-  }
-  .k-action-btn:hover{ transform: translateY(-1px); background:#f8fafc; }
-
-  .k-footer{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    padding:14px 16px;
-    color:#64748b;
-    font-size: 13px;
-    flex-wrap:wrap;
-  }
-
-  .k-pagination{
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  .k-pagebtn{
-    width:34px; height:34px;
-    border-radius: 10px;
-    border:1px solid #e2e8f0;
-    background:#fff;
-    cursor:pointer;
-    display:grid;
-    place-items:center;
-    font-weight:800;
-    color:#0f172a;
-  }
-  .k-pagebtn.active{
-    background:#7c3aed;
-    color:#fff;
-    border-color:#7c3aed;
-  }
-
-  @media (max-width: 768px){
-    .k-search{ max-width: 100%; }
-  }
+    /* Footer & Pagination */
+    .k-footer { padding: 16px; display: flex; justify-content: space-between; align-items: center; background: white; color: #64748b; font-size: 13px; }
+    .k-pagination { display: flex; gap: 5px; }
+    .k-page-link {
+        padding: 6px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #1e293b;
+        font-weight: 600;
+    }
+    .k-page-link.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+    .k-page-link.disabled { color: #cbd5e1; pointer-events: none; }
+    .k-select-limit {
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        font-size: 14px;
+        color: #1e293b;
+        outline: none;
+        cursor: pointer;
+    }
+    .k-select-limit:focus { border-color: #7c3aed; background: #fff; }
 </style>
 
-@php
-  // Dummy data sementara (nanti tinggal ganti dari DB)
-  $rows = [
-    [
-      'nomor' => '0528/HO-SUPCO/SIR-LN-I/X/2024',
-      'pembeli' => 'Bitung Gunasejahtera',
-      'tgl_kontrak' => '15/1/2024',
-      'volume' => '50.000 Kg',
-      'harga' => 'Rp 32.000',
-      'total' => '30.000 Kg',
-      'sisa' => '20.000 Kg',
-      'jatuh_tempo' => '15/3/2024',
-    ],
-    [
-      'nomor' => '0529/HO-SUPCO/SIR-LN-I/X/2024',
-      'pembeli' => 'Wilson Tunggal Perkasa',
-      'tgl_kontrak' => '20/1/2024',
-      'volume' => '75.000 Kg',
-      'harga' => 'Rp 32.500',
-      'total' => '45.000 Kg',
-      'sisa' => '30.000 Kg',
-      'jatuh_tempo' => '20/3/2024',
-    ],
-    [
-      'nomor' => '0103/HO-SUPCO/RSS-LN-I/VIII/2024',
-      'pembeli' => 'Singapore Tong Teik',
-      'tgl_kontrak' => '1/2/2024',
-      'volume' => '100.000 Kg',
-      'harga' => 'Rp 31.500',
-      'total' => '60.000 Kg',
-      'sisa' => '40.000 Kg',
-      'jatuh_tempo' => '1/4/2024',
-    ],
-    [
-      'nomor' => '0345/SUPCO/SIR-LN-I/IX/2024',
-      'pembeli' => 'Jaya Asri Niaga',
-      'tgl_kontrak' => '5/2/2024',
-      'volume' => '60.000 Kg',
-      'harga' => 'Rp 30.000',
-      'total' => '25.000 Kg',
-      'sisa' => '35.000 Kg',
-      'jatuh_tempo' => '5/4/2024',
-    ],
-    [
-      'nomor' => '0416/HO-SUPCO/SIR-LN-I/VIII/2024',
-      'pembeli' => 'Meridian Jati Indonesia',
-      'tgl_kontrak' => '10/2/2024',
-      'volume' => '80.000 Kg',
-      'harga' => 'Rp 29.800',
-      'total' => '50.000 Kg',
-      'sisa' => '30.000 Kg',
-      'jatuh_tempo' => '10/4/2024',
-    ],
-  ];
-@endphp
-
-<h2 class="k-page-title">Data Manajemen Kontrak Penjualan</h2>
-<p class="k-page-subtitle">Kelola dan pantau semua kontrak penjualan Anda</p>
-
-<div class="k-card">
-  <div class="k-toolbar">
-    <div class="k-search">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M21 21l-4.3-4.3m1.8-5.2a7 7 0 11-14 0 7 7 0 0114 0z" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <input type="text" placeholder="Cari nomor kontrak atau nama pembeli...">
+<div class="k-container">
+    <div class="k-header">
+        <h2 class="k-title">Data Manajemen Kontrak Penjualan</h2>
+        <p class="k-subtitle">Kelola dan pantau semua kontrak penjualan Anda secara realtime dari Google Sheets</p>
     </div>
 
-    <button class="k-btn-primary" id="btnOpenTambah" type="button">
-      <span style="font-size:16px; line-height:0;">＋</span>
-      Tambah Data
-    </button>
-  </div>
-
-  <div class="k-table-wrap">
-    <table class="k-table">
-      <thead>
-        <tr>
-          <th>Nomor Kontrak</th>
-          <th>Nama Pembeli</th>
-          <th>Tanggal Kontrak</th>
-          <th>Volume</th>
-          <th>Harga</th>
-          <th>Total Penyerahan</th>
-          <th>Sisa Penyerahan</th>
-          <th>Jatuh Tempo</th>
-          <th style="text-align:center;">Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach($rows as $r)
-          <tr>
-            <td>
-              <a href="#" class="k-link">{{ $r['nomor'] }}</a>
-              <div class="k-muted">SUPCO / SIR</div>
-            </td>
-            <td>{{ $r['pembeli'] }}</td>
-            <td style="color:#64748b;">{{ $r['tgl_kontrak'] }}</td>
-            <td>{{ $r['volume'] }}</td>
-            <td style="color:#334155;">{{ $r['harga'] }}</td>
-            <td><span class="k-badge green">{{ $r['total'] }}</span></td>
-            <td><span class="k-badge orange">{{ $r['sisa'] }}</span></td>
-            <td style="color:#64748b;">{{ $r['jatuh_tempo'] }}</td>
-            <td>
-              <div class="k-actions" style="justify-content:center;">
-                <button class="k-action-btn" title="Lihat" type="button" data-open="modalDetail">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="#7c3aed" stroke-width="2"/>
-                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="#7c3aed" stroke-width="2"/>
+    <div class="k-card">
+        <div class="k-toolbar">
+          <form action="{{ route('kontrak') }}" method="GET" id="filterForm" class="k-search-box" style="max-width: 600px; gap: 10px; background: transparent; border: none; padding: 0;">
+              
+              <div class="k-search-box" style="margin: 0;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
-                </button>
-
-                <button class="k-action-btn" title="Edit" type="button" data-open="modalEdit">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 20h9" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="#f97316" stroke-width="2" stroke-linejoin="round"/>
-                  </svg>
-                </button>
-
-                <button class="k-action-btn" title="Hapus" type="button">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 6h18" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M8 6V4h8v2" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M6 6l1 16h10l1-16" stroke="#ef4444" stroke-width="2" stroke-linejoin="round"/>
-                  </svg>
-                </button>
+                  <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nomor kontrak...">
               </div>
-            </td>
-          </tr>
-        @endforeach
-      </tbody>
-    </table>
-  </div>
 
-  <div class="k-footer">
-    <div>Menampilkan 1 - {{ count($rows) }} dari {{ count($rows) }} data</div>
-    <div class="k-pagination">
-      <button class="k-pagebtn" type="button" title="Prev">‹</button>
-      <button class="k-pagebtn active" type="button">1</button>
-      <button class="k-pagebtn" type="button" title="Next">›</button>
+              <select name="per_page" class="k-select-limit" onchange="document.getElementById('filterForm').submit()">
+                  @foreach([10, 50, 100, 250, 500, 1000] as $limit)
+                      <option value="{{ $limit }}" {{ request('per_page') == $limit ? 'selected' : '' }}>
+                          Tampilkan {{ $limit }}
+                      </option>
+                  @endforeach
+              </select> 
+              
+              <button type="submit" style="display:none"></button>
+          </form>
+
+          <button class="k-btn-add">
+              <span>＋</span> Tambah Data
+          </button>
+      </div>
+
+        <div class="k-table-responsive">
+            <table class="k-table">
+                <thead>
+                    <tr>
+                        <th>Nomor Kontrak</th>
+                        <th>Nama Pembeli</th>
+                        <th>Tanggal</th>
+                        <th>Volume</th>
+                        <th>Harga</th>
+                        <th>Total Penyerahan</th>
+                        <th>Sisa Penyerahan</th>
+                        <th>Jatuh Tempo</th>
+                        <th style="text-align:center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($data as $r)
+                        <tr>
+                            <td>
+                                <a href="#" style="color:#7c3aed; font-weight:700; text-decoration:none;">{{ $r['no_kontrak'] }}</a>
+                                <div style="font-size:11px; color:#94a3b8; margin-top:2px;">{{ $r['unit'] }} / {{ $r['mutu'] }}</div>
+                            </td>
+                            <td style="font-weight:600;">{{ $r['pembeli'] }}</td>
+                            <td style="color:#64748b;">{{ $r['tgl_kontrak'] }}</td>
+                            <td style="font-weight:700;">{{ number_format((float)$r['volume'], 0, ',', '.') }} Kg</td>
+                            <td>Rp {{ number_format((float)$r['harga'], 0, ',', '.') }}</td>
+                            <td><span class="k-badge k-badge-green">{{ number_format((float)$r['total_layan'], 0, ',', '.') }} Kg</span></td>
+                            <td><span class="k-badge k-badge-orange">{{ number_format((float)($r['sisa_akhir'] ?? 0), 0, ',', '.') }} Kg</span></td>
+                            <td style="color:#64748b;">{{ $r['jatuh_tempo'] }}</td>
+                            <td style="text-align:center;">
+                                <button class="k-btn-icon" title="Lihat">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                </button>
+                                <button class="k-btn-icon" title="Edit">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                </button>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="9" style="text-align:center; padding: 40px; color:#94a3b8;">Data kontrak tidak ditemukan.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="k-footer">
+            <div>
+                Menampilkan <b>{{ $data->firstItem() ?? 0 }}</b> - <b>{{ $data->lastItem() ?? 0 }}</b> dari <b>{{ $data->total() }}</b> data
+            </div>
+            
+            <div class="k-pagination">
+                @if($data->onFirstPage())
+                    <span class="k-page-link disabled">‹</span>
+                @else
+                    <a href="{{ $data->previousPageUrl() }}" class="k-page-link">‹</a>
+                @endif
+
+                @foreach ($data->getUrlRange(max(1, $data->currentPage() - 1), min($data->lastPage(), $data->currentPage() + 1)) as $page => $url)
+                    <a href="{{ $url }}" class="k-page-link {{ $page == $data->currentPage() ? 'active' : '' }}">{{ $page }}</a>
+                @endforeach
+
+                @if($data->hasMorePages())
+                    <a href="{{ $data->nextPageUrl() }}" class="k-page-link">›</a>
+                @else
+                    <span class="k-page-link disabled">›</span>
+                @endif
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
-{{-- modal css+js --}}
+{{-- Includes modal --}}
 @include('dashboard.kontrak.modal-assets')
-
-{{-- modal tambah/edit/detail --}}
 @include('dashboard.kontrak.modal-tambah')
 @include('dashboard.kontrak.modal-edit')
 @include('dashboard.kontrak.modal-detail')
-
 @endsection

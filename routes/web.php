@@ -11,7 +11,7 @@ Route::get('/', function () {
 });
 
 // Auth Routes
-Route::get('/sheets', [SheetController::class, 'index']);
+// Route::get('/sheets', [SheetController::class, 'index']);
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -25,9 +25,9 @@ Route::middleware(['auth'])->group(function () {
     })->name('dashboard')->middleware('role:admin,staff,viewer');
 
     // Admin + Staff boleh akses Manajemen Kontrak
-    Route::get('/kontrak', function () {
-        return view('dashboard.kontrak.index');
-    })->name('kontrak')->middleware('role:admin,staff');
+    Route::get('/kontrak', [SheetController::class, 'index'])
+    ->name('kontrak')
+    ->middleware(['auth', 'role:admin,staff']);
 
     // Admin only boleh akses User Management
     Route::get('/users', function () {
