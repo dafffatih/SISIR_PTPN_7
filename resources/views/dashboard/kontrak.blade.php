@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Manajemen Kontrak')
+@section('page_title', 'Manajemen Kontrak')
 
 @section('content')
   <h2 style="margin:0 0 8px;">Manajemen Kontrak</h2>

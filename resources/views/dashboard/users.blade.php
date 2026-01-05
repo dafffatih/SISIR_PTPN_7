@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
 @section('title', 'User Management')
+@section('page_title', 'User Management')
 
 @section('content')
   <style>
-    /* Page Content Styles (khusus halaman users) */
     .page-header {
       display: flex;
       justify-content: space-between;
@@ -54,7 +54,7 @@
     .users-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 760px; /* biar ada scroll horizontal di mobile */
+      min-width: 760px;
     }
 
     .users-table thead {
@@ -124,10 +124,7 @@
     .status-active { background: #dcfce7; color: #166534; }
     .status-inactive { background: #f1f5f9; color: #64748b; }
 
-    .action-buttons {
-      display: flex;
-      gap: 8px;
-    }
+    .action-buttons { display: flex; gap: 8px; }
 
     .btn-icon {
       width: 34px;
@@ -146,7 +143,6 @@
     .btn-delete:hover { background: #fef2f2; color: #ef4444; }
     .btn-edit:hover { color: #3b82f6; }
 
-    /* Responsive (ngikutin layout kamu, tapi buat header/table lebih rapih) */
     @media (max-width: 768px) {
       .page-title { font-size: 22px; }
       .btn-add-user { width: 100%; justify-content: center; }
@@ -154,7 +150,7 @@
   </style>
 
   @php
-    // Placeholder data sesuai user model kamu (name, username, role)
+    // sementara dummy, nanti tinggal ganti dari DB: $users = \App\Models\User::all();
     $users = [
       ['name' => 'Administrator SISIR', 'username' => 'admin',  'role' => 'admin',  'status' => 'active',   'last_login' => '12/5/2025'],
       ['name' => 'Staff Pemasaran',     'username' => 'staff',  'role' => 'staff',  'status' => 'active',   'last_login' => '11/5/2025'],
@@ -163,7 +159,7 @@
 
     $roleLabel = [
       'admin'  => 'Administrator',
-      'staff'  => 'Staff',
+      'staff'  => 'Staff Pemasaran',
       'viewer' => 'Viewer',
     ];
 
@@ -181,7 +177,6 @@
       <p class="page-subtitle">Kelola user dan role (khusus admin)</p>
     </div>
 
-    {{-- tombol ini masih UI doang, nanti bisa diarahkan ke form tambah user --}}
     <button class="btn-add-user" type="button">
       <i class="fas fa-plus"></i>
       Tambah User
