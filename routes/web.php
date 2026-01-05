@@ -26,7 +26,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Admin + Staff boleh akses Manajemen Kontrak
     Route::get('/kontrak', function () {
-        return view('dashboard.kontrak');
+        return view('dashboard.kontrak.index');
     })->name('kontrak')->middleware('role:admin,staff');
 
     // Admin only boleh akses User Management
