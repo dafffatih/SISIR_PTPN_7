@@ -74,7 +74,6 @@ $menus = [
 .sisir-logo{
   width:48px;
   height:48px;
-  background:linear-gradient(135deg,#3b82f6 0%,#06b6d4 100%);
   border-radius:10px;
   display:flex;
   align-items:center;
@@ -141,7 +140,7 @@ $menus = [
   align-items:center;
   gap:12px;
   transition:.2s;
-  font-size:14px;
+  font-size:16px;
 }
 .sisir-link:hover{ background:rgba(255,255,255,.06); color:#fff; }
 .sisir-link.is-active{
@@ -178,11 +177,14 @@ $menus = [
   <div class="sisir-sidebar-content">
     <div class="sisir-brand-container">
       <div class="sisir-brand-left">
-        <div class="sisir-logo"><i class="fas fa-chart-line"></i></div>
-        <div class="sisir-brand-text">
-          <div class="sisir-brand-title">SISIR</div>
-          <div class="sisir-brand-subtitle">PTPN 1 Regional 7</div>
-        </div>
+          <div class="sisir-logo">
+              <img src="{{ asset('images/SisirLogo.png') }}" alt="Logo Sisir" style="max-height: 40px;">
+          </div>
+          
+          <div class="sisir-brand-text">
+              <div class="sisir-brand-title">SISIR</div>
+              <div class="sisir-brand-subtitle">PTPN 1 Regional 7</div>
+          </div>
       </div>
 
       <!-- collapse desktop -->
