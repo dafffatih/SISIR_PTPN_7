@@ -162,7 +162,7 @@
               <button type="submit" style="display:none"></button>
           </form>
 
-          <button class="k-btn-add">
+          <button class="k-btn-add" id="btnOpenTambah">
               <span>＋</span> Tambah Data
           </button>
       </div>
@@ -194,7 +194,9 @@
                           <td style="font-weight:600;">{{ $r['pembeli'] }}</td>
                           <td style="color:#64748b;">{{ $r['tgl_kontrak'] }}</td>
                           <td style="font-weight:700;">{{ number_format((float)$r['volume'], 0, ',', '.') }} Kg</td>
-                          <td>Rp {{ number_format((float)$r['harga'], 0, ',', '.') }}</td>
+                          <td style="white-space: nowrap;">
+                            Rp&nbsp;{{ number_format((float) str_replace('.', '', $r['harga']), 0, ',', '.') }}
+                          </td>
                           <td><span class="k-badge k-badge-green">{{ number_format((float)$r['total_layan'], 0, ',', '.') }} Kg</span></td>
                           <td><span class="k-badge k-badge-orange">{{ number_format((float)($r['sisa_akhir'] ?? 0), 0, ',', '.') }} Kg</span></td>
                           <td style="color:#64748b;">{{ $r['jatuh_tempo'] }}</td>

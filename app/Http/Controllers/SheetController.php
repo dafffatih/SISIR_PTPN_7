@@ -82,47 +82,78 @@ class SheetController extends Controller
         $data = new LengthAwarePaginator($currentPageItems, $itemCollection->count(), $perPage);
         $data->setPath($request->url());
         $data->appends($request->all());
-
+        // dd($M);
         return view('dashboard.kontrak.index', compact('data'));
     }
 
     // Menambah Data Baru (A-BA)
     public function store(Request $request, GoogleSheetService $sheetService)
     {
-        // Susun array 53 kolom (Index 0-52) sesuai urutan A-BA
+        $manualInputs = $request->except(['_token']);
+        if (empty(array_filter($manualInputs))) {
+            return back()->with('error', 'Minimal harus mengisi satu data sebelum menyimpan.');
+        }
+
+        $existingData = $sheetService->getData();
+        $row = count($existingData) + 4; 
+
+        // Susun array 53 kolom (Index 0 sampai 52)
         $data = [
-            $request->A ?? "", $request->B ?? "", $request->C ?? "", 
-            $request->D ?? "", $request->E ?? "", $request->F ?? "", 
-            $request->G ?? "", 
-            $request->loex ?? "",           // H (Index 7)
-            $request->nomor_kontrak ?? "",  // I (Index 8)
-            $request->nama_pembeli ?? "",   // J
-            $request->tgl_kontrak ?? "",    // K
-            $request->volume ?? "",         // L
-            $request->harga ?? "",          // M
-            $request->nilai ?? "",          // N
-            "",                             // O
-            "",                             // P
-            $request->unit ?? "",           // Q
-            $request->mutu ?? "",           // R
-            $request->nomor_dosi ?? "",     // S
-            "",                             // T
-            $request->port ?? "",           // U
-            "",                             // V
-            "",                             // W
-            "",                             // X
-            "",                             // Y
-            $request->sisa_awal ?? "",      // Z
-            $request->total_dilayani ?? "", // AA
-            $request->sisa_akhir ?? "",     // AB
-            // ... teruskan sampai index 52 (BA)
+            "=CONCATENATE(I{$row};Q{$row};R{$row})", // A (0)
+            "=CONCATENATE(I{$row};Q{$row})",        // B (1)
+            "=CONCATENATE(D{$row};F{$row};H{$row})", // C (2)
+            "=IFERROR(E{$row}*1;0)",                // D (3)
+            "=IF(LEN(S{$row})=17;LEFT(S{$row};3);LEFT(S{$row};4))", // E (4)
+            "=RIGHT(S{$row};4)",                    // F (5)
+            "=G".($row-1)."+1",                     // G (6)
+            $request->loex ?? "",                   // H (7) - KOLOM INI YANG ANDA MAKSUD
+            $request->nomor_kontrak ?? "",          // I (8)
+            $request->nama_pembeli ?? "",           // J (9)
+            $request->tgl_kontrak ?? "",            // K (10)
+            $request->volume ?? "",                 // L (11)
+            $request->harga ?? "",                  // M (12)
+            $request->nilai ?? "",                  // N (13)
+            $request->inc_ppn ?? "",                // O (14)
+            $request->tgl_bayar ?? "",              // P (15)
+            $request->unit ?? "",                   // Q (16)
+            $request->mutu ?? "",                   // R (17)
+            $request->nomor_dosi ?? "",             // S (18)
+            $request->tgl_dosi ?? "",               // T (19)
+            $request->port ?? "",                   // U (20)
+            $request->kontrak_sap ?? "",            // V (21)
+            $request->dp_sap ?? "",                 // W (22)
+            $request->so_sap ?? "",                 // X (23)
+            "=C{$row}",                             // Y (24)
+            "=L{$row}",                             // Z (25)
+            "=(SUMPRODUCT((Panjang!\$P\$2:\$P\$5011='SC Sudah Bayar'!Y{$row})*Panjang!\$Q\$2:\$Q\$5011))+(SUMPRODUCT((Palembang!\$P\$2:\$P\$5003='SC Sudah Bayar'!Y{$row})*Palembang!\$Q\$2:\$Q\$5003))+(SUMPRODUCT((Bengkulu!\$P\$2:\$P\$5000='SC Sudah Bayar'!Y{$row})*Bengkulu!\$Q\$2:\$Q\$5000))", // AA (26)
+            "=Z{$row}-AA{$row}",                    // AB (27)
+            "=M{$row}*1000",                        // AC (28)
+            "=VLOOKUP(J{$row};Katalog!\$D$4:\$E\$101;2;FALSE)", // AD (29)
+            "=IF(H{$row}=\"LO\";\"LOKAL\";\"EKSPOR\")", // AE (30)
+            "=CONCATENATE(AE{$row};Q{$row})",       // AF (31)
+            "", "", "", "", "", "", "",             // AG s/d AL (32-38) - KOSONG
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Bengkulu!\$AB$2:\$AB$7775))", // AM (39)
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Bengkulu!\$AC$2:\$AC$7775))", // AN (40)
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Bengkulu!\$AB$2:\$AB$7775))", // AO (41)
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Bengkulu!\$AC$2:\$AC$7775))", // AP (42)
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Bengkulu!\$AB$2:\$AB$7775))", // AQ (43)
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Bengkulu!\$AC$2:\$AC$7775))", // AR (44)
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Bengkulu!\$AB$2:\$AB$7775))", // AS (45)
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Bengkulu!\$AC$2:\$AC$7775))", // AT (46)
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Bengkulu!\$AB$2:\$AB$7775))", // AU (47)
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Bengkulu!\$AC$2:\$AC$7775))", // AV (48)
+            "=AV{$row}+AT{$row}+AR{$row}+AP{$row}+AN{$row}", // AW (49)
+            "=IF(Z{$row}>1;L{$row};0)",               // AX (50)
+            "=IF(AX{$row}>1;AX{$row}-AW{$row};0)",      // AY (51)
+            "=AW{$row}-AA{$row}",                       // AZ (52)
+            $request->jatuh_tempo ?? "",                // BA (53)
         ];
 
         try {
             $sheetService->storeData($data);
-            return back()->with('success', 'Kontrak berhasil ditambahkan.');
+            return back()->with('success', 'Data Baru Berhasil Ditambahkan');
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal menambah data: ' . $e->getMessage());
+            return back()->with('error', $e->getMessage());
         }
     }
 
@@ -148,7 +179,7 @@ class SheetController extends Controller
             "=CONCATENATE(I{$row};Q{$row})",        // B
             "=CONCATENATE(D{$row};F{$row};H{$row})", // C
             "=IFERROR(E{$row}*1;0)",                // D
-            "=IF(LEN(S{$row})=13;LEFT(S{$row};3);LEFT(S{$row};3))", // E
+            "=IF(LEN(S{$row})=17;LEFT(S{$row};3);LEFT(S{$row};4))", // E
             "=RIGHT(S{$row};4)",                    // F
             "=G".($row-1)."+1",                     // G (Baris sebelumnya + 1)
             $request->loex ?? "",                   // H (Manual)

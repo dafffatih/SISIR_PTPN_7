@@ -54,7 +54,11 @@ class GoogleSheetService
         ]);
 
         $params = ['valueInputOption' => 'USER_ENTERED'];
-        $range = "'{$sheetName}'!A:BA";
+
+        // UBAH DISINI: 
+        // Menggunakan A:A memaksa Google API mencari baris kosong pertama 
+        // berdasarkan kolom A, lalu memasukkan array data mulai dari kolom A.
+        $range = "'{$sheetName}'!A:AB"; 
 
         $this->service->spreadsheets_values->append(
             $this->spreadsheetId,
