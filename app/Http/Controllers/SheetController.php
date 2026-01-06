@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Services\GoogleSheetService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class SheetController extends Controller
 {
@@ -237,4 +239,102 @@ class SheetController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
+
+
+
+    public function dashboard(GoogleSheetService $sheetService)
+{
+    $allData = $sheetService->getData();
+    
+    // Inisialisasi Variabel
+    $totalVolume = 0;
+    $totalRevenue = 0;
+    $volumePerMonth = array_fill(1, 12, 0); 
+    $revenuePerMonth = array_fill(1, 12, 0);
+    $topBuyers = [];
+    $topProducts = [];
+    $dailyPrices = []; 
+
+    // Loop Data (Mulai index 4 karena asumsi header row 1-4)
+    foreach ($allData as $row) {
+        $tglKontrak = $row[10] ?? null; // Kolom K
+        $volumeStr  = $row[11] ?? '0';  // Kolom L
+        $hargaStr   = $row[12] ?? '0';  // Kolom M
+        $pembeli    = $row[9] ?? 'Unknown'; // Kolom J
+        $produk     = $row[17] ?? 'Other'; // Kolom R
+        $jenis      = $row[16] ?? 'Other'; // Kolom Q
+
+        if (!$tglKontrak) continue;
+
+        // Bersihkan format angka
+        $volume = (float) str_replace(['.', ','], ['', '.'], $volumeStr);
+        $harga  = (float) str_replace(['.', ','], ['', '.'], $hargaStr);
+        $revenue = $volume * $harga;
+
+        // Agregasi Total
+        $totalVolume += $volume;
+        $totalRevenue += $revenue;
+
+        try {
+            $date = Carbon::parse($tglKontrak);
+            
+            // Per Bulan
+            $volumePerMonth[$date->month] += $volume;
+            $revenuePerMonth[$date->month] += $revenue;
+
+            // Per Hari (Untuk Grafik Harga)
+            $dayKey = $date->format('d/m/Y');
+            if (!isset($dailyPrices[$dayKey][$produk])) $dailyPrices[$dayKey][$produk] = [];
+            $dailyPrices[$dayKey][$produk][] = $harga;
+
+        } catch (\Exception $e) { continue; }
+
+        // Top Buyers & Products
+        if (!isset($topBuyers[$pembeli])) $topBuyers[$pembeli] = 0;
+        $topBuyers[$pembeli] += $volume;
+
+        $prodKey = $jenis . '/' . $produk;
+        if (!isset($topProducts[$prodKey])) $topProducts[$prodKey] = 0;
+        $topProducts[$prodKey] += $volume;
+    }
+
+    // Sorting & Limit Top 5
+    arsort($topBuyers);
+    $topBuyers = array_slice($topBuyers, 0, 5);
+    arsort($topProducts);
+    $topProducts = array_slice($topProducts, 0, 5);
+
+    // Proses Data Grafik Harga
+    $chartDates = array_keys($dailyPrices);
+    usort($chartDates, fn($a, $b) => Carbon::createFromFormat('d/m/Y', $a)->timestamp <=> Carbon::createFromFormat('d/m/Y', $b)->timestamp);
+
+    $priceSeries = [];
+    $allProducts = []; // Cari semua jenis produk unik
+    foreach($dailyPrices as $d) foreach($d as $p => $v) $allProducts[] = $p;
+    $allProducts = array_unique($allProducts);
+
+    foreach ($allProducts as $prodName) {
+        $dataPoints = [];
+        foreach ($chartDates as $date) {
+            if (isset($dailyPrices[$date][$prodName])) {
+                $avg = array_sum($dailyPrices[$date][$prodName]) / count($dailyPrices[$date][$prodName]);
+                $dataPoints[] = round($avg);
+            } else {
+                $dataPoints[] = 0;
+            }
+        }
+        $priceSeries[] = ['name' => $prodName, 'data' => $dataPoints];
+    }
+
+    // Dummy RKAP (Target)
+    $rkapVolume = 60000000; 
+    $rkapRevenue = 90200000000;
+
+    // Arahkan ke view dashboard/index.blade.php
+    return view('dashboard.index', compact(
+        'totalVolume', 'totalRevenue', 'rkapVolume', 'rkapRevenue',
+        'topBuyers', 'topProducts', 'volumePerMonth', 'revenuePerMonth',
+        'chartDates', 'priceSeries'
+    ));
+}
 }

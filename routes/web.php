@@ -20,9 +20,9 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->group(function () {
 
     // Semua role boleh akses dashboard
-    Route::get('/dashboard', function () {
-        return view('dashboard.index');
-    })->name('dashboard')->middleware('role:admin,staff,viewer');
+    Route::get('/dashboard', [App\Http\Controllers\SheetController::class, 'dashboard'])
+    ->name('dashboard')
+    ->middleware(['auth', 'role:admin,staff,viewer']);
 
     // Admin + Staff boleh akses Manajemen Kontrak
     Route::get('/kontrak', [SheetController::class, 'index'])
