@@ -10,18 +10,36 @@ $menus = [
 @endphp
 
 <style>
-.sisir-sidebar{
-  width:260px;
-  min-height:100vh;
-  background:#1e293b;
-  color:#fff;
-  position:fixed;
-  top:0;
-  left:0;
-  z-index:1000;
-  display:flex;
-  flex-direction:column;
-  transition: transform .3s ease;
+.sisir-sidebar {
+  width: 260px !important; /* Paksa lebar tetap 260px */
+  min-width: 260px !important; /* Mencegah penyusutan di flex container */
+  min-height: 100vh;
+  background: #1e293b;
+  color: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transition: transform .3s ease, width .3s ease; /* Tambahkan transisi width */
+  box-sizing: border-box; /* Pastikan padding tidak menambah lebar total */
+  flex-shrink: 0; /* PENTING: Mencegah sidebar tergencet konten Dashboard */
+}
+
+/* Pastikan media query juga menggunakan !important agar tetap responsif */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .sisir-sidebar {
+    width: 220px !important;
+    min-width: 220px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .sisir-sidebar {
+    width: 280px !important;
+    max-width: 85vw !important;
+  }
 }
 
 /* desktop collapsed: hilang */

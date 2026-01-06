@@ -1,198 +1,308 @@
 @extends('layouts.app')
 
 @section('title', 'Dashboard Overview')
-@section('page_title', 'Dashboard Overview')
-
-{{-- Filter di Topbar (Opsional, sesuai kode lama kamu) --}}
-@section('topbar_filters')
-  <div class="flex gap-2">
-      <select class="px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm focus:outline-none focus:border-orange-500">
-        <option>2025</option>
-        <option>2024</option>
-      </select>
-
-      <select class="px-3 py-2 border border-slate-200 rounded-lg bg-white text-sm focus:outline-none focus:border-orange-500">
-        <option>All Units</option>
-        <option>Unit A</option>
-        <option>Unit B</option>
-      </select>
-  </div>
-@endsection
 
 @section('content')
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<style>
-    /* Helper kecil untuk card */
-    .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-</style>
+{{-- BLOK PHP: DATA PRE-PROCESSING --}}
+@php
+    use Carbon\Carbon;
+    use Illuminate\Support\Str;
 
-<div class="space-y-6">
+    // Data Cleaning
+    $cleanTopBuyers = [];
+    $fixedBuyers = [];
+    foreach($topBuyers as $name => $val) {
+        $upperName = strtoupper($name);
+        if(!isset($fixedBuyers[$upperName])) $fixedBuyers[$upperName] = 0;
+        $fixedBuyers[$upperName] += $val;
+    }
+    arsort($fixedBuyers);
+    $cleanTopBuyers = array_slice($fixedBuyers, 0, 5);
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded-2xl p-6 card-shadow relative overflow-hidden border border-slate-100">
-            <div class="flex justify-between items-start">
-                <div>
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wide">Total Volume</p>
-                    <h3 class="text-3xl font-extrabold text-slate-900 mt-2">
-                        {{ number_format($totalVolume / 1000, 3, ',', '.') }} <span class="text-lg text-slate-400 font-medium">Ton</span>
-                    </h3>
-                    <div class="mt-4 flex items-center gap-2">
-                        <span class="text-green-700 bg-green-100 px-2 py-1 rounded text-xs font-bold">
-                            Progress: {{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 1) : 0 }}%
-                        </span>
+    // Simulasi Data Breakdown Mutu
+    $mutuBreakdown = [
+        ['name' => 'SIR 20', 'val' => 25200, 'pct' => 42],
+        ['name' => 'RSS 1', 'val' => 12500, 'pct' => 21],
+        ['name' => 'SIR 3L', 'val' => 10200, 'pct' => 17],
+        ['name' => 'SIR 3WF', 'val' => 8500, 'pct' => 14],
+        ['name' => 'OFF GRADE', 'val' => 2477, 'pct' => 6],
+    ];
+@endphp
+
+<link rel="stylesheet" href="{{ asset('css/dashboard-custom.css') }}">
+
+<div class="dashboard-container">
+    
+    <div class="dashboard-header">
+        <div>
+            <h1>Dashboard Overview</h1>
+            <p>PTPN 1 Regional 7 - Rubber Trading Analytics</p>
+        </div>
+        <div class="filter-box">
+             <span class="icon-calendar">📅</span> 2026
+        </div>
+    </div>
+
+    <div class="row-grid-2">
+        <div class="card-metric">
+            <div class="metric-content">
+                <div class="metric-left">
+                    <span class="metric-label">Total Volume</span>
+                    <div class="metric-value-group">
+                        <span class="metric-number">{{ number_format($totalVolume / 1000, 3, ',', '.') }}</span>
+                        <span class="metric-unit">Ton</span>
+                    </div>
+                    <div class="metric-progress">
+                        Progress: <span class="progress-val">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 1) : 0 }}%</span>
                     </div>
                 </div>
-                <div class="text-right">
-                    <p class="text-slate-400 text-xs">Target RKAP</p>
-                    <p class="text-slate-600 font-bold text-lg">{{ number_format($rkapVolume/1000, 0, ',', '.') }} <span class="text-xs font-normal">Ton</span></p>
-                    <div class="bg-slate-800 p-2 rounded-lg mt-3 inline-block">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                <div class="metric-right">
+                    <div class="rkap-info">
+                        <span class="metric-label">Total Volume RKAP</span>
+                        <div class="metric-value-group right-align">
+                            <span class="metric-number-small">{{ number_format($rkapVolume/1000, 0, ',', '.') }}</span>
+                            <span class="metric-unit-small">Ton</span>
+                        </div>
+                    </div>
+                    <div class="icon-box bg-dark">
+                        <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     </div>
                 </div>
-            </div>
-            <div class="w-full bg-slate-100 h-1.5 mt-6 rounded-full overflow-hidden">
-                <div class="bg-slate-800 h-1.5 rounded-full" style="width: {{ $rkapVolume > 0 ? ($totalVolume/$rkapVolume)*100 : 0 }}%"></div>
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl p-6 card-shadow relative overflow-hidden border border-slate-100">
-            <div class="flex justify-between items-start">
-                <div>
-                    <p class="text-slate-500 text-xs font-bold uppercase tracking-wide">Total Revenue</p>
-                    <h3 class="text-3xl font-extrabold text-slate-900 mt-2">
-                        Rp {{ number_format($totalRevenue / 1000000000, 1, ',', '.') }} <span class="text-lg text-slate-400 font-medium">B</span>
-                    </h3>
-                    <div class="mt-4 flex items-center gap-2">
-                        <span class="text-green-700 bg-green-100 px-2 py-1 rounded text-xs font-bold">
-                            Progress: {{ $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 1) : 0 }}%
-                        </span>
+        <div class="card-metric">
+            <div class="metric-content">
+                <div class="metric-left">
+                    <span class="metric-label">Total Revenue</span>
+                    <div class="metric-value-group">
+                        <span class="metric-number">Rp {{ number_format($totalRevenue / 1000000000, 1, ',', '.') }}</span>
+                        <span class="metric-unit">B</span>
+                    </div>
+                    <div class="metric-progress">
+                        Progress: <span class="progress-val">{{ $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 1) : 0 }}%</span>
                     </div>
                 </div>
-                <div class="text-right">
-                    <p class="text-slate-400 text-xs">Target RKAP</p>
-                    <p class="text-slate-600 font-bold text-lg">Rp {{ number_format($rkapRevenue/1000000000, 1, ',', '.') }}B</p>
-                    <div class="bg-orange-500 p-2 rounded-lg mt-3 inline-block">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="metric-right">
+                    <div class="rkap-info">
+                        <span class="metric-label">Total Revenue RKAP</span>
+                        <div class="metric-value-group right-align">
+                            <span class="metric-number-small">Rp {{ number_format($rkapRevenue/1000000000, 1, ',', '.') }}</span>
+                            <span class="metric-unit-small">B</span>
+                        </div>
+                    </div>
+                    <div class="icon-box bg-orange">
+                        <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                 </div>
-            </div>
-            <div class="w-full bg-slate-100 h-1.5 mt-6 rounded-full overflow-hidden">
-                <div class="bg-orange-500 h-1.5 rounded-full" style="width: {{ $rkapRevenue > 0 ? ($totalRevenue/$rkapRevenue)*100 : 0 }}%"></div>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 bg-white p-6 rounded-2xl card-shadow border border-slate-100">
-            <h3 class="font-bold text-slate-800 mb-4">Daily Selling Price Trend</h3>
-            <div id="priceChart" style="min-height: 320px;"></div>
+    <div class="row-grid-2">
+        <div class="card-std">
+            <div class="card-header">
+                <h3>Average Selling Price Trend (Monthly)</h3>
+            </div>
+            <div id="chart-price-monthly"></div>
         </div>
 
-        <div class="space-y-6">
-            <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100">
-                <h3 class="font-bold text-slate-800 mb-4">Top 5 Buyers</h3>
-                <div class="flex items-center">
-                    <div id="buyerChart" style="width: 140px;"></div>
-                    <div class="flex-1 pl-4 space-y-2">
-                        @php $colors = ['#1e293b', '#0f766e', '#14b8a6', '#fb923c', '#fcd34d']; $i=0; @endphp
-                        @foreach($topBuyers as $buyer => $vol)
-                        <div class="flex justify-between items-center text-xs">
-                            <div class="flex items-center gap-2 overflow-hidden">
-                                <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:{{ $colors[$i++ % 5] }}"></span>
-                                <span class="text-slate-600 truncate" title="{{ $buyer }}">{{ Str::limit($buyer, 15) }}</span>
-                            </div>
-                            <span class="font-bold text-slate-800">{{ $totalVolume > 0 ? round(($vol/$totalVolume)*100, 1) : 0 }}%</span>
+        <div class="col-stacked">
+            <div class="card-std card-half">
+                <div class="card-header"><h3>Top 5 Buyers</h3></div>
+                <div class="donut-container">
+                    <div id="chart-buyer" class="chart-donut"></div>
+                    <div class="custom-legend">
+                        @php $colors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8']; $i=0; @endphp
+                        @foreach($cleanTopBuyers as $buyer => $vol)
+                        <div class="legend-item">
+                            <span class="dot" style="background: {{ $colors[$i] }}"></span>
+                            <span class="name" title="{{ $buyer }}">{{ Str::limit($buyer, 15) }}</span>
+                            <span class="val">{{ $totalVolume > 0 ? round(($vol/$totalVolume)*100, 0) : 0 }}%</span>
                         </div>
+                        @php $i++; @endphp
                         @endforeach
+                    </div>
+                    <div class="donut-center-label">
+                        <span class="lbl">Total Ton</span>
+                        <span class="num">{{ number_format($totalVolume/1000, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100">
-                <h3 class="font-bold text-slate-800 mb-4">Top 5 Product Symbols</h3>
-                <div class="flex items-center">
-                    <div id="productChart" style="width: 140px;"></div>
-                    <div class="flex-1 pl-4 space-y-2">
+            <div class="card-std card-half">
+                <div class="card-header"><h3>Top 5 Products</h3></div>
+                <div class="donut-container">
+                    <div id="chart-product" class="chart-donut"></div>
+                    <div class="custom-legend">
                         @php $i=0; @endphp
                         @foreach($topProducts as $prod => $vol)
-                        <div class="flex justify-between items-center text-xs">
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:{{ $colors[$i++ % 5] }}"></span>
-                                <span class="text-slate-600 truncate">{{ $prod }}</span>
-                            </div>
-                            <span class="font-bold text-slate-800">{{ $totalVolume > 0 ? round(($vol/$totalVolume)*100, 1) : 0 }}%</span>
+                        <div class="legend-item">
+                            <span class="dot" style="background: {{ $colors[$i] }}"></span>
+                            <span class="name">{{ $prod }}</span>
+                            <span class="val">{{ $totalVolume > 0 ? round(($vol/$totalVolume)*100, 0) : 0 }}%</span>
                         </div>
+                        @php $i++; @endphp
                         @endforeach
+                    </div>
+                    <div class="donut-center-label">
+                        <span class="lbl">Total Ton</span>
+                        <span class="num">{{ number_format($totalVolume/1000, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-6">
-        <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100">
-            <h3 class="font-bold text-slate-800 mb-4">Monthly Volume (Real vs RKAP)</h3>
-            <div id="monthlyVolChart" style="height: 300px;"></div>
+    <div class="row-grid-2">
+        <div class="card-std card-table-compact">
+            <div class="card-header flex-between">
+                <h3>Stok Bebas</h3>
+                <span class="badge-date">{{ \Carbon\Carbon::now()->format('d/m/Y') }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table-stok">
+                    <thead>
+                        <tr>
+                            <th>Uraian</th>
+                            <th>SIR 20</th>
+                            <th>RSS</th>
+                            <th>TOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Stok Produksi</td><td>1.328</td><td>1.135</td><td>2.903</td></tr>
+                        <tr><td colspan="4" class="separator-row">OUTSTANDING CONTRACT</td></tr>
+                        <tr><td>Sudah Bayar</td><td>1.475</td><td>312</td><td>1.868</td></tr>
+                        <tr><td>Belum Bayar</td><td>5.161</td><td>2.516</td><td>8.035</td></tr>
+                        <tr class="row-sum"><td>Jumlah</td><td>6.636</td><td>2.828</td><td>9.904</td></tr>
+                        <tr class="row-highlight"><td>Stok Bebas</td><td>-5.308</td><td>-1.694</td><td>-6.905</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="empty-placeholder"></div>
+    </div>
+
+    <div class="card-std p-0 full-row-card">
+        <div class="chart-header-padded">
+            <h3>Monthly Volume (Real vs RKAP)</h3>
+        </div>
+        
+        <div class="layout-3-cols">
+            
+            <div class="col-chart">
+                <div id="chart-monthly-vol"></div>
+            </div>
+
+            <div class="col-middle bg-light">
+                <p class="sidebar-title">Rincian Mutu</p>
+                <div class="mutu-list">
+                    @foreach($mutuBreakdown as $m)
+                    <div class="mutu-item">
+                        <div class="mutu-info">
+                            <span class="mutu-name">{{ $m['name'] }}</span>
+                            <span class="mutu-pct">{{ $m['pct'] }}%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: {{ $m['pct'] }}%"></div>
+                        </div>
+                        <span class="mutu-val">{{ number_format($m['val'], 0, ',', '.') }}</span>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="col-right bg-light border-left">
+                <p class="sidebar-title">Ringkasan Total</p>
+                <div class="stats-container">
+                    <div class="summary-item">
+                        <span class="sum-label">Total Real</span>
+                        <span class="sum-val orange">{{ number_format($totalVolume / 1000, 0, ',', '.') }} <small>Ton</small></span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="sum-label">Total RKAP</span>
+                        <span class="sum-val dark">{{ number_format($rkapVolume / 1000, 0, ',', '.') }} <small>Ton</small></span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="sum-label">Percentage</span>
+                        <span class="sum-val huge">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card-std p-0 full-row-card">
+        <div class="chart-header-padded">
+            <h3>Monthly Revenue (Real vs RKAP)</h3>
+        </div>
+        
+        <div class="layout-3-cols">
+            
+            <div class="col-chart">
+                <div id="chart-monthly-rev"></div>
+            </div>
+
+            <div class="col-middle bg-light">
+                <p class="sidebar-title">Rincian Mutu</p>
+                <div class="mutu-list">
+                    @foreach($mutuBreakdown as $m)
+                    <div class="mutu-item">
+                        <div class="mutu-info">
+                            <span class="mutu-name">{{ $m['name'] }}</span>
+                            <span class="mutu-pct">{{ $m['pct'] }}%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill orange" style="width: {{ $m['pct'] }}%"></div>
+                        </div>
+                        <span class="mutu-val">Rp {{ number_format(($m['val'] * 25000)/1000000, 0, ',', '.') }}M</span>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="col-right bg-light border-left">
+                <p class="sidebar-title">Ringkasan Total</p>
+                <div class="stats-container">
+                    <div class="summary-item">
+                        <span class="sum-label">Total Real</span>
+                        <span class="sum-val orange">Rp {{ number_format($totalRevenue / 1000000000, 1, ',', '.') }}<small>B</small></span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="sum-label">Total RKAP</span>
+                        <span class="sum-val dark">Rp {{ number_format($rkapRevenue / 1000000000, 1, ',', '.') }}<small>B</small></span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="sum-label">Percentage</span>
+                        <span class="sum-val huge">{{ $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 0) : 0 }}%</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
 </div>
 
 <script>
-    // 1. Line Chart (Prices)
-    var priceOptions = {
-        series: @json($priceSeries),
-        chart: { type: 'line', height: 320, toolbar: { show: false }, zoom: { enabled: false } },
-        colors: ['#1e293b', '#fb923c', '#14b8a6'],
-        stroke: { curve: 'smooth', width: 3 },
-        xaxis: { 
-            categories: @json($chartDates),
-            labels: { style: { colors: '#94a3b8', fontSize: '10px' } }
-        },
-        yaxis: { labels: { formatter: (val) => 'Rp ' + (val/1000).toFixed(0) + 'k' } },
-        grid: { borderColor: '#f1f5f9' },
-        tooltip: { y: { formatter: (val) => "Rp " + val.toLocaleString('id-ID') } }
+    window.dashboardData = {
+        topBuyers: @json(array_values($cleanTopBuyers)),
+        topBuyersLabels: @json(array_keys($cleanTopBuyers)),
+        topProducts: @json(array_values($topProducts)),
+        topProductsLabels: @json(array_keys($topProducts)),
+        volumeReal: @json(array_values($volumePerMonth)),
+        revenueReal: @json(array_values($revenuePerMonth)),
+        rkapVol: Array(12).fill({{ $rkapVolume / 12 }}),
+        rkapRev: Array(12).fill({{ $rkapRevenue / 12 }}),
+        priceMonthly: [
+            { name: 'SIR 20', data: [29000, 29500, 30000, 29800, 30500, 31000, 30800, 31200, 31500, 32000, 31800, 32500] },
+            { name: 'RSS', data: [31000, 31500, 32000, 32500, 33000, 32800, 33500, 34000, 33800, 34500, 35000, 34800] },
+            { name: 'SIR 3L', data: [30000, 30500, 30800, 31000, 31500, 32000, 31800, 32200, 32500, 33000, 33500, 34000] }
+        ]
     };
-    new ApexCharts(document.querySelector("#priceChart"), priceOptions).render();
-
-    // 2. Donut Buyer
-    var buyerOptions = {
-        series: @json(array_values($topBuyers)),
-        labels: @json(array_keys($topBuyers)),
-        chart: { type: 'donut', height: 160 },
-        colors: ['#1e293b', '#0f766e', '#14b8a6', '#fb923c', '#fcd34d'],
-        dataLabels: { enabled: false },
-        plotOptions: { pie: { donut: { size: '65%' } } },
-        legend: { show: false },
-        stroke: { show: false }
-    };
-    new ApexCharts(document.querySelector("#buyerChart"), buyerOptions).render();
-
-    // 3. Donut Product
-    var prodOptions = {
-        series: @json(array_values($topProducts)),
-        labels: @json(array_keys($topProducts)),
-        chart: { type: 'donut', height: 160 },
-        colors: ['#1e293b', '#0f766e', '#14b8a6', '#fb923c', '#fcd34d'],
-        dataLabels: { enabled: false },
-        plotOptions: { pie: { donut: { size: '65%' } } },
-        legend: { show: false },
-        stroke: { show: false }
-    };
-    new ApexCharts(document.querySelector("#productChart"), prodOptions).render();
-
-    // 4. Bar Chart Bulanan
-    var monthlyVolOptions = {
-        series: [{
-            name: 'Real',
-            data: @json(array_values($volumePerMonth))
-        }],
-        chart: { type: 'bar', height: 300, toolbar: { show: false } },
-        colors: ['#f97316'],
-        plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
-        dataLabels: { enabled: false },
-        xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] }
-    };
-    new ApexCharts(document.querySelector("#monthlyVolChart"), monthlyVolOptions).render();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="{{ asset('js/dashboard-script.js') }}"></script>
 @endsection

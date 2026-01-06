@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg-dashboard: #F8FAFC;
+    --card-bg: #FFFFFF;
+    --text-dark: #0F172A;
+    --text-gray: #64748B;
+    --orange-primary: #F97316;
+    --blue-dark: #1E293B;
+    --border-color: #E2E8F0;
+}
+
+.dashboard-container {
+    font-family: 'Inter', sans-serif;
+    color: var(--text-dark);
+    background-color: var(--bg-dashboard);
+    width: 100%;
+    padding: 24px;
+    padding-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    box-sizing: border-box;
+}
+
+/* --- GRID SYSTEM --- */
+.dashboard-container .row-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); 
+    gap: 24px;
+    width: 100%;
+}
+.dashboard-container .col-stacked {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+}
+.dashboard-container .empty-placeholder { min-height: 200px; }
+
+/* --- CARDS --- */
+.dashboard-container .card-std, 
+.dashboard-container .card-metric {
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    padding: 24px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden; 
+}
+.dashboard-container .card-std.p-0 { padding: 0; display: flex; flex-direction: column; }
+.dashboard-container .full-row-card { width: 100%; }
+
+/* --- HEADER & METRIC (Sama) --- */
+.dashboard-container .dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; flex-wrap: wrap; gap: 10px; }
+.dashboard-container .dashboard-header h1 { font-size: 24px; font-weight: 700; color: var(--text-dark); margin: 0; line-height: 1.2; }
+.dashboard-container .dashboard-header p { font-size: 14px; color: var(--text-gray); margin: 4px 0 0 0; }
+.dashboard-container .filter-box { background: white; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 14px; color: #475569; }
+
+.dashboard-container .metric-content { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+.dashboard-container .metric-left { flex: 1; min-width: 120px; }
+.dashboard-container .metric-right { display: flex; align-items: center; gap: 16px; text-align: right; }
+.dashboard-container .metric-label { font-size: 12px; font-weight: 500; color: var(--text-gray); display: block; margin-bottom: 4px; }
+.dashboard-container .metric-value-group { display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px; }
+.dashboard-container .metric-value-group.right-align { justify-content: flex-end; }
+.dashboard-container .metric-number { font-size: 28px; font-weight: 800; color: var(--text-dark); line-height: 1; }
+.dashboard-container .metric-unit { font-size: 14px; font-weight: 600; color: var(--text-gray); }
+.dashboard-container .metric-progress { font-size: 13px; color: var(--text-gray); font-weight: 500; }
+.dashboard-container .progress-val { color: #16A34A; font-weight: 700; }
+.dashboard-container .metric-number-small { font-size: 18px; font-weight: 700; color: #64748B; }
+.dashboard-container .metric-unit-small { font-size: 11px; color: #94A3B8; }
+.dashboard-container .icon-box { width: 48px; height: 48px; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); flex-shrink: 0; }
+.dashboard-container .icon-box.bg-dark { background-color: var(--blue-dark); }
+.dashboard-container .icon-box.bg-orange { background-color: var(--orange-primary); }
+
+
+/* --- NEW 3-COLUMN LAYOUT (Chart | Mutu | Stats) --- */
+.dashboard-container .chart-header-padded { padding: 20px 24px 0 24px; }
+.dashboard-container .chart-header-padded h3 { font-size: 14px; font-weight: 700; color: var(--text-dark); margin: 0; }
+
+.dashboard-container .layout-3-cols {
+    display: flex;
+    width: 100%;
+    min-height: 280px;
+}
+
+/* Kolom 1: Grafik (Fleksibel, paling lebar) */
+.dashboard-container .col-chart {
+    flex: 1; 
+    min-width: 0;
+    padding: 0 10px 10px 10px;
+}
+
+/* Kolom 2: Mutu (Lebar fix) */
+.dashboard-container .col-middle {
+    width: 220px; /* Lebar kolom mutu */
+    flex-shrink: 0;
+    border-left: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Kolom 3: Stats (Lebar fix, paling kanan) */
+.dashboard-container .col-right {
+    width: 160px; /* Lebar kolom stats */
+    flex-shrink: 0;
+    border-left: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Konten vertikal di tengah */
+}
+
+/* Background & Styles untuk Kolom */
+.dashboard-container .bg-light { background-color: #F8FAFC; }
+.dashboard-container .border-left { border-left: 1px solid var(--border-color); }
+.dashboard-container .sidebar-title { font-size: 11px; font-weight: 700; color: var(--text-gray); text-transform: uppercase; margin-bottom: 15px; }
+
+/* Mutu List Styles */
+.dashboard-container .mutu-list { display: flex; flex-direction: column; gap: 10px; }
+.dashboard-container .mutu-item { display: flex; flex-direction: column; gap: 4px; }
+.dashboard-container .mutu-info { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--text-dark); }
+.dashboard-container .mutu-pct { color: var(--text-gray); }
+.dashboard-container .progress-bar-bg { height: 4px; background: #E2E8F0; border-radius: 2px; width: 100%; overflow: hidden; }
+.dashboard-container .progress-bar-fill { height: 100%; background: var(--blue-dark); border-radius: 2px; }
+.dashboard-container .progress-bar-fill.orange { background: var(--orange-primary); }
+.dashboard-container .mutu-val { font-size: 10px; color: var(--text-gray); font-weight: 500; text-align: right; }
+
+/* Stats Container */
+.dashboard-container .stats-container { display: flex; flex-direction: column; gap: 20px; }
+.dashboard-container .summary-item { display: flex; flex-direction: column; }
+.dashboard-container .sum-label { font-size: 10px; font-weight: 700; color: var(--text-gray); text-transform: uppercase; margin-bottom: 2px; }
+.dashboard-container .sum-val { font-size: 16px; font-weight: 700; line-height: 1.2; }
+.dashboard-container .sum-val.orange { color: var(--orange-primary); }
+.dashboard-container .sum-val.dark { color: var(--text-dark); }
+.dashboard-container .sum-val.huge { font-size: 26px; font-weight: 800; color: var(--text-dark); }
+.dashboard-container .sum-val small { font-size: 11px; font-weight: 500; color: var(--text-gray); margin-left: 2px; }
+
+/* --- DONUT & PRICE CHART (Sama) --- */
+.dashboard-container .card-header { margin-bottom: 16px; }
+.dashboard-container .card-header h3 { font-size: 14px; font-weight: 700; color: var(--text-dark); margin: 0; }
+.dashboard-container .card-half { min-height: 200px; display: flex; flex-direction: column; justify-content: center; }
+.dashboard-container .donut-container { display: flex; align-items: center; position: relative; width: 100%; }
+.dashboard-container .chart-donut { width: 50%; }
+.dashboard-container .custom-legend { width: 50%; padding-left: 10px; }
+.dashboard-container .legend-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11px; }
+.dashboard-container .legend-item .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.dashboard-container .legend-item .name { flex: 1; margin: 0 8px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dashboard-container .legend-item .val { font-weight: 700; color: var(--text-dark); }
+.dashboard-container .donut-center-label { position: absolute; left: 25%; top: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+.dashboard-container .donut-center-label .lbl { font-size: 9px; color: var(--text-gray); display: block; }
+.dashboard-container .donut-center-label .num { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+
+/* --- TABLE STOK --- */
+.dashboard-container .card-table-compact { padding: 20px; }
+.dashboard-container .card-header.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.dashboard-container .table-responsive { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
+.dashboard-container .table-stok { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 300px; }
+.dashboard-container .table-stok th { text-align: right; padding: 10px; border-bottom: 1px solid var(--border-color); color: var(--text-gray); font-weight: 700; text-transform: uppercase; font-size: 10px; }
+.dashboard-container .table-stok td { text-align: right; padding: 8px 10px; color: var(--text-dark); font-weight: 600; }
+.dashboard-container .table-stok th:first-child, 
+.dashboard-container .table-stok td:first-child { text-align: left; padding-left: 0; }
+.dashboard-container .separator-row { text-align: left !important; font-size: 10px; font-weight: 700; color: var(--text-gray); padding-top: 12px; padding-bottom: 4px; border-bottom: none; }
+.dashboard-container .row-sum td { border-top: 1px solid #CBD5E1; font-weight: 800; padding-top: 12px; }
+.dashboard-container .row-highlight { background-color: #475569; }
+.dashboard-container .row-highlight td { color: white !important; padding: 10px; }
+.dashboard-container .badge-date { background: #F1F5F9; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: #64748B; font-weight: 600; }
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .dashboard-container .row-grid-2 { grid-template-columns: 1fr; }
+    /* Mobile: Stack columns vertikal */
+    .dashboard-container .layout-3-cols { flex-direction: column; }
+    .dashboard-container .col-middle, 
+    .dashboard-container .col-right { width: 100%; border-left: none; border-top: 1px solid var(--border-color); flex-direction: row; flex-wrap: wrap; gap: 20px; }
+    .dashboard-container .mutu-list { flex-direction: row; flex-wrap: wrap; width: 100%; }
+    .dashboard-container .mutu-item { flex: 1; min-width: 120px; }
+    .dashboard-container .stats-container { flex-direction: row; flex-wrap: wrap; width: 100%; }
+    .dashboard-container .summary-item { flex: 1; min-width: 100px; }
+}
