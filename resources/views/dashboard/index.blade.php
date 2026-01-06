@@ -8,7 +8,7 @@
     use Carbon\Carbon;
     use Illuminate\Support\Str;
 
-    // Data Cleaning
+    // 1. Data Cleaning (Sama seperti sebelumnya)
     $cleanTopBuyers = [];
     $fixedBuyers = [];
     foreach($topBuyers as $name => $val) {
@@ -19,7 +19,21 @@
     arsort($fixedBuyers);
     $cleanTopBuyers = array_slice($fixedBuyers, 0, 5);
 
-    // Simulasi Data Breakdown Mutu
+    // 2. FUNGSI MEMBUAT SINGKATAN (INISIAL)
+    // Contoh: "Wilson Tunggal Perkasa" -> "WTP"
+    $buyerInitials = [];
+    foreach(array_keys($cleanTopBuyers) as $name) {
+        $words = explode(' ', $name);
+        $initial = '';
+        foreach($words as $w) {
+            // Ambil huruf pertama, abaikan karakter aneh, pastikan uppercase
+            $initial .= strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $w), 0, 1));
+        }
+        // Jika hasil kosong (misal simbol), pakai 3 huruf pertama nama asli
+        $buyerInitials[] = $initial ?: substr($name, 0, 3);
+    }
+
+    // 3. Simulasi Data Breakdown Mutu
     $mutuBreakdown = [
         ['name' => 'SIR 20', 'val' => 25200, 'pct' => 42],
         ['name' => 'RSS 1', 'val' => 12500, 'pct' => 21],
@@ -112,17 +126,23 @@
                 <div class="card-header"><h3>Top 5 Buyers</h3></div>
                 <div class="donut-container">
                     <div id="chart-buyer" class="chart-donut"></div>
+                    
                     <div class="custom-legend">
                         @php $colors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8']; $i=0; @endphp
                         @foreach($cleanTopBuyers as $buyer => $vol)
                         <div class="legend-item">
                             <span class="dot" style="background: {{ $colors[$i] }}"></span>
-                            <span class="name" title="{{ $buyer }}">{{ Str::limit($buyer, 15) }}</span>
+                            <span class="name" title="{{ $buyer }}">
+                                {{ Str::limit($buyer, 15) }} 
+                                {{-- Opsional: Tampilkan singkatan juga di list --}}
+                                <span class="text-xs text-gray-400">({{ $buyerInitials[$i] }})</span>
+                            </span>
                             <span class="val">{{ $totalVolume > 0 ? round(($vol/$totalVolume)*100, 0) : 0 }}%</span>
                         </div>
                         @php $i++; @endphp
                         @endforeach
                     </div>
+                    
                     <div class="donut-center-label">
                         <span class="lbl">Total Ton</span>
                         <span class="num">{{ number_format($totalVolume/1000, 0, ',', '.') }}</span>
@@ -177,6 +197,8 @@
                         <tr><td>Belum Bayar</td><td>5.161</td><td>2.516</td><td>8.035</td></tr>
                         <tr class="row-sum"><td>Jumlah</td><td>6.636</td><td>2.828</td><td>9.904</td></tr>
                         <tr class="row-highlight"><td>Stok Bebas</td><td>-5.308</td><td>-1.694</td><td>-6.905</td></tr>
+                        <tr><td>Stok Bahan Baku</td><td>4.448</td><td>-</td><td>4.448</td></tr>
+                        <tr class="row-highlight"><td>Stok Bebas</td><td>-860</td><td>-1.694</td><td>-2.457</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -188,13 +210,10 @@
         <div class="chart-header-padded">
             <h3>Monthly Volume (Real vs RKAP)</h3>
         </div>
-        
         <div class="layout-3-cols">
-            
             <div class="col-chart">
                 <div id="chart-monthly-vol"></div>
             </div>
-
             <div class="col-middle bg-light">
                 <p class="sidebar-title">Rincian Mutu</p>
                 <div class="mutu-list">
@@ -212,7 +231,6 @@
                     @endforeach
                 </div>
             </div>
-
             <div class="col-right bg-light border-left">
                 <p class="sidebar-title">Ringkasan Total</p>
                 <div class="stats-container">
@@ -230,7 +248,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -238,13 +255,10 @@
         <div class="chart-header-padded">
             <h3>Monthly Revenue (Real vs RKAP)</h3>
         </div>
-        
         <div class="layout-3-cols">
-            
             <div class="col-chart">
                 <div id="chart-monthly-rev"></div>
             </div>
-
             <div class="col-middle bg-light">
                 <p class="sidebar-title">Rincian Mutu</p>
                 <div class="mutu-list">
@@ -262,7 +276,6 @@
                     @endforeach
                 </div>
             </div>
-
             <div class="col-right bg-light border-left">
                 <p class="sidebar-title">Ringkasan Total</p>
                 <div class="stats-container">
@@ -280,7 +293,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -289,7 +301,9 @@
 <script>
     window.dashboardData = {
         topBuyers: @json(array_values($cleanTopBuyers)),
-        topBuyersLabels: @json(array_keys($cleanTopBuyers)),
+        // PERUBAHAN DISINI: Label Chart sekarang menggunakan INISIAL (Singkatan)
+        topBuyersLabels: @json($buyerInitials), 
+        
         topProducts: @json(array_values($topProducts)),
         topProductsLabels: @json(array_keys($topProducts)),
         volumeReal: @json(array_values($volumePerMonth)),
