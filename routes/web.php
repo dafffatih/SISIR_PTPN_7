@@ -21,7 +21,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Semua role boleh akses dashboard
     Route::get('/dashboard', function () {
-        return view('dashboard.dashboard');
+        return view('dashboard.index');
     })->name('dashboard')->middleware('role:admin,staff,viewer');
 
     // Admin + Staff boleh akses Manajemen Kontrak
