@@ -24,7 +24,7 @@ class SheetController extends Controller
         $filteredData = [];
 
         foreach ($allData as $index => $row) {
-            $realRowIndex = $index + 2; // Karena mulai dari A2
+            $realRowIndex = $index + 4; // Karena mulai dari A2
 
             // Mapping Kolom A sampai BA ke variabel huruf
             // Index array dimulai dari 0 (A=0, B=1, dst)
@@ -129,19 +129,81 @@ class SheetController extends Controller
     // Memperbarui Data Berdasarkan Nomor Baris
     public function update(Request $request, GoogleSheetService $sheetService)
     {
-        $row = $request->row_index; // Diambil dari hidden input modal edit
+        // Ambil nomor baris dari form hidden input
+        $row = $request->row_index; 
+        $manualInputs = $request->only([
+            'loex', 'nomor_kontrak', 'nama_pembeli', 'tgl_kontrak', 
+            'volume', 'harga', 'nilai', 'inc_ppn', 'tgl_bayar', 
+            'unit', 'mutu', 'nomor_dosi', 'tgl_dosi', 'port', 
+            'kontrak_sap', 'dp_sap', 'so_sap', 'jatuh_tempo'
+        ]);
 
+        if (empty(array_filter($manualInputs))) {
+            return back()->with('error', 'Minimal harus mengisi satu data sebelum menyimpan.');
+        }
+
+        // Susun array 53 kolom (A sampai BA)
         $data = [
-            $request->A ?? "", $request->B ?? "", // ... petakan semua kolom A-BA
-            $request->loex, $request->nomor_kontrak, $request->nama_pembeli,
-            // ... (urutan harus sama persis dengan fungsi store)
+            "=CONCATENATE(I{$row};Q{$row};R{$row})", // A
+            "=CONCATENATE(I{$row};Q{$row})",        // B
+            "=CONCATENATE(D{$row};F{$row};H{$row})", // C
+            "=IFERROR(E{$row}*1;0)",                // D
+            "=IF(LEN(S{$row})=13;LEFT(S{$row};3);LEFT(S{$row};3))", // E
+            "=RIGHT(S{$row};4)",                    // F
+            "=G".($row-1)."+1",                     // G (Baris sebelumnya + 1)
+            $request->loex ?? "",                   // H (Manual)
+            $request->nomor_kontrak ?? "",          // I (Manual)
+            $request->nama_pembeli ?? "",           // J (Manual)
+            $request->tgl_kontrak ?? "",            // K (Manual)
+            $request->volume ?? "",                 // L (Manual)
+            $request->harga ?? "",                  // M (Manual)
+            $request->nilai ?? "",                  // N (Manual)
+            $request->inc_ppn ?? "",                // O (Manual)
+            $request->tgl_bayar ?? "",              // P (Manual)
+            $request->unit ?? "",                   // Q (Manual)
+            $request->mutu ?? "",                   // R (Manual)
+            $request->nomor_dosi ?? "",             // S (Manual)
+            $request->tgl_dosi ?? "",               // T (Manual)
+            $request->port ?? "",                   // U (Manual)
+            $request->kontrak_sap ?? "",            // V (Manual)
+            $request->dp_sap ?? "",                 // W (Manual)
+            $request->so_sap ?? "",                 // X (Manual)
+            "=C{$row}",                             // Y
+            "=L{$row}",                             // Z
+            "=(SUMPRODUCT((Panjang!\$P\$2:\$P\$5011='SC Sudah Bayar'!Y{$row})*Panjang!\$Q\$2:\$Q\$5011))+(SUMPRODUCT((Palembang!\$P\$2:\$P\$5003='SC Sudah Bayar'!Y{$row})*Palembang!\$Q\$2:\$Q\$5003))+(SUMPRODUCT((Bengkulu!\$P\$2:\$P\$5000='SC Sudah Bayar'!Y{$row})*Bengkulu!\$Q\$2:\$Q\$5000))",
+            "=Z{$row}-AA{$row}",                    // AB
+            "=M{$row}*1000",                        // AC
+            "=VLOOKUP(J{$row};Katalog!\$D\$4:\$E\$101;2;FALSE)", // AD
+            "=IF(H{$row}=\"LO\";\"LOKAL\";\"EKSPOR\")", // AE
+            "=CONCATENATE(AE{$row};Q{$row})",       // AF
+            "",                                     // AG (KOSONG)
+            "=LEFT(I{$row};LEN(I{$row})-2)",        // AH
+            "=J{$row}",                             // AI
+            "",                                     // AJ (KOSONG)
+            "",                                     // AK (KOSONG)
+            "",                                     // AL (KOSONG)
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Bengkulu!\$AB$2:\$AB$7775))", // AM
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Bengkulu!\$AC$2:\$AC$7775))", // AN
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Bengkulu!\$AB$2:\$AB$7775))", // AO
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Bengkulu!\$AC$2:\$AC$7775))", // AP
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Bengkulu!\$AB$2:\$AB$7775))", // AQ
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Bengkulu!\$AC$2:\$AC$7775))", // AR
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Bengkulu!\$AB$2:\$AB$7775))", // AS
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Bengkulu!\$AC$2:\$AC$7775))", // AT
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Bengkulu!\$AB$2:\$AB$7775))", // AU
+            "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Bengkulu!\$AC$2:\$AC$7775))", // AV
+            "=AV{$row}+AT{$row}+AR{$row}+AP{$row}+AN{$row}", // AW
+            "=IF(Z{$row}>1;L{$row};0)",               // AX
+            "=IF(AX{$row}>1;AX{$row}-AW{$row};0)",      // AY
+            "=AW{$row}-AA{$row}",                       // AZ
+            $request->jatuh_tempo ?? "",                // BA (Manual)
         ];
 
         try {
             $sheetService->updateData($row, $data);
-            return back()->with('success', 'Kontrak berhasil diperbarui.');
+            return back()->with('success', 'Data Berhasil Diperbarui');
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal memperbarui data: ' . $e->getMessage());
+            return back()->with('error', $e->getMessage());
         }
     }
 }

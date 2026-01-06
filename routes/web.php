@@ -26,8 +26,21 @@ Route::middleware(['auth'])->group(function () {
 
     // Admin + Staff boleh akses Manajemen Kontrak
     Route::get('/kontrak', [SheetController::class, 'index'])
-    ->name('kontrak')
-    ->middleware(['auth', 'role:admin,staff']);
+        ->name('kontrak')
+        ->middleware(['auth', 'role:admin,staff']);
+
+    // TAMBAHKAN ROUTE CRUD DI BAWAH INI:
+    Route::post('/kontrak/store', [SheetController::class, 'store'])
+        ->name('kontrak.store')
+        ->middleware(['auth', 'role:admin,staff']);
+
+    Route::put('/kontrak/update', [SheetController::class, 'update'])
+        ->name('kontrak.update')
+        ->middleware(['auth', 'role:admin,staff']);
+
+    Route::delete('/kontrak/delete/{row}', [SheetController::class, 'destroy'])
+        ->name('kontrak.destroy')
+        ->middleware(['auth', 'role:admin,staff']);
 
     // Admin only boleh akses User Management
     Route::get('/users', function () {

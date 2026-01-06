@@ -22,7 +22,7 @@ class GoogleSheetService
     }
 
     // Mengambil data dari sheet tertentu
-    public function getData($range = "'SC Sudah Bayar'!A2:BA")
+    public function getData($range = "'SC Sudah Bayar'!A4:BA")
     {
         $response = $this->service->spreadsheets_values->get($this->spreadsheetId, $range);
         return $response->getValues() ?? [];

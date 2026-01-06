@@ -249,34 +249,32 @@
         }
       }
 
+      // Di dalam function fillModalData(modalId, data)
       if (modalId === 'modalEdit') {
-        const modal = document.getElementById('modalEdit');
-        const form = modal.querySelector('form');
-        
-        // Mengisi hidden input untuk baris (row index) agar Controller tahu baris mana yang diupdate
-        if (!form.querySelector('[name="row_index"]')) {
-            const inputRow = document.createElement('input');
-            inputRow.type = 'hidden';
-            inputRow.name = 'row_index';
-            form.appendChild(inputRow);
-        }
-        form.querySelector('[name="row_index"]').value = data.row;
+          const form = document.getElementById('modalEdit').querySelector('form');
+          
+          // Set row index
+          form.querySelector('[name="row_index"]').value = data.row;
 
-        // Mengisi field input berdasarkan name (sesuaikan name di modal-edit Anda)
-        form.querySelector('[name="loex"]').value = data.H;
-        form.querySelector('[name="nomor_kontrak"]').value = data.I;
-        form.querySelector('[name="nama_pembeli"]').value = data.J;
-        form.querySelector('[name="tgl_kontrak"]').value = data.K;
-        form.querySelector('[name="volume"]').value = data.L;
-        form.querySelector('[name="harga"]').value = data.M;
-        form.querySelector('[name="nilai"]').value = data.N;
-        form.querySelector('[name="unit"]').value = data.Q;
-        form.querySelector('[name="mutu"]').value = data.R;
-        form.querySelector('[name="nomor_dosi"]').value = data.S;
-        form.querySelector('[name="port"]').value = data.U;
-        form.querySelector('[name="sisa_awal"]').value = data.Z;
-        form.querySelector('[name="total_dilayani"]').value = data.AA;
-        form.querySelector('[name="sisa_akhir"]').value = data.AB;
+          // Fill Manual Fields
+          form.querySelector('[name="loex"]').value = data.H;
+          form.querySelector('[name="nomor_kontrak"]').value = data.I;
+          form.querySelector('[name="nama_pembeli"]').value = data.J;
+          form.querySelector('[name="tgl_kontrak"]').value = data.K;
+          form.querySelector('[name="volume"]').value = data.L;
+          form.querySelector('[name="harga"]').value = data.M;
+          form.querySelector('[name="nilai"]').value = data.N;
+          form.querySelector('[name="inc_ppn"]').value = data.O;
+          form.querySelector('[name="tgl_bayar"]').value = data.P;
+          form.querySelector('[name="unit"]').value = data.Q;
+          form.querySelector('[name="mutu"]').value = data.R;
+          form.querySelector('[name="nomor_dosi"]').value = data.S;
+          form.querySelector('[name="tgl_dosi"]').value = data.T;
+          form.querySelector('[name="port"]').value = data.U;
+          form.querySelector('[name="kontrak_sap"]').value = data.V;
+          form.querySelector('[name="dp_sap"]').value = data.W;
+          form.querySelector('[name="so_sap"]').value = data.X;
+          form.querySelector('[name="jatuh_tempo"]').value = data.BA;
       }
     }
 
