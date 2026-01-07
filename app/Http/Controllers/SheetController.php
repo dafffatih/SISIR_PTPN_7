@@ -117,15 +117,21 @@ class SheetController extends Controller
                 }
             };
 
+            // Format numbers with Indonesian thousand separator (dot)
+            $formatNumber = function ($val) {
+                if (!$val && $val !== 0 && $val !== '0') return '';
+                return number_format((float)$val, 0, ',', '.');
+            };
+
             return [
                 'id' => $item->id,
                 'H' => $item->loex,
                 'I' => $item->nomor_kontrak,
                 'J' => $item->nama_pembeli,
                 'K' => $formatDate($item->tgl_kontrak),
-                'L' => $item->volume ?? 0,
-                'M' => $item->harga ?? 0,
-                'N' => $item->nilai ?? 0,
+                'L' => ($item->volume || $item->volume === 0) ? $formatNumber($item->volume) : '',
+                'M' => ($item->harga || $item->harga === 0) ? $formatNumber($item->harga) : '',
+                'N' => ($item->nilai || $item->nilai === 0) ? $formatNumber($item->nilai) : '',
                 'O' => $item->inc_ppn ?? '',
                 'P' => $formatDate($item->tgl_bayar),
                 'Q' => $item->unit ?? '',
@@ -137,9 +143,9 @@ class SheetController extends Controller
                 'W' => $item->dp_sap ?? '',
                 'X' => $item->so_sap ?? '',
                 'Y' => $item->kode_do ?? '',
-                'Z' => $item->sisa_awal ?? 0,
-                'AA' => $item->total_layan ?? 0,
-                'AB' => $item->sisa_akhir ?? 0,
+                'Z' => ($item->sisa_awal || $item->sisa_awal === 0) ? $formatNumber($item->sisa_awal) : '',
+                'AA' => ($item->total_layan || $item->total_layan === 0) ? $formatNumber($item->total_layan) : '',
+                'AB' => ($item->sisa_akhir || $item->sisa_akhir === 0) ? $formatNumber($item->sisa_akhir) : '',
                 'BA' => $formatDate($item->jatuh_tempo),
                 'row' => $item->id,
             ];

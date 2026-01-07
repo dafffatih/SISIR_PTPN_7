@@ -217,46 +217,22 @@
 
     // Fungsi untuk mengisi data ke modal (MENGGUNAKAN VARIABEL HURUF)
     function fillModalData(modalId, data) {
-      // Helper: format number with thousand separator (dot) and no decimals
-      function formatNumberRaw(value) {
-        if (value === null || value === undefined || value === '') return '-';
-        // if contains letters, return as-is
-        if (typeof value === 'string' && /[A-Za-z]/.test(value)) return value;
-        const n = Number(String(value).replace(/[^0-9\-\.]/g, '').replace(/\./g, ''));
-        if (isNaN(n)) return value;
-        return n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
-      }
-
-      function detectCurrencyAndFormat(value) {
-        if (!value && value !== 0) return '-';
-        // If already contains currency symbol
-        if (typeof value === 'string' && /\$|USD|EUR|Rp|IDR/.test(value)) return value;
-        // Remove non numeric except dot/comma
-        let cleaned = String(value).trim();
-        // Try to convert strings like "100.000.00" or "1.234.567,89"
-        cleaned = cleaned.replace(/\./g, '').replace(/,/g, '.');
-        const num = Number(cleaned);
-        if (isNaN(num)) return value;
-        // Default to Indonesian Rupiah
-        return 'Rp ' + num.toLocaleString('id-ID', { maximumFractionDigits: 0 });
-      }
-
       if (modalId === 'modalDetail') {
         const modal = document.getElementById('modalDetail');
 
         // Set nomor kontrak di subtitle
         document.getElementById('detail_nomor_kontrak').innerText = data.I || '-';
 
-        // Populate fields with formatting
+        // Populate fields - data already formatted from controller
         const map = {
           'detail_H': data.H || '-',
           'detail_I': data.I || '-',
           'detail_J': data.J || '-',
           'detail_K': data.K || '-',
-          'detail_L': (data.L || data.L === 0) ? formatNumberRaw(data.L) + ' Kg' : '-',
-          'detail_M': (data.M || data.M === 0) ? detectCurrencyAndFormat(data.M) : '-',
-          'detail_N': (data.N || data.N === 0) ? detectCurrencyAndFormat(data.N) : '-',
-          'detail_O': data.O || '-',
+          'detail_L': data.L ? (data.L + ' Kg') : '-',        // Volume + unit
+          'detail_M': data.M ? ('Rp ' + data.M) : '-',        // Currency prefix
+          'detail_N': data.N ? ('Rp ' + data.N) : '-',        // Currency prefix
+          'detail_O': data.O ? ('Rp ' + (typeof data.O === 'number' ? number_format(data.O, 0, ',', '.') : data.O)) : '-',  // Inc PPN + Rp
           'detail_P': data.P || '-',
           'detail_Q': data.Q || '-',
           'detail_R': data.R || '-',
@@ -267,9 +243,9 @@
           'detail_W': data.W || '-',
           'detail_X': data.X || '-',
           'detail_Y': data.Y || '-',
-          'detail_Z': (data.Z || data.Z === 0) ? formatNumberRaw(data.Z) + ' Kg' : '-',
-          'detail_AA': (data.AA || data.AA === 0) ? formatNumberRaw(data.AA) + ' Kg' : '-',
-          'detail_AB': (data.AB || data.AB === 0) ? formatNumberRaw(data.AB) + ' Kg' : '-',
+          'detail_Z': data.Z ? (data.Z + ' Kg') : '-',        // Sisa awal + unit
+          'detail_AA': data.AA ? (data.AA + ' Kg') : '-',     // Total + unit
+          'detail_AB': data.AB ? (data.AB + ' Kg') : '-',     // Sisa akhir + unit
           'detail_BA': data.BA || '-',
         };
 
@@ -305,6 +281,29 @@
           form.querySelector('[name="dp_sap"]').value = data.W || '';
           form.querySelector('[name="so_sap"]').value = data.X || '';
           form.querySelector('[name="jatuh_tempo"]').value = data.BA || '';
+      }
+
+      // Helper function for number formatting in JS if needed
+      function number_format(number, decimals, decPoint, thousandsSep) {
+          number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+          var n = !isFinite(+number) ? 0 : +number,
+              prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+              sep = (typeof thousandsSep === 'undefined') ? ',' : thousandsSep,
+              dec = (typeof decPoint === 'undefined') ? '.' : decPoint,
+              s = '',
+              toFixedFix = function (n, prec) {
+                  var k = Math.pow(10, prec);
+                  return '' + Math.round(n * k) / k;
+              };
+          s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+          if (s[0].length > 3) {
+              s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+          }
+          if ((s[1] || '').length < prec) {
+              s[1] = s[1] || '';
+              s[1] += new Array(prec - s[1].length + 1).join('0');
+          }
+          return s.join(dec);
       }
     }
 

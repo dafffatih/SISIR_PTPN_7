@@ -255,12 +255,12 @@
                                                     </td>
                           <td style="font-weight:600;">{{ $r['J'] }}</td>
                           <td style="color:#64748b;">{{ $r['K'] }}</td>
-                          <td style="font-weight:700;">{{ number_format($r['L'] ?? 0, 0, ',', '.') }} Kg</td>
+                          <td style="font-weight:700;">{{ $r['L'] ?? '' }} Kg</td>
                           <td style="white-space: nowrap;">
-                            Rp&nbsp;{{ number_format($r['M'] ?? 0, 0, ',', '.') }}
+                            Rp&nbsp;{{ $r['M'] ?? '' }}
                           </td>
-                          <td><span class="k-badge k-badge-green">{{ number_format($r['AA'] ?? 0, 0, ',', '.') }} Kg</span></td>
-                          <td><span class="k-badge k-badge-orange">{{ number_format($r['AB'] ?? 0, 0, ',', '.') }} Kg</span></td>
+                          <td><span class="k-badge k-badge-green">{{ $r['AA'] ?? '' }} Kg</span></td>
+                          <td><span class="k-badge k-badge-orange">{{ $r['AB'] ?? '' }} Kg</span></td>
                           <td style="color:#64748b;">-</td>
                           <td style="text-align:center;">
                               <div class="k-actions" style="justify-content:center; display:flex; gap:8px;">
