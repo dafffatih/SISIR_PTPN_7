@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -25,7 +26,6 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        // 1. Validasi input
         $credentials = $request->validate([
             'username' => ['required', 'string'],
             'password' => ['required'],
@@ -34,18 +34,28 @@ class AuthController extends Controller
             'password.required' => 'Password tidak boleh kosong.',
         ]);
 
-        // 2. Remember me
+        // ✅ CEK STATUS SEBELUM LOGIN (blok jika inactive)
+        $user = User::where('username', $credentials['username'])->first();
+
+        if ($user && ($user->status ?? 'active') === 'inactive') {
+            return back()
+                ->with('error', 'Akun kamu sedang nonaktif. Hubungi admin.')
+                ->withInput();
+        }
+
         $remember = $request->has('remember');
 
-        // 3. Proses login
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
 
-            // 4. Redirect sesuai role
+            // ✅ Catat last login
+            User::where('id', Auth::id())->update([
+                'last_login_at' => now(),
+            ]);
+
             return $this->redirectByRole(Auth::user()->role);
         }
 
-        // 5. Jika gagal
         return back()
             ->with('error', 'Username atau password salah!')
             ->withInput();

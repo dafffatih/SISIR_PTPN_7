@@ -219,62 +219,91 @@
     function fillModalData(modalId, data) {
       if (modalId === 'modalDetail') {
         const modal = document.getElementById('modalDetail');
-        modal.querySelector('.m-subtitle').innerText = data.I; // Nomor Kontrak (I)
 
-        const cells = modal.querySelectorAll('.m-kv td:last-child');
-        if(cells.length > 0) {
-            // Urutan sesuai struktur modal-detail Anda
-            cells[0].innerText = data.H;  // LO/EX
-            cells[1].innerText = data.I;  // Nomor Kontrak
-            cells[2].innerText = data.J;  // Nama Pembeli
-            cells[3].innerText = data.K;  // Tanggal Kontrak
-            cells[4].innerText = data.L + ' Kg'; // Volume
-            cells[5].innerText = 'Rp ' + data.M; // Harga
-            cells[6].innerText = 'Rp ' + data.N; // Nilai
-            cells[7].innerText = data.O;  // Inc PPN
-            cells[8].innerText = data.P;  // Tanggal Bayar
-            cells[9].innerText = data.Q;  // Unit
-            cells[10].innerText = data.R; // Mutu
-            cells[11].innerText = data.V; // Kontrak SAP
-            cells[12].innerText = data.W; // DP SAP
-            cells[13].innerText = data.X; // SO SAP
-            cells[14].innerText = data.Z + ' Kg'; // Sisa Awal
+        // Set nomor kontrak di subtitle
+        document.getElementById('detail_nomor_kontrak').innerText = data.I || '-';
 
-            // Bagian Pengiriman
-            cells[15].innerText = data.S;  // Nomor DO/SI
-            cells[16].innerText = data.T;  // Tanggal DO/SI
-            cells[17].innerText = data.U;  // Port
-            cells[18].innerText = data.AA + ' Kg'; // Total Dilayani
-            cells[19].innerText = data.AB + ' Kg'; // Sisa Akhir
-        }
+        // Populate fields - data already formatted from controller
+        const map = {
+          'detail_H': data.H || '-',
+          'detail_I': data.I || '-',
+          'detail_J': data.J || '-',
+          'detail_K': data.K || '-',
+          'detail_L': data.L ? (data.L + ' Kg') : '-',        // Volume + unit
+          'detail_M': data.M ? ('Rp ' + data.M) : '-',        // Currency prefix
+          'detail_N': data.N ? ('Rp ' + data.N) : '-',        // Currency prefix
+          'detail_O': data.O ? ('Rp ' + (typeof data.O === 'number' ? number_format(data.O, 0, ',', '.') : data.O)) : '-',  // Inc PPN + Rp
+          'detail_P': data.P || '-',
+          'detail_Q': data.Q || '-',
+          'detail_R': data.R || '-',
+          'detail_S': data.S || '-',
+          'detail_T': data.T || '-',
+          'detail_U': data.U || '-',
+          'detail_V': data.V || '-',
+          'detail_W': data.W || '-',
+          'detail_X': data.X || '-',
+          'detail_Y': data.Y || '-',
+          'detail_Z': data.Z ? (data.Z + ' Kg') : '-',        // Sisa awal + unit
+          'detail_AA': data.AA ? (data.AA + ' Kg') : '-',     // Total + unit
+          'detail_AB': data.AB ? (data.AB + ' Kg') : '-',     // Sisa akhir + unit
+          'detail_BA': data.BA || '-',
+        };
+
+        Object.entries(map).forEach(([id, value]) => {
+          const el = document.getElementById(id);
+          if (el) el.innerText = value;
+        });
       }
 
-      // Di dalam function fillModalData(modalId, data)
+      // Fill Edit Modal
       if (modalId === 'modalEdit') {
           const form = document.getElementById('modalEdit').querySelector('form');
-          
-          // Set row index
-          form.querySelector('[name="row_index"]').value = data.row;
 
-          // Fill Manual Fields
-          form.querySelector('[name="loex"]').value = data.H;
-          form.querySelector('[name="nomor_kontrak"]').value = data.I;
-          form.querySelector('[name="nama_pembeli"]').value = data.J;
-          form.querySelector('[name="tgl_kontrak"]').value = data.K;
-          form.querySelector('[name="volume"]').value = data.L;
-          form.querySelector('[name="harga"]').value = data.M;
-          form.querySelector('[name="nilai"]').value = data.N;
-          form.querySelector('[name="inc_ppn"]').value = data.O;
-          form.querySelector('[name="tgl_bayar"]').value = data.P;
-          form.querySelector('[name="unit"]').value = data.Q;
-          form.querySelector('[name="mutu"]').value = data.R;
-          form.querySelector('[name="nomor_dosi"]').value = data.S;
-          form.querySelector('[name="tgl_dosi"]').value = data.T;
-          form.querySelector('[name="port"]').value = data.U;
-          form.querySelector('[name="kontrak_sap"]').value = data.V;
-          form.querySelector('[name="dp_sap"]').value = data.W;
-          form.querySelector('[name="so_sap"]').value = data.X;
-          form.querySelector('[name="jatuh_tempo"]').value = data.BA;
+          // Set id
+          form.querySelector('[name="id"]').value = data.id || data.row;
+
+          // Fill Manual Fields (raw strings)
+          form.querySelector('[name="loex"]').value = data.H || '';
+          form.querySelector('[name="nomor_kontrak"]').value = data.I || '';
+          form.querySelector('[name="nama_pembeli"]').value = data.J || '';
+          form.querySelector('[name="tgl_kontrak"]').value = data.K || '';
+          form.querySelector('[name="volume"]').value = data.L || '';
+          form.querySelector('[name="harga"]').value = data.M || '';
+          form.querySelector('[name="nilai"]').value = data.N || '';
+          form.querySelector('[name="inc_ppn"]').value = data.O || '';
+          form.querySelector('[name="tgl_bayar"]').value = data.P || '';
+          form.querySelector('[name="unit"]').value = data.Q || '';
+          form.querySelector('[name="mutu"]').value = data.R || '';
+          form.querySelector('[name="nomor_dosi"]').value = data.S || '';
+          form.querySelector('[name="tgl_dosi"]').value = data.T || '';
+          form.querySelector('[name="port"]').value = data.U || '';
+          form.querySelector('[name="kontrak_sap"]').value = data.V || '';
+          form.querySelector('[name="dp_sap"]').value = data.W || '';
+          form.querySelector('[name="so_sap"]').value = data.X || '';
+          form.querySelector('[name="jatuh_tempo"]').value = data.BA || '';
+      }
+
+      // Helper function for number formatting in JS if needed
+      function number_format(number, decimals, decPoint, thousandsSep) {
+          number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+          var n = !isFinite(+number) ? 0 : +number,
+              prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+              sep = (typeof thousandsSep === 'undefined') ? ',' : thousandsSep,
+              dec = (typeof decPoint === 'undefined') ? '.' : decPoint,
+              s = '',
+              toFixedFix = function (n, prec) {
+                  var k = Math.pow(10, prec);
+                  return '' + Math.round(n * k) / k;
+              };
+          s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+          if (s[0].length > 3) {
+              s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+          }
+          if ((s[1] || '').length < prec) {
+              s[1] = s[1] || '';
+              s[1] += new Array(prec - s[1].length + 1).join('0');
+          }
+          return s.join(dec);
       }
     }
 

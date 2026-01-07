@@ -5,10 +5,12 @@ namespace App\Services;
 use Google_Client;
 use Google_Service_Sheets;
 use Google_Service_Sheets_ValueRange;
+use Google_Service_Drive;
 
 class GoogleSheetService
 {
-    protected $service;
+    protected $sheetsService;
+    protected $driveService;
     protected $spreadsheetId;
 
     public function __construct()
@@ -16,16 +18,49 @@ class GoogleSheetService
         $client = new Google_Client();
         $client->setAuthConfig(storage_path('app/google/service-account.json'));
         $client->addScope(Google_Service_Sheets::SPREADSHEETS);
+        $client->addScope(Google_Service_Drive::DRIVE_READONLY);
 
-        $this->service = new Google_Service_Sheets($client);
+        $this->sheetsService = new Google_Service_Sheets($client);
+        $this->driveService = new Google_Service_Drive($client);
         $this->spreadsheetId = env('GOOGLE_SHEET_ID');
     }
 
     // Mengambil data dari sheet tertentu
-    public function getData($range = "'SC Sudah Bayar'!A4:BA")
+    public function getData($spreadsheetId = null, $range = "'SC Sudah Bayar'!A4:BA")
     {
-        $response = $this->service->spreadsheets_values->get($this->spreadsheetId, $range);
+        $id = $spreadsheetId ?? $this->spreadsheetId;
+        $response = $this->sheetsService->spreadsheets_values->get($id, $range);
         return $response->getValues() ?? [];
+    }
+
+    // List spreadsheets dalam folder tertentu menggunakan Google Drive API
+    public function listSpreadsheetsInFolder($folderId)
+    {
+        $query = "mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false and '{$folderId}' in parents";
+        
+        $optParams = [
+            'q' => $query,
+            'spaces' => 'drive',
+            'fields' => 'files(id, name)',
+            'pageSize' => 100,
+        ];
+
+        try {
+            $results = $this->driveService->files->listFiles($optParams);
+            $files = $results->getFiles();
+            
+            $spreadsheets = [];
+            foreach ($files as $file) {
+                $spreadsheets[] = [
+                    'id' => $file->getId(),
+                    'name' => $file->getName(),
+                ];
+            }
+            
+            return $spreadsheets;
+        } catch (\Exception $e) {
+            throw new \Exception('Error fetching files from Google Drive: ' . $e->getMessage());
+        }
     }
 
     // Update data berdasarkan nomor baris
@@ -38,7 +73,7 @@ class GoogleSheetService
         $params = ['valueInputOption' => 'USER_ENTERED'];
         $range = "'{$sheetName}'!A{$row}:BA{$row}";
 
-        $this->service->spreadsheets_values->update(
+        $this->sheetsService->spreadsheets_values->update(
             $this->spreadsheetId,
             $range,
             $body,
@@ -60,7 +95,7 @@ class GoogleSheetService
         // berdasarkan kolom A, lalu memasukkan array data mulai dari kolom A.
         $range = "'{$sheetName}'!A:AB"; 
 
-        $this->service->spreadsheets_values->append(
+        $this->sheetsService->spreadsheets_values->append(
             $this->spreadsheetId,
             $range,
             $body,
@@ -89,7 +124,7 @@ class GoogleSheetService
             'requests' => $requests
         ]);
 
-        $this->service->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
+        $this->sheetsService->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
     }
     public function batchGet($ranges)
     {

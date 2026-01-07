@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Services\GoogleSheetService;
+use App\Models\Kontrak;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Artisan;
 
 class SheetController extends Controller
 {
@@ -17,17 +19,26 @@ class SheetController extends Controller
         $this->googleSheetService = $googleSheetService;
     }
 
+<<<<<<< HEAD
     /**
      * Halaman Manajemen Kontrak (Tabel CRUD)
      */
     public function index(Request $request, GoogleSheetService $sheetService)
+=======
+    public function index(Request $request)
+>>>>>>> 5c984c84c0825f5cabf6bf50d6f620357da4288f
     {
-        $allData = $sheetService->getData();
         $search = $request->input('search');
         $perPage = (int) $request->input('per_page', 10);
+        $sort = $request->input('sort', 'nomor_dosi');
+        $direction = strtolower($request->input('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
 
-        $filteredData = [];
+        // Build query from Kontrak model
+        $query = Kontrak::query();
 
+<<<<<<< HEAD
         foreach ($allData as $index => $row) {
             $realRowIndex = $index + 4; // Dimulai dari A4
 
@@ -55,16 +66,135 @@ class SheetController extends Controller
                 }
             }
             $filteredData[] = $rowDataMapped;
+=======
+        // Apply search filter across multiple fields
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nomor_kontrak', 'like', "%{$search}%")
+                  ->orWhere('nama_pembeli', 'like', "%{$search}%")
+                  ->orWhere('nomor_dosi', 'like', "%{$search}%")
+                  ->orWhere('kontrak_sap', 'like', "%{$search}%")
+                  ->orWhere('so_sap', 'like', "%{$search}%");
+            });
+>>>>>>> 5c984c84c0825f5cabf6bf50d6f620357da4288f
         }
 
-        $currentPage = (int) $request->get('page', 1);
-        $itemCollection = collect($filteredData);
-        $currentPageItems = $itemCollection->slice(($currentPage - 1) * $perPage, $perPage)->all();
+        // Apply date range filter
+        if ($startDate) {
+            try {
+                $start = Carbon::createFromFormat('Y-m-d', $startDate)->toDateString();
+                $query->whereDate('tgl_kontrak', '>=', $start);
+            } catch (\Exception $e) { }
+        }
+        if ($endDate) {
+            try {
+                $end = Carbon::createFromFormat('Y-m-d', $endDate)->toDateString();
+                $query->whereDate('tgl_kontrak', '<=', $end);
+            } catch (\Exception $e) { }
+        }
 
+        // Get all matching records (will sort in PHP for DO/SI if needed)
+        $allRecords = $query->get();
+
+        // Smart sorting for nomor_dosi - parse DO number and year in PHP
+        if ($sort === 'nomor_dosi') {
+            $allRecords = $allRecords->sort(function ($a, $b) use ($direction) {
+                // Parse DO format: "807/KARET SC/2024" -> extract 807 and 2024
+                $parseDoSi = function ($doSi) {
+                    if (!$doSi) return [0, 0];
+                    $parts = explode('/', $doSi);
+                    $number = (int) ($parts[0] ?? 0);
+                    $year = (int) ($parts[2] ?? 0);
+                    return [$year, $number];
+                };
+
+                [$yearA, $numA] = $parseDoSi($a->nomor_dosi);
+                [$yearB, $numB] = $parseDoSi($b->nomor_dosi);
+
+                // Sort by year first, then by number
+                if ($yearA !== $yearB) {
+                    return $direction === 'asc' ? $yearA <=> $yearB : $yearB <=> $yearA;
+                }
+                return $direction === 'asc' ? $numA <=> $numB : $numB <=> $numA;
+            });
+        } else {
+            // Standard column sorting
+            $sortMap = [
+                'nomor_kontrak' => 'nomor_kontrak',
+                'tgl_kontrak' => 'tgl_kontrak',
+                'created_at' => 'created_at',
+            ];
+            $sortField = $sortMap[$sort] ?? 'nomor_dosi';
+            $allRecords = $allRecords->sortBy($sortField, options: 0, descending: $direction === 'desc');
+        }
+
+        // Paginate the sorted collection
+        $page = request()->get('page', 1);
+        $data = new LengthAwarePaginator(
+            $allRecords->forPage($page, $perPage),
+            count($allRecords),
+            $perPage,
+            $page,
+            [
+                'path' => route('kontrak'),
+                'query' => $request->except('page'),
+            ]
+        );
+
+        // Transform data untuk kompatibilitas dengan modal (map Eloquent properties ke struktur lama)
+        $data->getCollection()->transform(function ($item) {
+            // safe date formatting: handle DateTime/Carbon or string values
+            $formatDate = function ($val) {
+                if (!$val) return '';
+                if ($val instanceof \DateTime) return $val->format('d-M-Y');
+                try {
+                    return Carbon::parse($val)->format('d-M-Y');
+                } catch (\Exception $e) {
+                    return (string) $val;
+                }
+            };
+
+            // Format numbers with Indonesian thousand separator (dot)
+            $formatNumber = function ($val) {
+                if (!$val && $val !== 0 && $val !== '0') return '';
+                return number_format((float)$val, 0, ',', '.');
+            };
+
+            return [
+                'id' => $item->id,
+                'H' => $item->loex,
+                'I' => $item->nomor_kontrak,
+                'J' => $item->nama_pembeli,
+                'K' => $formatDate($item->tgl_kontrak),
+                'L' => ($item->volume || $item->volume === 0) ? $formatNumber($item->volume) : '',
+                'M' => ($item->harga || $item->harga === 0) ? $formatNumber($item->harga) : '',
+                'N' => ($item->nilai || $item->nilai === 0) ? $formatNumber($item->nilai) : '',
+                'O' => $item->inc_ppn ?? '',
+                'P' => $formatDate($item->tgl_bayar),
+                'Q' => $item->unit ?? '',
+                'R' => $item->mutu ?? '',
+                'S' => $item->nomor_dosi ?? '',
+                'T' => $formatDate($item->tgl_dosi),
+                'U' => $item->port ?? '',
+                'V' => $item->kontrak_sap ?? '',
+                'W' => $item->dp_sap ?? '',
+                'X' => $item->so_sap ?? '',
+                'Y' => $item->kode_do ?? '',
+                'Z' => ($item->sisa_awal || $item->sisa_awal === 0) ? $formatNumber($item->sisa_awal) : '',
+                'AA' => ($item->total_layan || $item->total_layan === 0) ? $formatNumber($item->total_layan) : '',
+                'AB' => ($item->sisa_akhir || $item->sisa_akhir === 0) ? $formatNumber($item->sisa_akhir) : '',
+                'BA' => $formatDate($item->jatuh_tempo),
+                'row' => $item->id,
+            ];
+        });
+
+<<<<<<< HEAD
         $data = new LengthAwarePaginator($currentPageItems, $itemCollection->count(), $perPage);
         $data->setPath($request->url());
         $data->appends($request->all());
 
+=======
+>>>>>>> 5c984c84c0825f5cabf6bf50d6f620357da4288f
         return view('dashboard.kontrak.index', compact('data'));
     }
 
@@ -242,6 +372,7 @@ class SheetController extends Controller
         }
     }
 
+<<<<<<< HEAD
     /**
      * Fitur CRUD: Update Data
      */
@@ -288,11 +419,159 @@ class SheetController extends Controller
             $request->jatuh_tempo ?? "",
         ];
 
+=======
+    // Memperbarui Data Kontrak dari Database
+    public function update(Request $request)
+    {
+>>>>>>> 5c984c84c0825f5cabf6bf50d6f620357da4288f
         try {
-            $sheetService->updateData($row, $data);
+            $id = $request->input('id');
+            
+            // Clean number format (remove dots dari thousands separator)
+            $volume = $request->input('volume') ? (float) str_replace(['.', ','], ['', '.'], $request->input('volume')) : null;
+            $harga = $request->input('harga') ? (float) str_replace(['.', ','], ['', '.'], $request->input('harga')) : null;
+            $nilai = $request->input('nilai') ? (float) str_replace(['.', ','], ['', '.'], $request->input('nilai')) : null;
+            
+            // Parse date jika ada
+            $tglKontrak = null;
+            if ($request->input('tgl_kontrak')) {
+                try {
+                    $tglKontrak = Carbon::createFromFormat('Y-m-d', $request->input('tgl_kontrak'))->format('Y-m-d');
+                } catch (\Exception $e) {
+                    $tglKontrak = null;
+                }
+            }
+            
+            // Update kontrak
+            $kontrak = Kontrak::findOrFail($id);
+            $kontrak->update([
+                'loex' => $request->input('loex'),
+                'nomor_kontrak' => $request->input('nomor_kontrak'),
+                'nama_pembeli' => $request->input('nama_pembeli'),
+                'tgl_kontrak' => $tglKontrak,
+                'volume' => $volume,
+                'harga' => $harga,
+                'nilai' => $nilai,
+                'total_layan' => $request->input('total_layan'),
+                'sisa_akhir' => $request->input('sisa_akhir'),
+            ]);
+            
             return back()->with('success', 'Data Berhasil Diperbarui');
         } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+            return back()->with('error', 'Update gagal: ' . $e->getMessage());
+        }
+    }
+<<<<<<< HEAD
+}
+=======
+
+
+
+    public function dashboard(GoogleSheetService $sheetService)
+{
+    $allData = $sheetService->getData();
+    
+    // Inisialisasi Variabel
+    $totalVolume = 0;
+    $totalRevenue = 0;
+    $volumePerMonth = array_fill(1, 12, 0); 
+    $revenuePerMonth = array_fill(1, 12, 0);
+    $topBuyers = [];
+    $topProducts = [];
+    $dailyPrices = []; 
+
+    // Loop Data (Mulai index 4 karena asumsi header row 1-4)
+    foreach ($allData as $row) {
+        $tglKontrak = $row[10] ?? null; // Kolom K
+        $volumeStr  = $row[11] ?? '0';  // Kolom L
+        $hargaStr   = $row[12] ?? '0';  // Kolom M
+        $pembeli    = $row[9] ?? 'Unknown'; // Kolom J
+        $produk     = $row[17] ?? 'Other'; // Kolom R
+        $jenis      = $row[16] ?? 'Other'; // Kolom Q
+
+        if (!$tglKontrak) continue;
+
+        // Bersihkan format angka
+        $volume = (float) str_replace(['.', ','], ['', '.'], $volumeStr);
+        $harga  = (float) str_replace(['.', ','], ['', '.'], $hargaStr);
+        $revenue = $volume * $harga;
+
+        // Agregasi Total
+        $totalVolume += $volume;
+        $totalRevenue += $revenue;
+
+        try {
+            $date = Carbon::parse($tglKontrak);
+            
+            // Per Bulan
+            $volumePerMonth[$date->month] += $volume;
+            $revenuePerMonth[$date->month] += $revenue;
+
+            // Per Hari (Untuk Grafik Harga)
+            $dayKey = $date->format('d/m/Y');
+            if (!isset($dailyPrices[$dayKey][$produk])) $dailyPrices[$dayKey][$produk] = [];
+            $dailyPrices[$dayKey][$produk][] = $harga;
+
+        } catch (\Exception $e) { continue; }
+
+        // Top Buyers & Products
+        if (!isset($topBuyers[$pembeli])) $topBuyers[$pembeli] = 0;
+        $topBuyers[$pembeli] += $volume;
+
+        $prodKey = $jenis . '/' . $produk;
+        if (!isset($topProducts[$prodKey])) $topProducts[$prodKey] = 0;
+        $topProducts[$prodKey] += $volume;
+    }
+
+    // Sorting & Limit Top 5
+    arsort($topBuyers);
+    $topBuyers = array_slice($topBuyers, 0, 5);
+    arsort($topProducts);
+    $topProducts = array_slice($topProducts, 0, 5);
+
+    // Proses Data Grafik Harga
+    $chartDates = array_keys($dailyPrices);
+    usort($chartDates, fn($a, $b) => Carbon::createFromFormat('d/m/Y', $a)->timestamp <=> Carbon::createFromFormat('d/m/Y', $b)->timestamp);
+
+    $priceSeries = [];
+    $allProducts = []; // Cari semua jenis produk unik
+    foreach($dailyPrices as $d) foreach($d as $p => $v) $allProducts[] = $p;
+    $allProducts = array_unique($allProducts);
+
+    foreach ($allProducts as $prodName) {
+        $dataPoints = [];
+        foreach ($chartDates as $date) {
+            if (isset($dailyPrices[$date][$prodName])) {
+                $avg = array_sum($dailyPrices[$date][$prodName]) / count($dailyPrices[$date][$prodName]);
+                $dataPoints[] = round($avg);
+            } else {
+                $dataPoints[] = 0;
+            }
+        }
+        $priceSeries[] = ['name' => $prodName, 'data' => $dataPoints];
+    }
+
+    // Dummy RKAP (Target)
+    $rkapVolume = 60000000; 
+    $rkapRevenue = 90200000000;
+
+    // Arahkan ke view dashboard/index.blade.php
+    return view('dashboard.index', compact(
+        'totalVolume', 'totalRevenue', 'rkapVolume', 'rkapRevenue',
+        'topBuyers', 'topProducts', 'volumePerMonth', 'revenuePerMonth',
+        'chartDates', 'priceSeries'
+    ));
+}
+
+    // Sync data manually dari Google Drive
+    public function syncManual()
+    {
+        try {
+            Artisan::call('sync:drive-folder');
+            return back()->with('success', 'Sinkronisasi data dari Google Drive berhasil!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Sinkronisasi gagal: ' . $e->getMessage());
         }
     }
 }
+>>>>>>> 5c984c84c0825f5cabf6bf50d6f620357da4288f
