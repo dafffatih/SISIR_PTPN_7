@@ -16,8 +16,8 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Semua fitur wajib login
-Route::middleware(['auth'])->group(function () {
+// Semua fitur wajib login + wajib user ACTIVE
+Route::middleware(['auth', 'active'])->group(function () {
 
     // Dashboard (semua role)
     Route::get('/dashboard', [SheetController::class, 'dashboard'])
@@ -47,19 +47,15 @@ Route::middleware(['auth'])->group(function () {
     // =========================
     Route::middleware('role:admin')->group(function () {
 
-        // halaman user management (ambil data dari DB)
         Route::get('/users', [UserController::class, 'index'])
             ->name('users.index');
 
-        // tambah user
         Route::post('/users', [UserController::class, 'store'])
             ->name('users.store');
 
-        // update user
         Route::put('/users/{user}', [UserController::class, 'update'])
             ->name('users.update');
 
-        // hapus user
         Route::delete('/users/{user}', [UserController::class, 'destroy'])
             ->name('users.destroy');
     });
