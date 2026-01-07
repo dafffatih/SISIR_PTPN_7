@@ -131,7 +131,7 @@
                         @php $colors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8']; $i=0; @endphp
                         @foreach($cleanTopBuyers as $buyer => $vol)
                         <div class="legend-item">
-                            <span class="dot" style="background: {{ $colors[$i % count($colors)] }}"></span>
+                            <span class="dot" style="background: {{ $colors[$i] }}"></span>
                             <span class="name" title="{{ $buyer }}">
                                 {{ Str::limit($buyer, 15) }} 
                                 {{-- Opsional: Tampilkan singkatan juga di list --}}
@@ -155,13 +155,10 @@
                 <div class="donut-container">
                     <div id="chart-product" class="chart-donut"></div>
                     <div class="custom-legend">
-                        @php
-                            $colors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8', '#EF4444', '#10B981', '#F59E0B', '#6366F1', '#EC4899'];
-                            $i=0; 
-                        @endphp
+                        @php $i=0; @endphp
                         @foreach($topProducts as $prod => $vol)
                         <div class="legend-item">
-                            <span class="dot" style="background: {{ $colors[$i % count($colors)] }}"></span>
+                            <span class="dot" style="background: {{ $colors[$i] }}"></span>
                             <span class="name">{{ $prod }}</span>
                             <span class="val">{{ $totalVolume > 0 ? round(($vol/$totalVolume)*100, 0) : 0 }}%</span>
                         </div>
@@ -190,154 +187,18 @@
                             <th>Uraian</th>
                             <th>SIR 20</th>
                             <th>RSS</th>
-                            <th>SIR 3L</th>
-                            <th>SIR 3WF</th>
                             <th>TOTAL</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {{-- STOK PRODUKSI --}}
-                        @php
-                            $StokSir20  = $stokData['produksi']['sir20'];
-                            $StokRss    = $stokData['produksi']['rss'];
-                            $StokSir3l  = $stokData['produksi']['sir3l'];
-                            $StokSir3wf = $stokData['produksi']['sir3wf'];
-                            $StokTotal  = $StokSir20 + $StokRss + $StokSir3l + $StokSir3wf;
-                        @endphp
-                        <tr>
-                            <td>Stok Produksi</td>
-                            <td>{{ number_format($StokSir20, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokRss, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokSir3l, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokSir3wf, 0, ',', '.') }}</td>
-                            <td class="font-bold">{{ number_format($StokTotal, 0, ',', '.') }}</td>
-                        </tr>
-
-                        <tr class="separator-header"><td colspan="5">OUTSTANDING CONTRACT</td></tr>
-                        
-                        @php
-                            $StokSbSir20  = $stokData['sudah_bayar']['sir20'];
-                            $StokSbRss    = $stokData['sudah_bayar']['rss'];
-                            $StokSbSir3l  = $stokData['sudah_bayar']['sir3l'];
-                            $StokSbSir3wf = $stokData['sudah_bayar']['sir3wf'];
-                            $StokSbTotal  = $StokSbSir20 + $StokSbRss + $StokSbSir3l + $StokSbSir3wf;
-                        @endphp
-                        <tr>
-                            <td>Sudah Bayar</td>
-                            <td>{{ number_format($StokSbSir20, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokSbRss, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokSbSir3l, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokSbSir3wf, 0, ',', '.') }}</td>
-                            <td class="font-bold">{{ number_format($StokSbTotal, 0, ',', '.') }}</td>
-                        </tr>
-                        @php
-                            $StokBbSir20  = $stokData['belum_bayar']['sir20'];
-                            $StokBbRss    = $stokData['belum_bayar']['rss'];
-                            $StokBbSir3l  = $stokData['belum_bayar']['sir3l'];
-                            $StokBbSir3wf = $stokData['belum_bayar']['sir3wf'];
-                            $StokBbTotal  = $StokBbSir20 + $StokBbRss + $StokBbSir3l + $StokBbSir3wf;
-                        @endphp
-                        <tr>
-                            <td>Belum Bayar</td>
-                            <td>{{ number_format($StokBbSir20, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBbRss, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBbSir3l, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBbSir3wf, 0, ',', '.') }}</td>
-                            <td class="font-bold">{{ number_format($StokBbTotal, 0, ',', '.') }}</td>
-                        </tr>
-
-                        {{-- JUMLAH OUTSTANDING --}}
-                        @php
-                            $jmlSir20  = $StokSbSir20 + $StokBbSir20;
-                            $jmlRss    = $StokSbRss + $StokBbRss;
-                            $jmlSir3l  = $StokSbSir3l + $StokBbSir3l;
-                            $jmlSir3wf = $StokSbSir3l + $StokBbSir3l;
-                            $jmlTotal  = $jmlSir20 + $jmlRss + $jmlSir3l + $jmlSir3wf;
-                        @endphp
-                        <tr class="row-sum">
-                            <td>Jumlah</td>
-                            <td>{{ number_format($jmlSir20, 0, ',', '.') }}</td>
-                            <td>{{ number_format($jmlRss, 0, ',', '.') }}</td>
-                            <td>{{ number_format($jmlSir3l, 0, ',', '.') }}</td>
-                            <td>{{ number_format($jmlSir3wf, 0, ',', '.') }}</td>
-                            <td>{{ number_format($jmlTotal, 0, ',', '.') }}</td>
-                        </tr>
-
-                        {{-- STOK BEBAS PRODUKSI --}}
-                        @php
-                            $StokBebasSir20  = $StokSir20 - $jmlSir20;
-                            $StokBebasRss    = $StokRss - $jmlRss;
-                            $StokBebasSir3l  = $StokSir3l - $jmlSir3l;
-                            $StokBebasSir3wf = $StokSir3wf - $jmlSir3wf;
-                            $StokBebasTotal  = $StokTotal - $jmlTotal;
-                        @endphp
-                        <tr class="row-highlight">
-                            <td>Stok Bebas (Prod)</td>
-                            <td class="{{ $StokBebasSir20 < 0 ? 'text-red-600 font-bold' : '' }}">
-                                {{ number_format($StokBebasSir20, 0, ',', '.') }}
-                            </td>
-                            <td class="{{ $StokBebasRss < 0 ? 'text-red-600 font-bold' : '' }}">
-                                {{ number_format($StokBebasRss, 0, ',', '.') }}
-                            </td>
-                            <td class="{{ $StokBebasSir3l < 0 ? 'text-red-600 font-bold' : '' }}">
-                                {{ number_format($StokBebasSir3l, 0, ',', '.') }}
-                            </td>
-                            <td class="{{ $StokBebasSir3wf < 0 ? 'text-red-600 font-bold' : '' }}">
-                                {{ number_format($StokBebasSir3wf, 0, ',', '.') }}
-                            </td>
-                            <td class="{{ $StokBebasTotal < 0 ? 'text-red-700 font-black' : 'font-black' }}">
-                                {{ number_format($StokBebasTotal, 0, ',', '.') }}
-                            </td>
-                        </tr>
-
-
-                        @php
-                            $StokBahanBakuSir20  = $stokData['bahan_baku']['sir20'];
-                            $StokBahanBakuRss    = $stokData['bahan_baku']['rss'];
-                            $StokBahanBakuSir3l  = $stokData['bahan_baku']['sir3l'];
-                            $StokBahanBakuSir3wf = $stokData['bahan_baku']['sir3wf'];
-                            $StokBahanBakuTotal  = $StokBahanBakuSir20 + $StokBahanBakuRss + $StokBahanBakuSir3l + $StokBahanBakuSir3wf;
-                        @endphp
-                        <tr>
-                            <td>Stok Bahan Baku</td>
-                            <td>{{ number_format($StokBahanBakuSir20, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBahanBakuRss, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBahanBakuSir3l, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBahanBakuSir3wf, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBahanBakuTotal, 0, ',', '.') }}</td>
-                        </tr>
-
-                        {{-- STOK BEBAS AKHIR --}}
-                        @php
-                            $StokBebasFixSir20  = $StokBebasSir20 + $StokBahanBakuSir20;
-                            $StokBebasFixRss    = $StokBebasRss + $StokBahanBakuRss;
-                            $StokBebasFixSir3l  = $StokBebasSir3l + $StokBahanBakuSir3l;
-                            $StokBebasFixSir3wf = $StokBebasSir3wf + $StokBahanBakuSir3wf;
-                            $StokBebasFixTotal  = $StokBebasFixSir20 + $StokBebasFixRss + $StokBebasFixSir3l + $StokBebasFixSir3wf;
-                        @endphp
-                        <tr class="row-highlight-final">
-                            <td>STOK BEBAS AKHIR</td>
-
-                            <td class="{{ $StokBebasFixSir20 < 0 ? 'text-red font-bold' : '' }}">
-                                {{ number_format($StokBebasFixSir20, 0, ',', '.') }}
-                            </td>
-
-                            <td class="{{ $StokBebasFixRss < 0 ? 'text-red font-bold' : '' }}">
-                                {{ number_format($StokBebasFixRss, 0, ',', '.') }}
-                            </td>
-
-                            <td class="{{ $StokBebasFixSir3l < 0 ? 'text-red font-bold' : '' }}">
-                                {{ number_format($StokBebasFixSir3l, 0, ',', '.') }}
-                            </td>
-
-                            <td class="{{ $StokBebasFixSir3wf < 0 ? 'text-red font-bold' : '' }}">
-                                {{ number_format($StokBebasFixSir3wf, 0, ',', '.') }}
-                            </td>
-
-                            <td class="{{ $StokBebasFixTotal < 0 ? 'text-red font-black' : 'font-black' }}">
-                                {{ number_format($StokBebasFixTotal, 0, ',', '.') }}
-                            </td>
-                        </tr>
+                        <tr><td>Stok Produksi</td><td>1.328</td><td>1.135</td><td>2.903</td></tr>
+                        <tr><td colspan="4" class="separator-row">OUTSTANDING CONTRACT</td></tr>
+                        <tr><td>Sudah Bayar</td><td>1.475</td><td>312</td><td>1.868</td></tr>
+                        <tr><td>Belum Bayar</td><td>5.161</td><td>2.516</td><td>8.035</td></tr>
+                        <tr class="row-sum"><td>Jumlah</td><td>6.636</td><td>2.828</td><td>9.904</td></tr>
+                        <tr class="row-highlight"><td>Stok Bebas</td><td>-5.308</td><td>-1.694</td><td>-6.905</td></tr>
+                        <tr><td>Stok Bahan Baku</td><td>4.448</td><td>-</td><td>4.448</td></tr>
+                        <tr class="row-highlight"><td>Stok Bebas</td><td>-860</td><td>-1.694</td><td>-2.457</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -439,16 +300,21 @@
 
 <script>
     window.dashboardData = {
-        priceDaily: @json($trendPriceDaily),
-        topBuyers: @json(array_values($topBuyers)),
+        topBuyers: @json(array_values($cleanTopBuyers)),
+        // PERUBAHAN DISINI: Label Chart sekarang menggunakan INISIAL (Singkatan)
         topBuyersLabels: @json($buyerInitials), 
+        
         topProducts: @json(array_values($topProducts)),
         topProductsLabels: @json(array_keys($topProducts)),
-        volumeReal: @json($rekap4['volume_real']),
-        rkapVol: @json($rekap4['volume_rkap']),
-        revenueReal: @json($rekap4['revenue_real']),
-        rkapRev: @json($rekap4['revenue_rkap']),
-        monthLabels: @json($rekap4['labels'])
+        volumeReal: @json(array_values($volumePerMonth)),
+        revenueReal: @json(array_values($revenuePerMonth)),
+        rkapVol: Array(12).fill({{ $rkapVolume / 12 }}),
+        rkapRev: Array(12).fill({{ $rkapRevenue / 12 }}),
+        priceMonthly: [
+            { name: 'SIR 20', data: [29000, 29500, 30000, 29800, 30500, 31000, 30800, 31200, 31500, 32000, 31800, 32500] },
+            { name: 'RSS', data: [31000, 31500, 32000, 32500, 33000, 32800, 33500, 34000, 33800, 34500, 35000, 34800] },
+            { name: 'SIR 3L', data: [30000, 30500, 30800, 31000, 31500, 32000, 31800, 32200, 32500, 33000, 33500, 34000] }
+        ]
     };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>

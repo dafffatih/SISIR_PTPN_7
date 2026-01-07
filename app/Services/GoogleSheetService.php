@@ -91,4 +91,15 @@ class GoogleSheetService
 
         $this->service->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
     }
+    public function batchGet($ranges)
+    {
+        $params = ['ranges' => $ranges];
+        $result = $this->service->spreadsheets_values->batchGet($this->spreadsheetId, $params);
+        
+        $data = [];
+        foreach ($result->getValueRanges() as $valueRange) {
+            $data[$valueRange->getRange()] = $valueRange->getValues() ?? [];
+        }
+        return $data;
+    }
 }

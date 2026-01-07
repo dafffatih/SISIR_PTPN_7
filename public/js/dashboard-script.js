@@ -3,17 +3,46 @@ document.addEventListener("DOMContentLoaded", function () {
     const commonFont = 'Inter, sans-serif';
 
     // --- 1. CHART HARGA (TETAP) ---
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    // const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    // --- 1. CHART HARGA (DAILY DATA WITH MONTHLY LABELS) ---
     var priceOptions = {
-        series: data.priceMonthly,
-        chart: { type: 'line', height: 320, toolbar: { show: false }, zoom: { enabled: false }, fontFamily: commonFont },
+        series: data.priceDaily, // Mengambil data harian
+        chart: { 
+            type: 'line', 
+            height: 320, 
+            toolbar: { show: false },
+            fontFamily: commonFont 
+        },
         colors: ['#1E293B', '#F97316', '#0D9488'],
-        stroke: { curve: 'smooth', width: 3 },
-        xaxis: { categories: months, labels: { style: { colors: '#94a3b8', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
-        yaxis: { labels: { formatter: (val) => (val/1000).toFixed(0) + 'k', style: { colors: '#94a3b8', fontSize: '11px' } } },
-        grid: { borderColor: '#F1F5F9', strokeDashArray: 4, padding: { top: 0, right: 10, bottom: 0, left: 10 } },
-        legend: { position: 'top', horizontalAlign: 'right', offsetY: -20, markers: { radius: 12 } }
+        stroke: { curve: 'smooth', width: 2 }, // Garis lebih tipis agar harian tidak terlihat penuh
+        xaxis: { 
+            type: 'datetime', // KUNCI UTAMA
+            labels: { 
+                format: 'MMM', // Menampilkan JAN, FEB, MAR dst pada sumbu X
+                style: { colors: '#94a3b8', fontSize: '11px' } 
+            },
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+        },
+        yaxis: { 
+            min: 20000, // Mulai dari 20k
+            max: 50000, // Berakhir di 50k
+            tickAmount: 6, // Mengatur jumlah garis horizontal agar rapi
+            labels: { 
+                formatter: (val) => 'Rp ' + (val/1000).toFixed(0) + 'k', 
+                style: { colors: '#94a3b8', fontSize: '11px' } 
+            } 
+        },
+        tooltip: {
+            shared: true,
+            x: {
+                format: 'dd MMM yyyy' // KUNCI: Menampilkan tanggal lengkap saat hover (misal: 05 Jan 2026)
+            }
+        },
+        grid: { borderColor: '#F1F5F9', strokeDashArray: 4 },
+        legend: { position: 'top', horizontalAlign: 'right' }
     };
+
     new ApexCharts(document.querySelector("#chart-price-monthly"), priceOptions).render();
 
 
@@ -82,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function () {
         plotOptions: { bar: { horizontal: false, columnWidth: '50%', borderRadius: 3 } },
         dataLabels: { enabled: false },
         stroke: { show: true, width: 2, colors: ['transparent'] },
-        xaxis: { categories: months, labels: { style: { colors: '#94a3b8', fontSize: '10px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+        xaxis: { categories: data.monthLabels, labels: { style: { colors: '#94a3b8', fontSize: '10px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
         yaxis: { show: false },
         grid: { show: false },
         legend: { position: 'bottom', markers: { radius: 12 }, offsetY: 5 },
