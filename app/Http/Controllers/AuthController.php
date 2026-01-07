@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -41,11 +42,16 @@ class AuthController extends Controller
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
 
+            // ✅ CATAT LAST LOGIN (AMAN DARI INTELEPHENSE)
+            User::where('id', Auth::id())->update([
+                'last_login_at' => now(),
+            ]);
+
             // 4. Redirect sesuai role
             return $this->redirectByRole(Auth::user()->role);
         }
 
-        // 5. Jika gagal
+        // 5. Jika gagal login
         return back()
             ->with('error', 'Username atau password salah!')
             ->withInput();

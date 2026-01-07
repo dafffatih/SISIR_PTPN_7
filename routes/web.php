@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SheetController;
+use App\Http\Controllers\UserController;
 
 // Halaman awal
 Route::get('/', function () {
@@ -11,43 +12,59 @@ Route::get('/', function () {
 });
 
 // Auth Routes
-// Route::get('/sheets', [SheetController::class, 'index']);
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Semua fitur harus login
+// Semua fitur wajib login
 Route::middleware(['auth'])->group(function () {
 
-    // Semua role boleh akses dashboard
-    Route::get('/dashboard', [App\Http\Controllers\SheetController::class, 'dashboard'])
-    ->name('dashboard')
-    ->middleware(['auth', 'role:admin,staff,viewer']);
+    // Dashboard (semua role)
+    Route::get('/dashboard', [SheetController::class, 'dashboard'])
+        ->name('dashboard')
+        ->middleware('role:admin,staff,viewer');
 
-    // Admin + Staff boleh akses Manajemen Kontrak
+    // Manajemen Kontrak (admin + staff)
     Route::get('/kontrak', [SheetController::class, 'index'])
         ->name('kontrak')
-        ->middleware(['auth', 'role:admin,staff']);
+        ->middleware('role:admin,staff');
 
-    // TAMBAHKAN ROUTE CRUD DI BAWAH INI:
     Route::post('/kontrak/store', [SheetController::class, 'store'])
         ->name('kontrak.store')
-        ->middleware(['auth', 'role:admin,staff']);
+        ->middleware('role:admin,staff');
 
+    // NOTE: kalau update kamu pakai row/id, sebaiknya /kontrak/update/{row}
     Route::put('/kontrak/update', [SheetController::class, 'update'])
         ->name('kontrak.update')
-        ->middleware(['auth', 'role:admin,staff']);
+        ->middleware('role:admin,staff');
 
     Route::delete('/kontrak/delete/{row}', [SheetController::class, 'destroy'])
         ->name('kontrak.destroy')
-        ->middleware(['auth', 'role:admin,staff']);
+        ->middleware('role:admin,staff');
 
-    // Admin only boleh akses User Management
-    Route::get('/users', function () {
-        return view('dashboard.users');
-    })->name('users')->middleware('role:admin');
+    // =========================
+    // USER MANAGEMENT (admin only)
+    // =========================
+    Route::middleware('role:admin')->group(function () {
 
-    // Admin + Staff boleh akses Upload & Export
+        // halaman user management (ambil data dari DB)
+        Route::get('/users', [UserController::class, 'index'])
+            ->name('users.index');
+
+        // tambah user
+        Route::post('/users', [UserController::class, 'store'])
+            ->name('users.store');
+
+        // update user
+        Route::put('/users/{user}', [UserController::class, 'update'])
+            ->name('users.update');
+
+        // hapus user
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])
+            ->name('users.destroy');
+    });
+
+    // Upload & Export (admin + staff)
     Route::get('/upload-export', function () {
         return view('dashboard.upload_export');
     })->name('upload.export')->middleware('role:admin,staff');
