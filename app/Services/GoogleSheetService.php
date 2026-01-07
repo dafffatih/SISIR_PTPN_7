@@ -25,12 +25,45 @@ class GoogleSheetService
         $this->spreadsheetId = env('GOOGLE_SHEET_ID');
     }
 
-    // Mengambil data dari sheet tertentu
+    // Mengambil data dari sheet tertentu dengan error handling yang lebih baik
     public function getData($spreadsheetId = null, $range = "'SC Sudah Bayar'!A4:BA")
     {
-        $id = $spreadsheetId ?? $this->spreadsheetId;
-        $response = $this->sheetsService->spreadsheets_values->get($id, $range);
-        return $response->getValues() ?? [];
+        try {
+            $id = $spreadsheetId ?? $this->spreadsheetId;
+            $response = $this->sheetsService->spreadsheets_values->get($id, $range);
+            $values = $response->getValues() ?? [];
+            
+            if (empty($values)) {
+                \Log::warning('Empty response from Google Sheets for range: ' . $range);
+            }
+            
+            return $values;
+        } catch (\Exception $e) {
+            \Log::error('Error fetching data from Google Sheets - Range: ' . $range . ' - Error: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    // Fungsi helper untuk get multiple ranges sekaligus (batch)
+    public function getBatchData($ranges)
+    {
+        try {
+            $response = $this->sheetsService->spreadsheets_values->batchGet($this->spreadsheetId, ['ranges' => $ranges]);
+            
+            $result = [];
+            $valueRanges = $response->getValueRanges();
+            
+            if (!empty($valueRanges)) {
+                foreach ($valueRanges as $index => $valueRange) {
+                    $result[$ranges[$index]] = $valueRange->getValues() ?? [];
+                }
+            }
+            
+            return $result;
+        } catch (\Exception $e) {
+            \Log::error('Error fetching batch data from Google Sheets: ' . $e->getMessage());
+            return [];
+        }
     }
 
     // List spreadsheets dalam folder tertentu menggunakan Google Drive API
