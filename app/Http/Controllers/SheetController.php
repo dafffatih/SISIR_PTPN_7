@@ -25,6 +25,8 @@ class SheetController extends Controller
         $perPage = (int) $request->input('per_page', 10);
         $sort = $request->input('sort', 'nomor_dosi');
         $direction = strtolower($request->input('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
 
         // Build query from Kontrak model
         $query = Kontrak::query();
@@ -40,12 +42,67 @@ class SheetController extends Controller
             });
         }
 
-        // Whitelist sortable columns to avoid SQL injection
-        $allowedSorts = ['nomor_dosi', 'nomor_kontrak', 'tgl_kontrak', 'created_at'];
-        if (!in_array($sort, $allowedSorts)) $sort = 'nomor_dosi';
+        // Apply date range filter
+        if ($startDate) {
+            try {
+                $start = Carbon::createFromFormat('Y-m-d', $startDate)->toDateString();
+                $query->whereDate('tgl_kontrak', '>=', $start);
+            } catch (\Exception $e) { }
+        }
+        if ($endDate) {
+            try {
+                $end = Carbon::createFromFormat('Y-m-d', $endDate)->toDateString();
+                $query->whereDate('tgl_kontrak', '<=', $end);
+            } catch (\Exception $e) { }
+        }
 
-        // Order and paginate
-        $data = $query->orderBy($sort, $direction)->paginate($perPage)->appends($request->except('page'));
+        // Get all matching records (will sort in PHP for DO/SI if needed)
+        $allRecords = $query->get();
+
+        // Smart sorting for nomor_dosi - parse DO number and year in PHP
+        if ($sort === 'nomor_dosi') {
+            $allRecords = $allRecords->sort(function ($a, $b) use ($direction) {
+                // Parse DO format: "807/KARET SC/2024" -> extract 807 and 2024
+                $parseDoSi = function ($doSi) {
+                    if (!$doSi) return [0, 0];
+                    $parts = explode('/', $doSi);
+                    $number = (int) ($parts[0] ?? 0);
+                    $year = (int) ($parts[2] ?? 0);
+                    return [$year, $number];
+                };
+
+                [$yearA, $numA] = $parseDoSi($a->nomor_dosi);
+                [$yearB, $numB] = $parseDoSi($b->nomor_dosi);
+
+                // Sort by year first, then by number
+                if ($yearA !== $yearB) {
+                    return $direction === 'asc' ? $yearA <=> $yearB : $yearB <=> $yearA;
+                }
+                return $direction === 'asc' ? $numA <=> $numB : $numB <=> $numA;
+            });
+        } else {
+            // Standard column sorting
+            $sortMap = [
+                'nomor_kontrak' => 'nomor_kontrak',
+                'tgl_kontrak' => 'tgl_kontrak',
+                'created_at' => 'created_at',
+            ];
+            $sortField = $sortMap[$sort] ?? 'nomor_dosi';
+            $allRecords = $allRecords->sortBy($sortField, options: 0, descending: $direction === 'desc');
+        }
+
+        // Paginate the sorted collection
+        $page = request()->get('page', 1);
+        $data = new LengthAwarePaginator(
+            $allRecords->forPage($page, $perPage),
+            count($allRecords),
+            $perPage,
+            $page,
+            [
+                'path' => route('kontrak'),
+                'query' => $request->except('page'),
+            ]
+        );
 
         // Transform data untuk kompatibilitas dengan modal (map Eloquent properties ke struktur lama)
         $data->getCollection()->transform(function ($item) {

@@ -150,6 +150,23 @@
     }
     .k-btn-sync:hover { background: #2563eb; transform: translateY(-1px); }
     .k-btn-sync:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
+
+    /* Date filter inputs */
+    .k-date-input {
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        font-size: 14px;
+        color: #1e293b;
+        outline: none;
+    }
+    .k-date-input:focus { border-color: #7c3aed; background: #fff; }
+    .k-date-separator {
+        padding: 0 6px;
+        color: #94a3b8;
+        font-weight: 600;
+    }
 </style>
 
 <div class="k-container">
@@ -160,9 +177,9 @@
 
     <div class="k-card">
         <div class="k-toolbar">
-          <form action="{{ route('kontrak') }}" method="GET" id="filterForm" class="k-search-box" style="max-width: 800px; gap: 10px; background: transparent; border: none; padding: 0;">
+          <form action="{{ route('kontrak') }}" method="GET" id="filterForm" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; width: 100%;">
               
-              <div class="k-search-box" style="margin: 0;">
+              <div class="k-search-box" style="margin: 0; flex: 1; min-width: 250px;">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="11" cy="11" r="8"></circle>
                       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -170,21 +187,28 @@
                   <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nomor kontrak, pembeli, DO/SI, SAP...">
               </div>
 
-              <select name="sort" class="k-select-limit" onchange="document.getElementById('filterForm').submit()">
-                  <option value="nomor_dosi" {{ request('sort') == 'nomor_dosi' ? 'selected' : '' }}>Urut berdasarkan Nomor DO/SI</option>
-                  <option value="nomor_kontrak" {{ request('sort') == 'nomor_kontrak' ? 'selected' : '' }}>Urut berdasarkan Nomor Kontrak</option>
-                  <option value="tgl_kontrak" {{ request('sort') == 'tgl_kontrak' ? 'selected' : '' }}>Urut berdasarkan Tanggal Kontrak</option>
+              <!-- Date Range Filter -->
+              <div style="display: flex; gap: 6px; align-items: center;">
+                  <input type="date" name="start_date" class="k-date-input" value="{{ request('start_date') }}" placeholder="Dari tanggal" title="Tanggal awal">
+                  <span class="k-date-separator">-</span>
+                  <input type="date" name="end_date" class="k-date-input" value="{{ request('end_date') }}" placeholder="Sampai tanggal" title="Tanggal akhir">
+              </div>
+
+              <select name="sort" class="k-select-limit" onchange="document.getElementById('filterForm').submit()" title="Urutkan berdasarkan">
+                  <option value="nomor_dosi" {{ request('sort') == 'nomor_dosi' ? 'selected' : '' }}>Urut DO/SI</option>
+                  <option value="nomor_kontrak" {{ request('sort') == 'nomor_kontrak' ? 'selected' : '' }}>Urut Nomor Kontrak</option>
+                  <option value="tgl_kontrak" {{ request('sort') == 'tgl_kontrak' ? 'selected' : '' }}>Urut Tanggal</option>
               </select>
 
-              <select name="direction" class="k-select-limit" onchange="document.getElementById('filterForm').submit()">
-                  <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>Ascending</option>
-                  <option value="desc" {{ request('direction') == 'desc' ? 'selected' : '' }}>Descending</option>
+              <select name="direction" class="k-select-limit" onchange="document.getElementById('filterForm').submit()" title="Arah urutan">
+                  <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>↑ Ascending</option>
+                  <option value="desc" {{ request('direction') == 'desc' ? 'selected' : '' }}>↓ Descending</option>
               </select>
 
-              <select name="per_page" class="k-select-limit" onchange="document.getElementById('filterForm').submit()">
+              <select name="per_page" class="k-select-limit" onchange="document.getElementById('filterForm').submit()" title="Data per halaman">
                   @foreach([10, 50, 100, 250, 500, 1000] as $limit)
                       <option value="{{ $limit }}" {{ request('per_page') == $limit ? 'selected' : '' }}>
-                          Tampilkan {{ $limit }}
+                          Tampil {{ $limit }}
                       </option>
                   @endforeach
               </select> 
