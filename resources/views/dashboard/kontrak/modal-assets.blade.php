@@ -217,64 +217,94 @@
 
     // Fungsi untuk mengisi data ke modal (MENGGUNAKAN VARIABEL HURUF)
     function fillModalData(modalId, data) {
-      if (modalId === 'modalDetail') {
-        const modal = document.getElementById('modalDetail');
-        modal.querySelector('.m-subtitle').innerText = data.I; // Nomor Kontrak (I)
-
-        const cells = modal.querySelectorAll('.m-kv td:last-child');
-        if(cells.length > 0) {
-            // Urutan sesuai struktur modal-detail Anda
-            cells[0].innerText = data.H;  // LO/EX
-            cells[1].innerText = data.I;  // Nomor Kontrak
-            cells[2].innerText = data.J;  // Nama Pembeli
-            cells[3].innerText = data.K;  // Tanggal Kontrak
-            cells[4].innerText = data.L + ' Kg'; // Volume
-            cells[5].innerText = 'Rp ' + data.M; // Harga
-            cells[6].innerText = 'Rp ' + data.N; // Nilai
-            cells[7].innerText = data.O;  // Inc PPN
-            cells[8].innerText = data.P;  // Tanggal Bayar
-            cells[9].innerText = data.Q;  // Unit
-            cells[10].innerText = data.R; // Mutu
-            cells[11].innerText = data.V; // Kontrak SAP
-            cells[12].innerText = data.W; // DP SAP
-            cells[13].innerText = data.X; // SO SAP
-            cells[14].innerText = data.Z + ' Kg'; // Sisa Awal
-
-            // Bagian Pengiriman
-            cells[15].innerText = data.S;  // Nomor DO/SI
-            cells[16].innerText = data.T;  // Tanggal DO/SI
-            cells[17].innerText = data.U;  // Port
-            cells[18].innerText = data.AA + ' Kg'; // Total Dilayani
-            cells[19].innerText = data.AB + ' Kg'; // Sisa Akhir
-        }
+      // Helper: format number with thousand separator (dot) and no decimals
+      function formatNumberRaw(value) {
+        if (value === null || value === undefined || value === '') return '-';
+        // if contains letters, return as-is
+        if (typeof value === 'string' && /[A-Za-z]/.test(value)) return value;
+        const n = Number(String(value).replace(/[^0-9\-\.]/g, '').replace(/\./g, ''));
+        if (isNaN(n)) return value;
+        return n.toLocaleString('id-ID', { maximumFractionDigits: 0 });
       }
 
-      // Di dalam function fillModalData(modalId, data)
+      function detectCurrencyAndFormat(value) {
+        if (!value && value !== 0) return '-';
+        // If already contains currency symbol
+        if (typeof value === 'string' && /\$|USD|EUR|Rp|IDR/.test(value)) return value;
+        // Remove non numeric except dot/comma
+        let cleaned = String(value).trim();
+        // Try to convert strings like "100.000.00" or "1.234.567,89"
+        cleaned = cleaned.replace(/\./g, '').replace(/,/g, '.');
+        const num = Number(cleaned);
+        if (isNaN(num)) return value;
+        // Default to Indonesian Rupiah
+        return 'Rp ' + num.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+      }
+
+      if (modalId === 'modalDetail') {
+        const modal = document.getElementById('modalDetail');
+
+        // Set nomor kontrak di subtitle
+        document.getElementById('detail_nomor_kontrak').innerText = data.I || '-';
+
+        // Populate fields with formatting
+        const map = {
+          'detail_H': data.H || '-',
+          'detail_I': data.I || '-',
+          'detail_J': data.J || '-',
+          'detail_K': data.K || '-',
+          'detail_L': (data.L || data.L === 0) ? formatNumberRaw(data.L) + ' Kg' : '-',
+          'detail_M': (data.M || data.M === 0) ? detectCurrencyAndFormat(data.M) : '-',
+          'detail_N': (data.N || data.N === 0) ? detectCurrencyAndFormat(data.N) : '-',
+          'detail_O': data.O || '-',
+          'detail_P': data.P || '-',
+          'detail_Q': data.Q || '-',
+          'detail_R': data.R || '-',
+          'detail_S': data.S || '-',
+          'detail_T': data.T || '-',
+          'detail_U': data.U || '-',
+          'detail_V': data.V || '-',
+          'detail_W': data.W || '-',
+          'detail_X': data.X || '-',
+          'detail_Y': data.Y || '-',
+          'detail_Z': (data.Z || data.Z === 0) ? formatNumberRaw(data.Z) + ' Kg' : '-',
+          'detail_AA': (data.AA || data.AA === 0) ? formatNumberRaw(data.AA) + ' Kg' : '-',
+          'detail_AB': (data.AB || data.AB === 0) ? formatNumberRaw(data.AB) + ' Kg' : '-',
+          'detail_BA': data.BA || '-',
+        };
+
+        Object.entries(map).forEach(([id, value]) => {
+          const el = document.getElementById(id);
+          if (el) el.innerText = value;
+        });
+      }
+
+      // Fill Edit Modal
       if (modalId === 'modalEdit') {
           const form = document.getElementById('modalEdit').querySelector('form');
-          
-          // Set row index
-          form.querySelector('[name="row_index"]').value = data.row;
 
-          // Fill Manual Fields
-          form.querySelector('[name="loex"]').value = data.H;
-          form.querySelector('[name="nomor_kontrak"]').value = data.I;
-          form.querySelector('[name="nama_pembeli"]').value = data.J;
-          form.querySelector('[name="tgl_kontrak"]').value = data.K;
-          form.querySelector('[name="volume"]').value = data.L;
-          form.querySelector('[name="harga"]').value = data.M;
-          form.querySelector('[name="nilai"]').value = data.N;
-          form.querySelector('[name="inc_ppn"]').value = data.O;
-          form.querySelector('[name="tgl_bayar"]').value = data.P;
-          form.querySelector('[name="unit"]').value = data.Q;
-          form.querySelector('[name="mutu"]').value = data.R;
-          form.querySelector('[name="nomor_dosi"]').value = data.S;
-          form.querySelector('[name="tgl_dosi"]').value = data.T;
-          form.querySelector('[name="port"]').value = data.U;
-          form.querySelector('[name="kontrak_sap"]').value = data.V;
-          form.querySelector('[name="dp_sap"]').value = data.W;
-          form.querySelector('[name="so_sap"]').value = data.X;
-          form.querySelector('[name="jatuh_tempo"]').value = data.BA;
+          // Set id
+          form.querySelector('[name="id"]').value = data.id || data.row;
+
+          // Fill Manual Fields (raw strings)
+          form.querySelector('[name="loex"]').value = data.H || '';
+          form.querySelector('[name="nomor_kontrak"]').value = data.I || '';
+          form.querySelector('[name="nama_pembeli"]').value = data.J || '';
+          form.querySelector('[name="tgl_kontrak"]').value = data.K || '';
+          form.querySelector('[name="volume"]').value = data.L || '';
+          form.querySelector('[name="harga"]').value = data.M || '';
+          form.querySelector('[name="nilai"]').value = data.N || '';
+          form.querySelector('[name="inc_ppn"]').value = data.O || '';
+          form.querySelector('[name="tgl_bayar"]').value = data.P || '';
+          form.querySelector('[name="unit"]').value = data.Q || '';
+          form.querySelector('[name="mutu"]').value = data.R || '';
+          form.querySelector('[name="nomor_dosi"]').value = data.S || '';
+          form.querySelector('[name="tgl_dosi"]').value = data.T || '';
+          form.querySelector('[name="port"]').value = data.U || '';
+          form.querySelector('[name="kontrak_sap"]').value = data.V || '';
+          form.querySelector('[name="dp_sap"]').value = data.W || '';
+          form.querySelector('[name="so_sap"]').value = data.X || '';
+          form.querySelector('[name="jatuh_tempo"]').value = data.BA || '';
       }
     }
 

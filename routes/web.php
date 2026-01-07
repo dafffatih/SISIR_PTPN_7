@@ -42,6 +42,10 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->name('kontrak.destroy')
         ->middleware('role:admin,staff');
 
+    Route::post('/kontrak/sync', [SheetController::class, 'syncManual'])
+        ->name('kontrak.sync')
+        ->middleware('role:admin,staff');
+
     // =========================
     // USER MANAGEMENT (admin only)
     // =========================

@@ -132,6 +132,24 @@
         cursor: pointer;
     }
     .k-select-limit:focus { border-color: #7c3aed; background: #fff; }
+
+    /* Secondary Button */
+    .k-btn-sync {
+        background: #3b82f6;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+    }
+    .k-btn-sync:hover { background: #2563eb; transform: translateY(-1px); }
+    .k-btn-sync:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
 </style>
 
 <div class="k-container">
@@ -142,15 +160,26 @@
 
     <div class="k-card">
         <div class="k-toolbar">
-          <form action="{{ route('kontrak') }}" method="GET" id="filterForm" class="k-search-box" style="max-width: 600px; gap: 10px; background: transparent; border: none; padding: 0;">
+          <form action="{{ route('kontrak') }}" method="GET" id="filterForm" class="k-search-box" style="max-width: 800px; gap: 10px; background: transparent; border: none; padding: 0;">
               
               <div class="k-search-box" style="margin: 0;">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="11" cy="11" r="8"></circle>
                       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
-                  <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nomor kontrak...">
+                  <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nomor kontrak, pembeli, DO/SI, SAP...">
               </div>
+
+              <select name="sort" class="k-select-limit" onchange="document.getElementById('filterForm').submit()">
+                  <option value="nomor_dosi" {{ request('sort') == 'nomor_dosi' ? 'selected' : '' }}>Urut berdasarkan Nomor DO/SI</option>
+                  <option value="nomor_kontrak" {{ request('sort') == 'nomor_kontrak' ? 'selected' : '' }}>Urut berdasarkan Nomor Kontrak</option>
+                  <option value="tgl_kontrak" {{ request('sort') == 'tgl_kontrak' ? 'selected' : '' }}>Urut berdasarkan Tanggal Kontrak</option>
+              </select>
+
+              <select name="direction" class="k-select-limit" onchange="document.getElementById('filterForm').submit()">
+                  <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>Ascending</option>
+                  <option value="desc" {{ request('direction') == 'desc' ? 'selected' : '' }}>Descending</option>
+              </select>
 
               <select name="per_page" class="k-select-limit" onchange="document.getElementById('filterForm').submit()">
                   @foreach([10, 50, 100, 250, 500, 1000] as $limit)
@@ -165,12 +194,20 @@
           <button class="k-btn-add" id="btnOpenTambah">
               <span>＋</span> Tambah Data
           </button>
+
+          <form action="{{ route('kontrak.sync') }}" method="POST" id="syncForm" style="margin: 0;">
+              @csrf
+              <button type="button" class="k-btn-sync" onclick="handleSyncClick(this)">
+                  <i class="fas fa-sync"></i> Sync Database
+              </button>
+          </form>
       </div>
 
         <div class="k-table-responsive">
             <table class="k-table">
                 <thead>
                     <tr>
+                        <th>Nomor DO/SI</th>
                         <th>Nomor Kontrak</th>
                         <th>Nama Pembeli</th>
                         <th>Tanggal</th>
@@ -185,21 +222,22 @@
                 <tbody>
                   @forelse($data as $index => $r)
                       <tr>
-                          <td>
-                              <a href="javascript:void(0)" class="k-link" 
-                                data-open="modalDetail" 
-                                data-row="{{ json_encode($r) }}">{{ $r['no_kontrak'] }}</a>
-                              <div style="font-size:11px; color:#94a3b8; margin-top:2px;">{{ $r['unit'] }} / {{ $r['mutu'] }}</div>
-                          </td>
-                          <td style="font-weight:600;">{{ $r['pembeli'] }}</td>
-                          <td style="color:#64748b;">{{ $r['tgl_kontrak'] }}</td>
-                          <td style="font-weight:700;">{{ number_format((float)$r['volume'], 0, ',', '.') }} Kg</td>
+                                                    <td style="font-weight:700;">{{ $r['S'] }}</td>
+                                                    <td>
+                                                            <a href="javascript:void(0)" class="k-link" 
+                                                                data-open="modalDetail" 
+                                                                data-json="{{ json_encode($r) }}">{{ $r['I'] }}</a>
+                                                            <div style="font-size:11px; color:#94a3b8; margin-top:2px;">{{ $r['Y'] ?? '-' }}</div>
+                                                    </td>
+                          <td style="font-weight:600;">{{ $r['J'] }}</td>
+                          <td style="color:#64748b;">{{ $r['K'] }}</td>
+                          <td style="font-weight:700;">{{ number_format($r['L'] ?? 0, 0, ',', '.') }} Kg</td>
                           <td style="white-space: nowrap;">
-                            Rp&nbsp;{{ number_format((float) str_replace('.', '', $r['harga']), 0, ',', '.') }}
+                            Rp&nbsp;{{ number_format($r['M'] ?? 0, 0, ',', '.') }}
                           </td>
-                          <td><span class="k-badge k-badge-green">{{ number_format((float)$r['total_layan'], 0, ',', '.') }} Kg</span></td>
-                          <td><span class="k-badge k-badge-orange">{{ number_format((float)($r['sisa_akhir'] ?? 0), 0, ',', '.') }} Kg</span></td>
-                          <td style="color:#64748b;">{{ $r['jatuh_tempo'] }}</td>
+                          <td><span class="k-badge k-badge-green">{{ number_format($r['AA'] ?? 0, 0, ',', '.') }} Kg</span></td>
+                          <td><span class="k-badge k-badge-orange">{{ number_format($r['AB'] ?? 0, 0, ',', '.') }} Kg</span></td>
+                          <td style="color:#64748b;">-</td>
                           <td style="text-align:center;">
                               <div class="k-actions" style="justify-content:center; display:flex; gap:8px;">
                                   <button class="k-btn-icon" title="Lihat" 
@@ -255,4 +293,12 @@
 @include('dashboard.kontrak.modal-tambah')
 @include('dashboard.kontrak.modal-edit')
 @include('dashboard.kontrak.modal-detail')
+
+<script>
+    function handleSyncClick(button) {
+        button.textContent = 'Sedang Sinkronisasi...';
+        button.disabled = true;
+        document.getElementById('syncForm').submit();
+    }
+</script>
 @endsection

@@ -11,7 +11,7 @@
     <form method="POST" action="{{ route('kontrak.update') }}" class="m-body">
       @csrf
       @method('PUT')
-      <input type="hidden" name="row_index" id="edit_row_index">
+      <input type="hidden" name="id" id="edit_id">
 
       <div class="m-section">
         <div class="m-section-head">Informasi Kontrak</div>
