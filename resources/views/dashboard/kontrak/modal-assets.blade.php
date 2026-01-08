@@ -266,21 +266,22 @@
           form.querySelector('[name="loex"]').value = data.H || '';
           form.querySelector('[name="nomor_kontrak"]').value = data.I || '';
           form.querySelector('[name="nama_pembeli"]').value = data.J || '';
-          form.querySelector('[name="tgl_kontrak"]').value = data.K || '';
+          // Use raw ISO date for date inputs to be compatible with <input type="date">
+          form.querySelector('[name="tgl_kontrak"]').value = data.K_raw || data.K || '';
           form.querySelector('[name="volume"]').value = data.L || '';
           form.querySelector('[name="harga"]').value = data.M || '';
           form.querySelector('[name="nilai"]').value = data.N || '';
           form.querySelector('[name="inc_ppn"]').value = data.O || '';
-          form.querySelector('[name="tgl_bayar"]').value = data.P || '';
+          form.querySelector('[name="tgl_bayar"]').value = data.P_raw || data.P || '';
           form.querySelector('[name="unit"]').value = data.Q || '';
           form.querySelector('[name="mutu"]').value = data.R || '';
           form.querySelector('[name="nomor_dosi"]').value = data.S || '';
-          form.querySelector('[name="tgl_dosi"]').value = data.T || '';
+          form.querySelector('[name="tgl_dosi"]').value = data.T_raw || data.T || '';
           form.querySelector('[name="port"]').value = data.U || '';
           form.querySelector('[name="kontrak_sap"]').value = data.V || '';
           form.querySelector('[name="dp_sap"]').value = data.W || '';
           form.querySelector('[name="so_sap"]').value = data.X || '';
-          form.querySelector('[name="jatuh_tempo"]').value = data.BA || '';
+          form.querySelector('[name="jatuh_tempo"]').value = data.BA_raw || data.BA || '';
       }
 
       // Helper function for number formatting in JS if needed

@@ -105,6 +105,7 @@ class SheetController extends Controller
         );
 
         // Transform data untuk kompatibilitas dengan modal (map Eloquent properties ke struktur lama)
+        // Also include raw ISO date fields (e.g., K_raw) for edit inputs to work with <input type="date">.
         $data->getCollection()->transform(function ($item) {
             // safe date formatting: handle DateTime/Carbon or string values
             $formatDate = function ($val) {
@@ -129,15 +130,18 @@ class SheetController extends Controller
                 'I' => $item->nomor_kontrak,
                 'J' => $item->nama_pembeli,
                 'K' => $formatDate($item->tgl_kontrak),
+                'K_raw' => $item->tgl_kontrak ? (is_string($item->tgl_kontrak) ? Carbon::parse($item->tgl_kontrak)->format('Y-m-d') : $item->tgl_kontrak->format('Y-m-d')) : '',
                 'L' => ($item->volume || $item->volume === 0) ? $formatNumber($item->volume) : '',
                 'M' => ($item->harga || $item->harga === 0) ? $formatNumber($item->harga) : '',
                 'N' => ($item->nilai || $item->nilai === 0) ? $formatNumber($item->nilai) : '',
                 'O' => $item->inc_ppn ?? '',
                 'P' => $formatDate($item->tgl_bayar),
+                'P_raw' => $item->tgl_bayar ? (is_string($item->tgl_bayar) ? Carbon::parse($item->tgl_bayar)->format('Y-m-d') : $item->tgl_bayar->format('Y-m-d')) : '',
                 'Q' => $item->unit ?? '',
                 'R' => $item->mutu ?? '',
                 'S' => $item->nomor_dosi ?? '',
                 'T' => $formatDate($item->tgl_dosi),
+                'T_raw' => $item->tgl_dosi ? (is_string($item->tgl_dosi) ? Carbon::parse($item->tgl_dosi)->format('Y-m-d') : $item->tgl_dosi->format('Y-m-d')) : '',
                 'U' => $item->port ?? '',
                 'V' => $item->kontrak_sap ?? '',
                 'W' => $item->dp_sap ?? '',
@@ -147,6 +151,7 @@ class SheetController extends Controller
                 'AA' => ($item->total_layan || $item->total_layan === 0) ? $formatNumber($item->total_layan) : '',
                 'AB' => ($item->sisa_akhir || $item->sisa_akhir === 0) ? $formatNumber($item->sisa_akhir) : '',
                 'BA' => $formatDate($item->jatuh_tempo),
+                'BA_raw' => $item->jatuh_tempo ? (is_string($item->jatuh_tempo) ? Carbon::parse($item->jatuh_tempo)->format('Y-m-d') : $item->jatuh_tempo->format('Y-m-d')) : '',
                 'row' => $item->id,
             ];
         });
@@ -490,8 +495,19 @@ class SheetController extends Controller
     public function syncManual(Request $request)
     {
         try {
-            \Log::info('Starting manual sync from Google Sheets');
-            return back()->with('success', 'Sinkronisasi berhasil dilakukan');
+            \Log::info('Starting manual sync from Google Sheets (triggered by user)');
+
+            // Call existing console command that already contains robust sync logic
+            $exitCode = Artisan::call('sync:drive-folder');
+            $output = trim(Artisan::output());
+
+            if ($exitCode === 0) {
+                \Log::info('Manual sync completed: ' . $output);
+                return back()->with('success', 'Sinkronisasi berhasil dilakukan');
+            }
+
+            \Log::warning('Manual sync finished with non-zero exit code: ' . $exitCode . ' output:' . $output);
+            return back()->with('error', 'Sinkronisasi selesai dengan peringatan. Periksa log.');
         } catch (\Exception $e) {
             \Log::error('Sync failed: ' . $e->getMessage());
             return back()->with('error', 'Sinkronisasi gagal: ' . $e->getMessage());
