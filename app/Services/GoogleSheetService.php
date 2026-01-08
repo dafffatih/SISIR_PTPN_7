@@ -15,14 +15,40 @@ class GoogleSheetService
 
     public function __construct()
     {
-        $client = new Google_Client();
-        $client->setAuthConfig(storage_path('app/google/service-account.json'));
-        $client->addScope(Google_Service_Sheets::SPREADSHEETS);
-        $client->addScope(Google_Service_Drive::DRIVE_READONLY);
+        try {
+            // Load credentials path
+            $credentialsPath = storage_path('app/google/service-account.json');
+            
+            // Validate credentials file exists
+            if (!file_exists($credentialsPath)) {
+                throw new \Exception("Service account credentials file not found at: {$credentialsPath}");
+            }
+            
+            $client = new Google_Client();
+            $client->setAuthConfig($credentialsPath);
+            $client->addScope(Google_Service_Sheets::SPREADSHEETS);
+            $client->addScope(Google_Service_Drive::DRIVE_READONLY);
 
-        $this->sheetsService = new Google_Service_Sheets($client);
-        $this->driveService = new Google_Service_Drive($client);
-        $this->spreadsheetId = env('GOOGLE_SHEET_ID');
+            $this->sheetsService = new Google_Service_Sheets($client);
+            $this->driveService = new Google_Service_Drive($client);
+            
+            // Load spreadsheet ID - try multiple methods
+            $this->spreadsheetId = config('services.google.sheet_id') 
+                                  ?? env('GOOGLE_SHEET_ID')
+                                  ?? $_ENV['GOOGLE_SHEET_ID']
+                                  ?? null;
+            
+            // Debug log
+            \Log::info('GoogleSheetService initialized - Sheet ID: ' . ($this->spreadsheetId ? 'SET' : 'NOT SET'));
+            
+            // Throw error jika spreadsheetId tidak ditemukan
+            if (!$this->spreadsheetId) {
+                throw new \Exception('GOOGLE_SHEET_ID is not configured. Please add it to .env file with key: GOOGLE_SHEET_ID');
+            }
+        } catch (\Exception $e) {
+            \Log::error('GoogleSheetService initialization error: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
     // Mengambil data dari sheet tertentu dengan error handling yang lebih baik
@@ -30,6 +56,14 @@ class GoogleSheetService
     {
         try {
             $id = $spreadsheetId ?? $this->spreadsheetId;
+            
+            // Validate spreadsheetId
+            if (empty($id)) {
+                throw new \Exception('Spreadsheet ID is empty. Please check GOOGLE_SHEET_ID in .env');
+            }
+            
+            \Log::info('Fetching data from Google Sheets - ID: ' . $id . ' - Range: ' . $range);
+            
             $response = $this->sheetsService->spreadsheets_values->get($id, $range);
             $values = $response->getValues() ?? [];
             

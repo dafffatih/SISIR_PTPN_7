@@ -19,8 +19,13 @@ class SheetController extends Controller
         $this->googleSheetService = $googleSheetService;
     }
 
-    public function index(Request $request)
+    /**
+     * Halaman Manajemen Kontrak - Data REALTIME dari Google Sheets
+     */
+    public function index(Request $request, GoogleSheetService $sheetService)
     {
+        // Ambil SEMUA data langsung dari Google Sheets (real-time)
+        $allData = $sheetService->getData();
         $search = $request->input('search');
         $perPage = (int) $request->input('per_page', 10);
         $sort = $request->input('sort', 'nomor_dosi');
@@ -28,41 +33,99 @@ class SheetController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
-        // Build query from Kontrak model
-        $query = Kontrak::query();
+        $filteredData = [];
 
-        // Apply search filter across multiple fields
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('nomor_kontrak', 'like', "%{$search}%")
-                  ->orWhere('nama_pembeli', 'like', "%{$search}%")
-                  ->orWhere('nomor_dosi', 'like', "%{$search}%")
-                  ->orWhere('kontrak_sap', 'like', "%{$search}%")
-                  ->orWhere('so_sap', 'like', "%{$search}%");
-            });
+        // Process data dari Google Sheets dengan filtering
+        foreach ($allData as $index => $row) {
+            // Row number di Google Sheets dimulai dari A4 (index 0 = baris 4)
+            $realRowIndex = $index + 4;
+
+            // Kolom I = Nomor Kontrak (index 8)
+            $I = $row[8] ?? '';
+            if (empty($I)) continue; // Skip baris kosong
+
+            // Format date helper
+            $formatDate = function ($val) {
+                if (!$val) return '';
+                try {
+                    return Carbon::parse($val)->format('d-M-Y');
+                } catch (\Exception $e) {
+                    return $val;
+                }
+            };
+
+            // Format number helper
+            $formatNumber = function ($val) {
+                if (!$val && $val !== 0 && $val !== '0') return '';
+                $cleaned = str_replace(['.', ','], ['', '.'], $val);
+                return number_format((float)$cleaned, 0, ',', '.');
+            };
+
+            // Map data dari row Google Sheets
+            $rowDataMapped = [
+                'row' => $realRowIndex, // Row number untuk update/delete
+                'id' => $realRowIndex, // Gunakan row number sebagai ID
+                'H' => $row[7] ?? '',  // LO/EX
+                'I' => $I,             // Nomor Kontrak
+                'J' => $row[9] ?? '',  // Nama Pembeli
+                'K' => $formatDate($row[10] ?? ''),  // Tgl Kontrak
+                'K_raw' => $row[10] ?? '',           // Raw date for input
+                'L' => $formatNumber($row[11] ?? '0'),  // Volume
+                'M' => $formatNumber($row[12] ?? '0'),  // Harga
+                'N' => $formatNumber($row[13] ?? '0'),  // Nilai
+                'O' => $row[14] ?? '',  // Inc PPN
+                'P' => $formatDate($row[15] ?? ''),  // Tgl Bayar
+                'P_raw' => $row[15] ?? '',           // Raw date for input
+                'Q' => $row[16] ?? '',  // Unit
+                'R' => $row[17] ?? '',  // Mutu
+                'S' => $row[18] ?? '',  // Nomor DO/SI
+                'T' => $formatDate($row[19] ?? ''),  // Tgl DO/SI
+                'T_raw' => $row[19] ?? '',           // Raw date for input
+                'U' => $row[20] ?? '',  // PORT
+                'V' => $row[21] ?? '',  // Kontrak SAP
+                'W' => $row[22] ?? '',  // DP SAP
+                'X' => $row[23] ?? '',  // SO SAP
+                'Y' => $row[24] ?? '',  // Kode DO
+                'Z' => $formatNumber($row[25] ?? '0'),  // Sisa Awal
+                'AA' => $formatNumber($row[26] ?? '0'), // Total Layan
+                'AB' => $formatNumber($row[27] ?? '0'), // Sisa Akhir
+                'BA' => $formatDate($row[52] ?? ''),    // Jatuh Tempo
+                'BA_raw' => $row[52] ?? '',             // Raw date for input
+            ];
+
+            // Filter berdasarkan search
+            if ($search) {
+                $searchLower = strtolower($search);
+                if (!str_contains(strtolower($I), $searchLower) && 
+                    !str_contains(strtolower($rowDataMapped['J']), $searchLower) &&
+                    !str_contains(strtolower($rowDataMapped['S']), $searchLower) &&
+                    !str_contains(strtolower($rowDataMapped['V']), $searchLower) &&
+                    !str_contains(strtolower($rowDataMapped['X']), $searchLower)) {
+                    continue;
+                }
+            }
+
+            // Filter berdasarkan date range
+            if ($startDate || $endDate) {
+                try {
+                    $tglKontrak = !empty($row[10]) ? Carbon::parse($row[10]) : null;
+                    if ($startDate && $tglKontrak) {
+                        $start = Carbon::createFromFormat('Y-m-d', $startDate);
+                        if ($tglKontrak->lt($start)) continue;
+                    }
+                    if ($endDate && $tglKontrak) {
+                        $end = Carbon::createFromFormat('Y-m-d', $endDate);
+                        if ($tglKontrak->gt($end)) continue;
+                    }
+                } catch (\Exception $e) {}
+            }
+
+            $filteredData[] = $rowDataMapped;
         }
 
-        // Apply date range filter
-        if ($startDate) {
-            try {
-                $start = Carbon::createFromFormat('Y-m-d', $startDate)->toDateString();
-                $query->whereDate('tgl_kontrak', '>=', $start);
-            } catch (\Exception $e) { }
-        }
-        if ($endDate) {
-            try {
-                $end = Carbon::createFromFormat('Y-m-d', $endDate)->toDateString();
-                $query->whereDate('tgl_kontrak', '<=', $end);
-            } catch (\Exception $e) { }
-        }
-
-        // Get all matching records (will sort in PHP for DO/SI if needed)
-        $allRecords = $query->get();
-
-        // Smart sorting for nomor_dosi - parse DO number and year in PHP
+        // Sorting
         if ($sort === 'nomor_dosi') {
-            $allRecords = $allRecords->sort(function ($a, $b) use ($direction) {
-                // Parse DO format: "807/KARET SC/2024" -> extract 807 and 2024
+            usort($filteredData, function ($a, $b) use ($direction) {
                 $parseDoSi = function ($doSi) {
                     if (!$doSi) return [0, 0];
                     $parts = explode('/', $doSi);
@@ -71,90 +134,38 @@ class SheetController extends Controller
                     return [$year, $number];
                 };
 
-                [$yearA, $numA] = $parseDoSi($a->nomor_dosi);
-                [$yearB, $numB] = $parseDoSi($b->nomor_dosi);
+                [$yearA, $numA] = $parseDoSi($a['S']);
+                [$yearB, $numB] = $parseDoSi($b['S']);
 
-                // Sort by year first, then by number
                 if ($yearA !== $yearB) {
                     return $direction === 'asc' ? $yearA <=> $yearB : $yearB <=> $yearA;
                 }
                 return $direction === 'asc' ? $numA <=> $numB : $numB <=> $numA;
             });
         } else {
-            // Standard column sorting
             $sortMap = [
-                'nomor_kontrak' => 'nomor_kontrak',
-                'tgl_kontrak' => 'tgl_kontrak',
-                'created_at' => 'created_at',
+                'nomor_kontrak' => 'I',
+                'tgl_kontrak' => 'K',
+                'created_at' => 'K',
             ];
-            $sortField = $sortMap[$sort] ?? 'nomor_dosi';
-            $allRecords = $allRecords->sortBy($sortField, options: 0, descending: $direction === 'desc');
+            $sortField = $sortMap[$sort] ?? 'S';
+            usort($filteredData, function ($a, $b) use ($sortField, $direction) {
+                $valA = $a[$sortField] ?? '';
+                $valB = $b[$sortField] ?? '';
+                $cmp = strcmp($valA, $valB);
+                return $direction === 'asc' ? $cmp : -$cmp;
+            });
         }
 
-        // Paginate the sorted collection
-        $page = request()->get('page', 1);
-        $data = new LengthAwarePaginator(
-            $allRecords->forPage($page, $perPage),
-            count($allRecords),
-            $perPage,
-            $page,
-            [
-                'path' => route('kontrak'),
-                'query' => $request->except('page'),
-            ]
-        );
+        // Pagination
+        $currentPage = (int) $request->get('page', 1);
+        $itemCollection = collect($filteredData);
+        $currentPageItems = $itemCollection->slice(($currentPage - 1) * $perPage, $perPage)->all();
 
-        // Transform data untuk kompatibilitas dengan modal (map Eloquent properties ke struktur lama)
-        // Also include raw ISO date fields (e.g., K_raw) for edit inputs to work with <input type="date">.
-        $data->getCollection()->transform(function ($item) {
-            // safe date formatting: handle DateTime/Carbon or string values
-            $formatDate = function ($val) {
-                if (!$val) return '';
-                if ($val instanceof \DateTime) return $val->format('d-M-Y');
-                try {
-                    return Carbon::parse($val)->format('d-M-Y');
-                } catch (\Exception $e) {
-                    return (string) $val;
-                }
-            };
-
-            // Format numbers with Indonesian thousand separator (dot)
-            $formatNumber = function ($val) {
-                if (!$val && $val !== 0 && $val !== '0') return '';
-                return number_format((float)$val, 0, ',', '.');
-            };
-
-            return [
-                'id' => $item->id,
-                'H' => $item->loex,
-                'I' => $item->nomor_kontrak,
-                'J' => $item->nama_pembeli,
-                'K' => $formatDate($item->tgl_kontrak),
-                'K_raw' => $item->tgl_kontrak ? (is_string($item->tgl_kontrak) ? Carbon::parse($item->tgl_kontrak)->format('Y-m-d') : $item->tgl_kontrak->format('Y-m-d')) : '',
-                'L' => ($item->volume || $item->volume === 0) ? $formatNumber($item->volume) : '',
-                'M' => ($item->harga || $item->harga === 0) ? $formatNumber($item->harga) : '',
-                'N' => ($item->nilai || $item->nilai === 0) ? $formatNumber($item->nilai) : '',
-                'O' => $item->inc_ppn ?? '',
-                'P' => $formatDate($item->tgl_bayar),
-                'P_raw' => $item->tgl_bayar ? (is_string($item->tgl_bayar) ? Carbon::parse($item->tgl_bayar)->format('Y-m-d') : $item->tgl_bayar->format('Y-m-d')) : '',
-                'Q' => $item->unit ?? '',
-                'R' => $item->mutu ?? '',
-                'S' => $item->nomor_dosi ?? '',
-                'T' => $formatDate($item->tgl_dosi),
-                'T_raw' => $item->tgl_dosi ? (is_string($item->tgl_dosi) ? Carbon::parse($item->tgl_dosi)->format('Y-m-d') : $item->tgl_dosi->format('Y-m-d')) : '',
-                'U' => $item->port ?? '',
-                'V' => $item->kontrak_sap ?? '',
-                'W' => $item->dp_sap ?? '',
-                'X' => $item->so_sap ?? '',
-                'Y' => $item->kode_do ?? '',
-                'Z' => ($item->sisa_awal || $item->sisa_awal === 0) ? $formatNumber($item->sisa_awal) : '',
-                'AA' => ($item->total_layan || $item->total_layan === 0) ? $formatNumber($item->total_layan) : '',
-                'AB' => ($item->sisa_akhir || $item->sisa_akhir === 0) ? $formatNumber($item->sisa_akhir) : '',
-                'BA' => $formatDate($item->jatuh_tempo),
-                'BA_raw' => $item->jatuh_tempo ? (is_string($item->jatuh_tempo) ? Carbon::parse($item->jatuh_tempo)->format('Y-m-d') : $item->jatuh_tempo->format('Y-m-d')) : '',
-                'row' => $item->id,
-            ];
-        });
+        $data = new LengthAwarePaginator($currentPageItems, $itemCollection->count(), $perPage, $currentPage, [
+            'path' => $request->url(),
+            'query' => $request->query(),
+        ]);
 
         return view('dashboard.kontrak.index', compact('data'));
     }
@@ -232,57 +243,101 @@ class SheetController extends Controller
     }
 
     /**
-     * Memperbarui Data Kontrak dari Database
+     * Fitur CRUD: Update Data - REALTIME ke Google Sheets
      */
-    public function update(Request $request)
+    public function update(Request $request, GoogleSheetService $sheetService)
     {
         try {
-            $id = $request->input('id');
-            
-            // Clean number format (remove dots dari thousands separator)
-            $volume = $request->input('volume') ? (float) str_replace(['.', ','], ['', '.'], $request->input('volume')) : null;
-            $harga = $request->input('harga') ? (float) str_replace(['.', ','], ['', '.'], $request->input('harga')) : null;
-            $nilai = $request->input('nilai') ? (float) str_replace(['.', ','], ['', '.'], $request->input('nilai')) : null;
-            
-            // Parse date jika ada
-            $tglKontrak = null;
-            if ($request->input('tgl_kontrak')) {
-                try {
-                    $tglKontrak = Carbon::createFromFormat('Y-m-d', $request->input('tgl_kontrak'))->format('Y-m-d');
-                } catch (\Exception $e) {
-                    $tglKontrak = null;
-                }
+            // Row index adalah nomor baris di Google Sheets (dari row di form)
+            $row = $request->input('row_index');
+            if (!$row) {
+                return back()->with('error', 'Row index tidak ditemukan');
             }
-            
-            // Update kontrak
-            $kontrak = Kontrak::findOrFail($id);
-            $kontrak->update([
-                'loex' => $request->input('loex'),
-                'nomor_kontrak' => $request->input('nomor_kontrak'),
-                'nama_pembeli' => $request->input('nama_pembeli'),
-                'tgl_kontrak' => $tglKontrak,
-                'volume' => $volume,
-                'harga' => $harga,
-                'nilai' => $nilai,
-                'total_layan' => $request->input('total_layan'),
-                'sisa_akhir' => $request->input('sisa_akhir'),
+
+            $manualInputs = $request->only([
+                'loex', 'nomor_kontrak', 'nama_pembeli', 'tgl_kontrak',
+                'volume', 'harga', 'nilai', 'inc_ppn', 'tgl_bayar',
+                'unit', 'mutu', 'nomor_dosi', 'tgl_dosi', 'port',
+                'kontrak_sap', 'dp_sap', 'so_sap', 'jatuh_tempo'
             ]);
-            
+
+            if (empty(array_filter($manualInputs))) {
+                return back()->with('error', 'Minimal harus mengisi satu data.');
+            }
+
+            // Susun array 53 kolom untuk update ke Google Sheets (sama seperti store)
+            $data = [
+                "=CONCATENATE(I{$row};Q{$row};R{$row})",
+                "=CONCATENATE(I{$row};Q{$row})",
+                "=CONCATENATE(D{$row};F{$row};H{$row})",
+                "=IFERROR(E{$row}*1;0)",
+                "=IF(LEN(S{$row})=17;LEFT(S{$row};3);LEFT(S{$row};4))",
+                "=RIGHT(S{$row};4)",
+                "=G".($row-1)."+1",
+                $request->loex ?? "",
+                $request->nomor_kontrak ?? "",
+                $request->nama_pembeli ?? "",
+                $request->tgl_kontrak ?? "",
+                $request->volume ?? "",
+                $request->harga ?? "",
+                $request->nilai ?? "",
+                $request->inc_ppn ?? "",
+                $request->tgl_bayar ?? "",
+                $request->unit ?? "",
+                $request->mutu ?? "",
+                $request->nomor_dosi ?? "",
+                $request->tgl_dosi ?? "",
+                $request->port ?? "",
+                $request->kontrak_sap ?? "",
+                $request->dp_sap ?? "",
+                $request->so_sap ?? "",
+                "=C{$row}",
+                "=L{$row}",
+                "=(SUMPRODUCT((Panjang!\$P\$2:\$P\$5011='SC Sudah Bayar'!Y{$row})*Panjang!\$Q\$2:\$Q\$5011))+(SUMPRODUCT((Palembang!\$P\$2:\$P\$5003='SC Sudah Bayar'!Y{$row})*Palembang!\$Q\$2:\$Q\$5003))+(SUMPRODUCT((Bengkulu!\$P\$2:\$P\$5000='SC Sudah Bayar'!Y{$row})*Bengkulu!\$Q\$2:\$Q\$5000))",
+                "=Z{$row}-AA{$row}",
+                "=M{$row}*1000",
+                "=VLOOKUP(J{$row};Katalog!\$D$4:\$E$101;2;FALSE)",
+                "=IF(H{$row}=\"LO\";\"LOKAL\";\"EKSPOR\")",
+                "=CONCATENATE(AE{$row};Q{$row})",
+                "", "", "", "", "", "", "",
+                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Bengkulu!\$AB$2:\$AB$7775))",
+                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Bengkulu!\$AC$2:\$AB$7775))",
+                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Bengkulu!\$AB$2:\$AB$7775))",
+                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Bengkulu!\$AC$2:\$AC$7775))",
+                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Bengkulu!\$AB$2:\$AB$7775))",
+                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Bengkulu!\$AC$2:\$AC$7775))",
+                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Bengkulu!\$AB$2:\$AB$7775))",
+                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Bengkulu!\$AC$2:\$AC$7775))",
+                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Bengkulu!\$AB$2:\$AB$7775))",
+                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Bengkulu!\$AC$2:\$AC$7775))",
+                "=AV{$row}+AT{$row}+AR{$row}+AP{$row}+AN{$row}",
+                "=IF(Z{$row}>1;L{$row};0)",
+                "=IF(AX{$row}>1;AX{$row}-AW{$row};0)",
+                "=AW{$row}-AA{$row}",
+                $request->jatuh_tempo ?? "",
+            ];
+
+            // Update langsung ke Google Sheets (bukan database)
+            $sheetService->updateData($row, $data);
+
             return back()->with('success', 'Data Berhasil Diperbarui');
         } catch (\Exception $e) {
+            \Log::error('Update gagal: ' . $e->getMessage());
             return back()->with('error', 'Update gagal: ' . $e->getMessage());
         }
     }
 
     /**
-     * Hapus Data Kontrak
+     * Hapus Data Kontrak dari Google Sheets
      */
-    public function destroy($row)
+    public function destroy($row, GoogleSheetService $sheetService)
     {
         try {
-            Kontrak::findOrFail($row)->delete();
+            // Parameter row adalah nomor baris di Google Sheets
+            $sheetService->deleteData($row);
             return back()->with('success', 'Data Berhasil Dihapus');
         } catch (\Exception $e) {
+            \Log::error('Delete gagal: ' . $e->getMessage());
             return back()->with('error', 'Hapus gagal: ' . $e->getMessage());
         }
     }

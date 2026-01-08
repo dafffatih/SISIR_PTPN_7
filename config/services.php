@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'google' => [
+        'sheet_id' => env('GOOGLE_SHEET_ID'),
+        'drive_folder_id' => env('GOOGLE_DRIVE_FOLDER_ID'),
+        'credentials' => env('GOOGLE_APPLICATION_CREDENTIALS', 'storage/app/google/service-account.json'),
+    ],
+
 ];

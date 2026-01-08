@@ -259,8 +259,8 @@
       if (modalId === 'modalEdit') {
           const form = document.getElementById('modalEdit').querySelector('form');
 
-          // Set id
-          form.querySelector('[name="id"]').value = data.id || data.row;
+          // Set row_index (nomor baris di Google Sheets) bukan ID database
+          form.querySelector('[name="row_index"]').value = data.row || data.id;
 
           // Fill Manual Fields (raw strings)
           form.querySelector('[name="loex"]').value = data.H || '';

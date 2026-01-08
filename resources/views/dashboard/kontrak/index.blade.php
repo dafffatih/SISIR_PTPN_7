@@ -107,6 +107,7 @@
         color: #64748b;
     }
     .k-btn-icon:hover { background: #f8fafc; color: #7c3aed; border-color: #7c3aed; }
+    .k-btn-delete:hover { color: #ef4444; border-color: #fca5a5; background: #fee2e2; }
 
     /* Footer & Pagination */
     .k-footer { padding: 16px; display: flex; justify-content: space-between; align-items: center; background: white; color: #64748b; font-size: 13px; }
@@ -218,13 +219,6 @@
           <button class="k-btn-add" id="btnOpenTambah">
               <span>＋</span> Tambah Data
           </button>
-
-          <form action="{{ route('kontrak.sync') }}" method="POST" id="syncForm" style="margin: 0;">
-              @csrf
-              <button type="button" class="k-btn-sync" onclick="handleSyncClick(this)">
-                  <i class="fas fa-sync"></i> Sync Database
-              </button>
-          </form>
       </div>
 
         <div class="k-table-responsive">
@@ -274,6 +268,10 @@
                                           data-json="{{ json_encode($r) }}">
                                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                   </button>
+                                  <button class="k-btn-icon k-btn-delete" title="Hapus" 
+                                          onclick="handleDeleteClick({{ $r['id'] }}, '{{ $r['I'] }}')">
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h16zM10 11v6M14 11v6"></path></svg>
+                                  </button>
                               </div>
                           </td>
                       </tr>
@@ -319,10 +317,29 @@
 @include('dashboard.kontrak.modal-detail')
 
 <script>
-    function handleSyncClick(button) {
-        button.textContent = 'Sedang Sinkronisasi...';
-        button.disabled = true;
-        document.getElementById('syncForm').submit();
+    function handleDeleteClick(rowId, nomorKontrak) {
+        const confirmDelete = confirm(`Apakah Anda yakin ingin menghapus kontrak nomor ${nomorKontrak}?\n\nTindakan ini tidak dapat dibatalkan.`);
+        
+        if (confirmDelete) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("kontrak.destroy", ":id") }}'.replace(':id', rowId);
+            
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            
+            const methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            methodInput.value = 'DELETE';
+            
+            form.appendChild(csrfToken);
+            form.appendChild(methodInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
     }
 </script>
 @endsection
