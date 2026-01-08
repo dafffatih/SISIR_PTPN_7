@@ -244,15 +244,18 @@ class SheetController extends Controller
 
     /**
      * Fitur CRUD: Update Data - REALTIME ke Google Sheets
+     * Update hanya kolom-kolom yang dapat diedit (H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, BA)
      */
     public function update(Request $request, GoogleSheetService $sheetService)
     {
         try {
-            // Row index adalah nomor baris di Google Sheets (dari row di form)
+            // Row index adalah nomor baris di Google Sheets
             $row = $request->input('row_index');
             if (!$row) {
                 return back()->with('error', 'Row index tidak ditemukan');
             }
+
+            \Log::info("Update request for row: {$row}");
 
             $manualInputs = $request->only([
                 'loex', 'nomor_kontrak', 'nama_pembeli', 'tgl_kontrak',
@@ -265,61 +268,110 @@ class SheetController extends Controller
                 return back()->with('error', 'Minimal harus mengisi satu data.');
             }
 
-            // Susun array 53 kolom untuk update ke Google Sheets (sama seperti store)
-            $data = [
-                "=CONCATENATE(I{$row};Q{$row};R{$row})",
-                "=CONCATENATE(I{$row};Q{$row})",
-                "=CONCATENATE(D{$row};F{$row};H{$row})",
-                "=IFERROR(E{$row}*1;0)",
-                "=IF(LEN(S{$row})=17;LEFT(S{$row};3);LEFT(S{$row};4))",
-                "=RIGHT(S{$row};4)",
-                "=G".($row-1)."+1",
-                $request->loex ?? "",
-                $request->nomor_kontrak ?? "",
-                $request->nama_pembeli ?? "",
-                $request->tgl_kontrak ?? "",
-                $request->volume ?? "",
-                $request->harga ?? "",
-                $request->nilai ?? "",
-                $request->inc_ppn ?? "",
-                $request->tgl_bayar ?? "",
-                $request->unit ?? "",
-                $request->mutu ?? "",
-                $request->nomor_dosi ?? "",
-                $request->tgl_dosi ?? "",
-                $request->port ?? "",
-                $request->kontrak_sap ?? "",
-                $request->dp_sap ?? "",
-                $request->so_sap ?? "",
-                "=C{$row}",
-                "=L{$row}",
-                "=(SUMPRODUCT((Panjang!\$P\$2:\$P\$5011='SC Sudah Bayar'!Y{$row})*Panjang!\$Q\$2:\$Q\$5011))+(SUMPRODUCT((Palembang!\$P\$2:\$P\$5003='SC Sudah Bayar'!Y{$row})*Palembang!\$Q\$2:\$Q\$5003))+(SUMPRODUCT((Bengkulu!\$P\$2:\$P\$5000='SC Sudah Bayar'!Y{$row})*Bengkulu!\$Q\$2:\$Q\$5000))",
-                "=Z{$row}-AA{$row}",
-                "=M{$row}*1000",
-                "=VLOOKUP(J{$row};Katalog!\$D$4:\$E$101;2;FALSE)",
-                "=IF(H{$row}=\"LO\";\"LOKAL\";\"EKSPOR\")",
-                "=CONCATENATE(AE{$row};Q{$row})",
-                "", "", "", "", "", "", "",
-                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Bengkulu!\$AB$2:\$AB$7775))",
-                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AN\$2))*Bengkulu!\$AC$2:\$AB$7775))",
-                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Bengkulu!\$AB$2:\$AB$7775))",
-                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AP\$2))*Bengkulu!\$AC$2:\$AC$7775))",
-                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Bengkulu!\$AB$2:\$AB$7775))",
-                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AR\$2))*Bengkulu!\$AC$2:\$AC$7775))",
-                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Bengkulu!\$AB$2:\$AB$7775))",
-                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AT\$2))*Bengkulu!\$AC$2:\$AC$7775))",
-                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Panjang!\$AB$2:\$AB$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Palembang!\$AB$2:\$AB$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Bengkulu!\$AB$2:\$AB$7775))",
-                "=(SUMPRODUCT((Panjang!\$R$2:\$R$6779=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Panjang!\$AC$2:\$AC$6779))+(SUMPRODUCT((Palembang!\$R$2:\$R$7774=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Palembang!\$AC$2:\$AC$7774))+(SUMPRODUCT((Bengkulu!\$R$2:\$R$7775=CONCATENATE(\$I{$row};\$S{$row};AV\$2))*Bengkulu!\$AC$2:\$AC$7775))",
-                "=AV{$row}+AT{$row}+AR{$row}+AP{$row}+AN{$row}",
-                "=IF(Z{$row}>1;L{$row};0)",
-                "=IF(AX{$row}>1;AX{$row}-AW{$row};0)",
-                "=AW{$row}-AA{$row}",
-                $request->jatuh_tempo ?? "",
-            ];
+            // Update individual cells/columns yang dapat diedit
+            // Format: update single cell untuk setiap kolom yang berubah
+            
+            $updates = [];
+            
+            // H = LO/EX
+            if ($request->has('loex')) {
+                $updates["'{sheet}'!H{$row}"] = $request->input('loex', '');
+            }
+            
+            // I = Nomor Kontrak
+            if ($request->has('nomor_kontrak')) {
+                $updates["'{sheet}'!I{$row}"] = $request->input('nomor_kontrak', '');
+            }
+            
+            // J = Nama Pembeli
+            if ($request->has('nama_pembeli')) {
+                $updates["'{sheet}'!J{$row}"] = $request->input('nama_pembeli', '');
+            }
+            
+            // K = Tgl Kontrak
+            if ($request->has('tgl_kontrak')) {
+                $updates["'{sheet}'!K{$row}"] = $request->input('tgl_kontrak', '');
+            }
+            
+            // L = Volume
+            if ($request->has('volume')) {
+                $updates["'{sheet}'!L{$row}"] = $request->input('volume', '');
+            }
+            
+            // M = Harga
+            if ($request->has('harga')) {
+                $updates["'{sheet}'!M{$row}"] = $request->input('harga', '');
+            }
+            
+            // N = Nilai
+            if ($request->has('nilai')) {
+                $updates["'{sheet}'!N{$row}"] = $request->input('nilai', '');
+            }
+            
+            // O = Inc PPN
+            if ($request->has('inc_ppn')) {
+                $updates["'{sheet}'!O{$row}"] = $request->input('inc_ppn', '');
+            }
+            
+            // P = Tgl Bayar
+            if ($request->has('tgl_bayar')) {
+                $updates["'{sheet}'!P{$row}"] = $request->input('tgl_bayar', '');
+            }
+            
+            // Q = Unit
+            if ($request->has('unit')) {
+                $updates["'{sheet}'!Q{$row}"] = $request->input('unit', '');
+            }
+            
+            // R = Mutu
+            if ($request->has('mutu')) {
+                $updates["'{sheet}'!R{$row}"] = $request->input('mutu', '');
+            }
+            
+            // S = Nomor DO/SI
+            if ($request->has('nomor_dosi')) {
+                $updates["'{sheet}'!S{$row}"] = $request->input('nomor_dosi', '');
+            }
+            
+            // T = Tgl DO/SI
+            if ($request->has('tgl_dosi')) {
+                $updates["'{sheet}'!T{$row}"] = $request->input('tgl_dosi', '');
+            }
+            
+            // U = PORT
+            if ($request->has('port')) {
+                $updates["'{sheet}'!U{$row}"] = $request->input('port', '');
+            }
+            
+            // V = Kontrak SAP
+            if ($request->has('kontrak_sap')) {
+                $updates["'{sheet}'!V{$row}"] = $request->input('kontrak_sap', '');
+            }
+            
+            // W = DP SAP
+            if ($request->has('dp_sap')) {
+                $updates["'{sheet}'!W{$row}"] = $request->input('dp_sap', '');
+            }
+            
+            // X = SO SAP
+            if ($request->has('so_sap')) {
+                $updates["'{sheet}'!X{$row}"] = $request->input('so_sap', '');
+            }
+            
+            // BA = Jatuh Tempo
+            if ($request->has('jatuh_tempo')) {
+                $updates["'{sheet}'!BA{$row}"] = $request->input('jatuh_tempo', '');
+            }
 
-            // Update langsung ke Google Sheets (bukan database)
-            $sheetService->updateData($row, $data);
+            // Jika tidak ada yang diupdate, return error
+            if (empty($updates)) {
+                return back()->with('error', 'Tidak ada perubahan data');
+            }
 
+            // Update multiple ranges sekaligus
+            $sheetService->batchUpdate($updates);
+
+            \Log::info("Update successful for row: {$row}");
             return back()->with('success', 'Data Berhasil Diperbarui');
         } catch (\Exception $e) {
             \Log::error('Update gagal: ' . $e->getMessage());

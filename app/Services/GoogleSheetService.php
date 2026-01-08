@@ -193,6 +193,53 @@ class GoogleSheetService
 
         $this->sheetsService->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
     }
+
+    /**
+     * Batch update multiple cells - update hanya kolom yang berubah
+     * Format: ['range' => value, 'range2' => value2]
+     * Range contoh: "'{sheet}'!H4" atau "'{sheet}'!I5:J5"
+     */
+    public function batchUpdate($updates, $sheetName = 'SC Sudah Bayar')
+    {
+        try {
+            $body = new \Google_Service_Sheets_ValueRange();
+            $data = [];
+
+            // Build requests untuk setiap range
+            foreach ($updates as $range => $value) {
+                // Replace '{sheet}' dengan actual sheet name
+                $actualRange = str_replace('{sheet}', $sheetName, $range);
+                
+                $valueRange = new \Google_Service_Sheets_ValueRange([
+                    'range' => $actualRange,
+                    'values' => [[$value]]  // Wrap dalam array untuk single cell
+                ]);
+                $data[] = $valueRange;
+            }
+
+            if (empty($data)) {
+                throw new \Exception('No data to update');
+            }
+
+            // Use batchUpdate untuk update multiple ranges
+            $batchBody = new \Google_Service_Sheets_BatchUpdateValuesRequest([
+                'data' => $data,
+                'valueInputOption' => 'USER_ENTERED'
+            ]);
+
+            $response = $this->sheetsService->spreadsheets_values->batchUpdate(
+                $this->spreadsheetId,
+                $batchBody
+            );
+
+            \Log::info('Batch update successful - Response: ' . json_encode($response));
+            return $response;
+        } catch (\Exception $e) {
+            \Log::error('Batch update failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
     public function batchGet($ranges)
     {
         $params = ['ranges' => $ranges];
