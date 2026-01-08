@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SheetController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DashboardController;
 
 // Halaman awal
 Route::get('/', function () {
@@ -20,7 +21,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth', 'active'])->group(function () {
 
     // Dashboard (semua role)
-    Route::get('/dashboard', [SheetController::class, 'dashboard'])
+    Route::get('/dashboard', [DashboardController::class, 'dashboard'])
         ->name('dashboard')
         ->middleware('role:admin,staff,viewer');
 
