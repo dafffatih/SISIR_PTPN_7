@@ -15,6 +15,9 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: #f1f5f9;
       color: #1e293b;
+
+      /* ✅ WAJIB: cegah halaman ikut geser */
+      overflow-x: hidden;
     }
 
     :root{
@@ -26,9 +29,12 @@
     .app-container {
       display: flex;
       min-height: 100vh;
+      overflow-x: hidden; /* ✅ */
     }
 
-    /* ====== MAIN AREA ====== */
+    /* ======================
+       MAIN AREA
+    ====================== */
     .main-area{
       flex: 1;
       margin-left: var(--sidebar-w);
@@ -37,14 +43,18 @@
       display: flex;
       flex-direction: column;
       position: relative;
+
+      overflow-x: hidden; /* ✅ */
     }
 
-    /* ketika sidebar collapsed (desktop/tablet) */
+    /* sidebar collapsed (desktop) */
     .main-area.expanded{
       margin-left: 0;
     }
 
-    /* topbar hanya untuk area konten (bukan menutupi sidebar) */
+    /* ======================
+       TOPBAR
+    ====================== */
     .topbar{
       height: var(--topbar-h);
       background: #ffffff;
@@ -65,7 +75,7 @@
       min-width: 0;
     }
 
-    /* hamburger muncul hanya kalau sidebar sedang tertutup / mobile */
+    /* hamburger */
     .hamburger-btn{
       width: 44px;
       height: 44px;
@@ -74,7 +84,7 @@
       cursor: pointer;
       background: #0f172a;
       color: #fff;
-      display: none; /* default: disembunyikan */
+      display: none; /* default hidden */
       align-items: center;
       justify-content: center;
       font-size: 18px;
@@ -90,7 +100,6 @@
       text-overflow: ellipsis;
     }
 
-    /* filter area */
     .topbar-filters{
       display:flex;
       align-items:center;
@@ -99,12 +108,9 @@
     }
 
     @media (max-width:768px){
-      .topbar-filters{
-        display:none; /* opsional: di mobile filter disembunyikan */
-      }
+      .topbar-filters{ display:none; }
     }
 
-    /* bagian profil kanan */
     .topbar-right{
       display:flex;
       align-items:center;
@@ -143,13 +149,18 @@
       flex-shrink:0;
     }
 
-    /* content */
+    /* ======================
+       CONTENT
+    ====================== */
     .main-content{
       padding: 24px;
       min-height: calc(100vh - var(--topbar-h));
+
+      /* ✅ PALING PENTING */
+      overflow-x: hidden;
     }
 
-    /* overlay untuk mobile / sidebar overlay */
+    /* overlay untuk mobile sidebar */
     .overlay{
       position: fixed;
       inset: 0;
@@ -164,12 +175,13 @@
       pointer-events: auto;
     }
 
-    /* ====== RESPONSIVE ====== */
+    /* ======================
+       RESPONSIVE
+    ====================== */
     @media (max-width: 1024px) and (min-width: 769px){
       .main-area{ margin-left: var(--sidebar-w-tablet); }
     }
 
-    /* mobile: sidebar off-canvas, main area full */
     @media (max-width: 768px){
       .main-area{ margin-left: 0 !important; }
       .main-content{ padding: 16px; }
@@ -202,21 +214,17 @@
   <div class="app-container">
     @include('layouts.sidebar')
 
-    <!-- overlay (klik untuk menutup sidebar saat mode overlay) -->
     <div class="overlay" id="overlay"></div>
 
     <div class="main-area" id="mainArea">
-      <!-- TOPBAR (area konten) -->
       <header class="topbar">
         <div class="topbar-left">
-          <!-- hamburger (muncul saat sidebar tertutup / mobile) -->
-          <button class="hamburger-btn" id="hamburgerBtn" type="button" aria-label="Open Sidebar">
+          <button class="hamburger-btn" id="hamburgerBtn" type="button">
             <i class="fas fa-bars"></i>
           </button>
 
           <div class="topbar-title">@yield('page_title', 'Dashboard')</div>
 
-          {{-- Filter hanya muncul jika halaman menyediakan section("topbar_filters") --}}
           @hasSection('topbar_filters')
             <div class="topbar-filters">
               @yield('topbar_filters')
@@ -251,87 +259,75 @@
         return window.innerWidth <= 768;
       }
 
-      // Desktop/Tablet: open/close pakai class "collapsed"
       function desktopOpen() {
         sidebar.classList.remove('collapsed');
         mainArea.classList.remove('expanded');
         overlay.classList.remove('active');
-        syncHamburgerVisibility();
+        syncHamburger();
       }
 
       function desktopClose() {
         sidebar.classList.add('collapsed');
         mainArea.classList.add('expanded');
         overlay.classList.remove('active');
-        syncHamburgerVisibility();
+        syncHamburger();
       }
 
-      // Mobile: open/close pakai class "open-mobile"
       function mobileOpen() {
         sidebar.classList.add('open-mobile');
         overlay.classList.add('active');
-        syncHamburgerVisibility();
+        syncHamburger();
       }
 
       function mobileClose() {
         sidebar.classList.remove('open-mobile');
         overlay.classList.remove('active');
-        syncHamburgerVisibility();
+        syncHamburger();
       }
 
-      function syncHamburgerVisibility() {
-        // hamburger muncul:
-        // - mobile (selalu ada)
-        // - desktop/tablet hanya saat sidebar collapsed
+      function syncHamburger() {
         if (isMobile()) {
           hamburger.style.display = 'inline-flex';
         } else {
-          const collapsed = sidebar.classList.contains('collapsed');
-          hamburger.style.display = collapsed ? 'inline-flex' : 'none';
+          hamburger.style.display = sidebar.classList.contains('collapsed')
+            ? 'inline-flex'
+            : 'none';
         }
       }
 
-      // klik hamburger = buka sidebar
       hamburger.addEventListener('click', function () {
         if (isMobile()) mobileOpen();
         else desktopOpen();
       });
 
-      // klik overlay = tutup sidebar (mobile)
       overlay.addEventListener('click', function () {
         if (isMobile()) mobileClose();
       });
 
-      // klik konten = tutup sidebar kalau mobile sedang open
       mainContent.addEventListener('click', function () {
         if (isMobile() && sidebar.classList.contains('open-mobile')) {
           mobileClose();
         }
       });
 
-      // menu link di mobile: auto close
       document.querySelectorAll('.sisir-link').forEach(link => {
         link.addEventListener('click', function () {
           if (isMobile()) mobileClose();
         });
       });
 
-      // initial state
       function init() {
         if (isMobile()) {
-          // mobile: sidebar default tertutup
           sidebar.classList.remove('open-mobile');
           overlay.classList.remove('active');
           mainArea.classList.add('expanded');
         } else {
-          // desktop: sidebar default terbuka
           sidebar.classList.remove('collapsed');
           mainArea.classList.remove('expanded');
         }
-        syncHamburgerVisibility();
+        syncHamburger();
       }
 
-      // resize handler
       let t;
       window.addEventListener('resize', function () {
         clearTimeout(t);
@@ -340,7 +336,6 @@
 
       init();
 
-      // hook untuk tombol collapse di sidebar (kalau kamu pakai)
       window.__SISIR__ = {
         collapseDesktop: desktopClose,
         openDesktop: desktopOpen

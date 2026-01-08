@@ -5,6 +5,9 @@
 
 @section('content')
   <style>
+    /* =========================
+       PAGE HEADER
+    ========================= */
     .page-header {
       display: flex;
       justify-content: space-between;
@@ -44,17 +47,48 @@
     }
     .btn-add-user:hover { background: #ea580c; transform: translateY(-1px); }
 
-    .users-table-container {
-      background: #fff;
-      border-radius: 14px;
-      overflow-x: auto;
-      border: 1px solid #e2e8f0;
+    /* =========================
+       IMPORTANT:
+       - ONLY TABLE AREA SCROLLS HORIZONTALLY
+       - PAGE MUST NOT SCROLL HORIZONTALLY
+    ========================= */
+    .users-table-card{
+      background:#fff;
+      border:1px solid #e2e8f0;
+      border-radius:14px;
+      overflow:hidden;              /* ✅ card tidak ikut melebar */
+    }
+
+    .users-table-scroll{
+      width:100%;
+      max-width:100%;
+      overflow-x:auto;              /* ✅ cuma area ini yang geser */
+      overflow-y:hidden;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior-x:contain;
+      position:relative;
+    }
+
+    /* hint geser (mobile) */
+    .users-table-scroll::after{
+      content:"Geser →";
+      position:sticky;
+      left:0;
+      bottom:0;
+      display:none;
+      font-size:12px;
+      color:#94a3b8;
+      padding:10px 12px;
+      background:linear-gradient(90deg, rgba(241,245,249,.95) 0%, rgba(241,245,249,0) 100%);
+      width:max-content;
+      border-top-right-radius:12px;
+      pointer-events:none;
     }
 
     .users-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 760px;
+      min-width: 980px;            /* ✅ ini bikin kolom kanan harus di-scroll */
     }
 
     .users-table thead {
@@ -79,15 +113,44 @@
       font-size: 14px;
       color: #334155;
       white-space: nowrap;
+      vertical-align: middle;
     }
 
     .users-table tbody tr:hover { background: #fafafa; }
+
+    /* ===== Sticky NAME (kolom kiri tetap terlihat) ===== */
+    .users-table th:first-child,
+    .users-table td:first-child{
+      position: sticky;
+      left: 0;
+      z-index: 4;
+      background: #fff;
+      box-shadow: 10px 0 18px rgba(2,6,23,.06);
+    }
+    .users-table thead th:first-child{
+      background:#f8fafc;
+      z-index: 6;
+    }
+
+    /* ===== Sticky ACTIONS (kolom kanan tetap terlihat) ===== */
+    .users-table th:last-child,
+    .users-table td:last-child{
+      position: sticky;
+      right: 0;
+      z-index: 3;
+      background: #fff;
+      box-shadow: -10px 0 18px rgba(2,6,23,.06);
+    }
+    .users-table thead th:last-child{
+      background:#f8fafc;
+      z-index: 6;
+    }
 
     .user-info {
       display: flex;
       align-items: center;
       gap: 12px;
-      min-width: 240px;
+      min-width: 260px;
     }
 
     .avatar {
@@ -156,7 +219,7 @@
     .alert-success { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
     .alert-error { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
 
-    /* Modal */
+    /* ===== Modal ===== */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -175,6 +238,9 @@
       border: 1px solid #e2e8f0;
       box-shadow: 0 20px 50px rgba(2,6,23,.25);
       overflow: hidden;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
     }
     .modal-header {
       padding: 16px 18px;
@@ -183,6 +249,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      flex-shrink: 0;
     }
     .modal-title {
       font-weight: 800;
@@ -194,6 +261,8 @@
       padding: 16px 18px;
       display: grid;
       gap: 12px;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .modal-footer {
       padding: 16px 18px;
@@ -202,6 +271,7 @@
       gap: 10px;
       justify-content: flex-end;
       flex-wrap: wrap;
+      flex-shrink: 0;
     }
     .btn {
       border: none;
@@ -241,15 +311,30 @@
       margin: 0;
     }
 
+    /* ===== Responsive tweaks ===== */
     @media (max-width: 768px) {
-      .page-title { font-size: 22px; }
+      .page-header { margin-bottom: 16px; }
+      .page-title { font-size: 20px; }
+      .page-subtitle { font-size: 13px; }
       .btn-add-user { width: 100%; justify-content: center; }
-      .modal { max-width: 100%; }
+
+      .users-table-scroll::after{ display:block; }
+
+      .users-table th, .users-table td{
+        padding: 10px 12px;
+        font-size: 13px;
+      }
+      .user-info { min-width: 220px; }
+      .avatar { width: 32px; height: 32px; font-size: 12px; }
+    }
+
+    @media (max-width: 480px) {
+      .modal-header, .modal-body, .modal-footer { padding: 14px; }
+      .btn { width: 100%; justify-content: center; }
     }
   </style>
 
   @php
-    // ✅ ID admin utama yang dilindungi (role tidak boleh berubah)
     $protectedAdminId = 1;
 
     $initials = function ($name) {
@@ -260,7 +345,6 @@
     };
   @endphp
 
-  {{-- Alert --}}
   @if (session('success'))
     <div class="alert alert-success">{{ session('success') }}</div>
   @endif
@@ -292,100 +376,101 @@
     </button>
   </div>
 
-  <div class="users-table-container">
-    <table class="users-table">
-      <thead>
-        <tr>
-          <th>NAME</th>
-          <th>USERNAME</th>
-          <th>ROLE</th>
-          <th>STATUS</th>
-          <th>LAST LOGIN</th>
-          <th>ACTIONS</th>
-        </tr>
-      </thead>
+  <!-- ✅ hanya area ini yang bisa scroll horizontal -->
+  <div class="users-table-card">
+    <div class="users-table-scroll">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>NAME</th>
+            <th>USERNAME</th>
+            <th>ROLE</th>
+            <th>STATUS</th>
+            <th>LAST LOGIN</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
 
-      <tbody>
-        @forelse($users as $u)
-          @php
-            $status = $u->status ?? 'active';
+        <tbody>
+          @forelse($users as $u)
+            @php
+              $status = $u->status ?? 'active';
 
-            $lastLogin = '-';
-            if (isset($u->last_login_at) && $u->last_login_at) {
-              try {
-                $lastLogin = \Carbon\Carbon::parse($u->last_login_at)->format('d/m/Y');
-              } catch (\Throwable $e) {
-                $lastLogin = '-';
+              $lastLogin = '-';
+              if (isset($u->last_login_at) && $u->last_login_at) {
+                try {
+                  $lastLogin = \Carbon\Carbon::parse($u->last_login_at)->format('d/m/Y');
+                } catch (\Throwable $e) {
+                  $lastLogin = '-';
+                }
               }
-            }
 
-            // ✅ khusus admin utama: role tidak boleh diubah (UI)
-            $lockRole = ($u->id == $protectedAdminId) ? '1' : '0';
-          @endphp
+              $lockRole = ($u->id == $protectedAdminId) ? '1' : '0';
+            @endphp
 
-          <tr>
-            <td>
-              <div class="user-info">
-                <div class="avatar">{{ $initials($u->name) }}</div>
-                <span>{{ $u->name }}</span>
-              </div>
-            </td>
+            <tr>
+              <td>
+                <div class="user-info">
+                  <div class="avatar">{{ $initials($u->name) }}</div>
+                  <span>{{ $u->name }}</span>
+                </div>
+              </td>
 
-            <td>{{ $u->username }}</td>
+              <td>{{ $u->username }}</td>
 
-            <td>
-              <span class="role-badge">
-                {{ $roleLabel[$u->role] ?? $u->role }}
-              </span>
-            </td>
+              <td>
+                <span class="role-badge">
+                  {{ $roleLabel[$u->role] ?? $u->role }}
+                </span>
+              </td>
 
-            <td>
-              <span class="status-badge {{ $status === 'active' ? 'status-active' : 'status-inactive' }}">
-                {{ ucfirst($status) }}
-              </span>
-            </td>
+              <td>
+                <span class="status-badge {{ $status === 'active' ? 'status-active' : 'status-inactive' }}">
+                  {{ ucfirst($status) }}
+                </span>
+              </td>
 
-            <td>{{ $lastLogin }}</td>
+              <td>{{ $lastLogin }}</td>
 
-            <td>
-              <div class="action-buttons">
-                <button
-                  class="btn-icon btn-edit"
-                  type="button"
-                  title="Edit"
-                  data-id="{{ $u->id }}"
-                  data-name="{{ $u->name }}"
-                  data-username="{{ $u->username }}"
-                  data-role="{{ $u->role }}"
-                  data-status="{{ $status }}"
-                  data-lock-role="{{ $lockRole }}"
-                  onclick="openEditModal(this)"
-                >
-                  <i class="fas fa-pen"></i>
-                </button>
-
-                <form action="{{ route('users.destroy', $u->id) }}" method="POST" onsubmit="return confirm('Yakin hapus user ini?')">
-                  @csrf
-                  @method('DELETE')
-                  <button class="btn-icon btn-delete" type="submit" title="Delete">
-                    <i class="fas fa-trash"></i>
+              <td>
+                <div class="action-buttons">
+                  <button
+                    class="btn-icon btn-edit"
+                    type="button"
+                    title="Edit"
+                    data-id="{{ $u->id }}"
+                    data-name="{{ $u->name }}"
+                    data-username="{{ $u->username }}"
+                    data-role="{{ $u->role }}"
+                    data-status="{{ $status }}"
+                    data-lock-role="{{ $lockRole }}"
+                    onclick="openEditModal(this)"
+                  >
+                    <i class="fas fa-pen"></i>
                   </button>
-                </form>
-              </div>
-            </td>
-          </tr>
-        @empty
-          <tr>
-            <td colspan="6" style="padding:18px; color:#64748b;">
-              Belum ada data user.
-            </td>
-          </tr>
-        @endforelse
-      </tbody>
-    </table>
+
+                  <form action="{{ route('users.destroy', $u->id) }}" method="POST" onsubmit="return confirm('Yakin hapus user ini?')">
+                    @csrf
+                    @method('DELETE')
+                    <button class="btn-icon btn-delete" type="submit" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          @empty
+            <tr>
+              <td colspan="6" style="padding:18px; color:#64748b;">
+                Belum ada data user.
+              </td>
+            </tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  {{-- hidden flag supaya JS tau ada errors tanpa nulis Blade di JS --}}
   <div id="pageFlags" data-has-errors="{{ $errors->any() ? '1' : '0' }}" style="display:none;"></div>
 
   {{-- =========================
@@ -487,6 +572,9 @@
               <option value="staff">Staff Pemasaran</option>
               <option value="viewer">Viewer</option>
             </select>
+
+            <input type="hidden" id="edit_role_hidden" name="role_hidden" value="">
+
             <p class="help" id="role_lock_hint" style="display:none;">
               Role Administrator SISIR tidak bisa diubah.
             </p>
@@ -513,10 +601,14 @@
 
   <script>
     function openCreateModal() {
-      document.getElementById('createModal').style.display = 'flex';
+      const el = document.getElementById('createModal');
+      if (!el) return;
+      el.style.display = 'flex';
     }
     function closeCreateModal() {
-      document.getElementById('createModal').style.display = 'none';
+      const el = document.getElementById('createModal');
+      if (!el) return;
+      el.style.display = 'none';
     }
 
     function openEditModal(el) {
@@ -530,6 +622,8 @@
       const editModal = document.getElementById('editModal');
       const editForm = document.getElementById('editForm');
 
+      if (!editModal || !editForm) return;
+
       editForm.action = "{{ url('/users') }}/" + id;
 
       document.getElementById('edit_name').value = name || '';
@@ -538,16 +632,18 @@
       document.getElementById('edit_role').value = role || 'viewer';
       document.getElementById('edit_status').value = status || 'active';
 
-      // ✅ Kunci hanya ROLE (username & password tetap bisa diubah)
       const roleSelect = document.getElementById('edit_role');
       const roleHint = document.getElementById('role_lock_hint');
+      const roleHidden = document.getElementById('edit_role_hidden');
 
       if (lockRole) {
-        roleSelect.disabled = true;          // role tidak bisa diubah
-        roleSelect.value = 'admin';          // pastikan tetap admin di UI
+        roleSelect.disabled = true;
+        roleSelect.value = 'admin';
+        roleHidden.value = 'admin';
         roleHint.style.display = 'block';
       } else {
         roleSelect.disabled = false;
+        roleHidden.value = '';
         roleHint.style.display = 'none';
       }
 
@@ -555,18 +651,25 @@
     }
 
     function closeEditModal() {
-      document.getElementById('editModal').style.display = 'none';
+      const el = document.getElementById('editModal');
+      if (!el) return;
+      el.style.display = 'none';
     }
 
-    // Close modal when click backdrop
-    document.getElementById('createModal').addEventListener('click', function(e){
-      if (e.target === this) closeCreateModal();
-    });
-    document.getElementById('editModal').addEventListener('click', function(e){
-      if (e.target === this) closeEditModal();
-    });
+    const createModalEl = document.getElementById('createModal');
+    if (createModalEl) {
+      createModalEl.addEventListener('click', function(e){
+        if (e.target === this) closeCreateModal();
+      });
+    }
 
-    // ESC close
+    const editModalEl = document.getElementById('editModal');
+    if (editModalEl) {
+      editModalEl.addEventListener('click', function(e){
+        if (e.target === this) closeEditModal();
+      });
+    }
+
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         closeCreateModal();
@@ -574,7 +677,6 @@
       }
     });
 
-    // Auto open modal "Tambah User" jika ada error validasi
     const flagsEl = document.getElementById('pageFlags');
     const hasErrors = flagsEl ? flagsEl.dataset.hasErrors === '1' : false;
     if (hasErrors) {
