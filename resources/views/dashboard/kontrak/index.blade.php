@@ -190,10 +190,22 @@
 
               <!-- Date Range Filter -->
               <div style="display: flex; gap: 6px; align-items: center;">
-                  <input type="date" name="start_date" class="k-date-input" value="{{ request('start_date') }}" placeholder="Dari tanggal" title="Tanggal awal">
-                  <span class="k-date-separator">-</span>
-                  <input type="date" name="end_date" class="k-date-input" value="{{ request('end_date') }}" placeholder="Sampai tanggal" title="Tanggal akhir">
-              </div>
+                <input type="date" 
+                    name="start_date" 
+                    class="k-date-input" 
+                    value="{{ request('start_date') }}" 
+                    placeholder="Dari tanggal" 
+                    title="Tanggal awal"
+                    onchange="document.getElementById('filterForm').submit()"> <span class="k-date-separator">-</span>
+
+                <input type="date" 
+                    name="end_date" 
+                    class="k-date-input" 
+                    value="{{ request('end_date') }}" 
+                    placeholder="Sampai tanggal" 
+                    title="Tanggal akhir"
+                    onchange="document.getElementById('filterForm').submit()"> 
+            </div>
 
               <select name="sort" class="k-select-limit" onchange="document.getElementById('filterForm').submit()" title="Urutkan berdasarkan">
                   <option value="nomor_dosi" {{ request('sort') == 'nomor_dosi' ? 'selected' : '' }}>Urut DO/SI</option>
