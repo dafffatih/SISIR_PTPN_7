@@ -63,7 +63,7 @@
                 <div class="metric-left">
                     <span class="metric-label">Total Volume</span>
                     <div class="metric-value-group">
-                        <span class="metric-number">{{ number_format($totalVolume / 1000, 3, ',', '.') }}</span>
+                        <span class="metric-number">{{ number_format($totalVolume, 2, ',', '.') }}</span>
                         <span class="metric-unit">Ton</span>
                     </div>
                     <div class="metric-progress">
@@ -74,7 +74,7 @@
                     <div class="rkap-info">
                         <span class="metric-label">Total Volume RKAP</span>
                         <div class="metric-value-group right-align">
-                            <span class="metric-number-small">{{ number_format($rkapVolume/1000, 0, ',', '.') }}</span>
+                            <span class="metric-number-small">{{ number_format($rkapVolume, 0, ',', '.') }}</span>
                             <span class="metric-unit-small">Ton</span>
                         </div>
                     </div>

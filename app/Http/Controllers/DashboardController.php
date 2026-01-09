@@ -79,7 +79,6 @@ class DashboardController extends Controller
             'revenue_real' => array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!Z94:Z105"] ?? []),
             'revenue_rkap' => array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!K190:K201"] ?? []),
         ];
-
         // Fallback untuk rekap4 jika kosong
         if (empty($rekap4['volume_real']) || count($rekap4['volume_real']) < 12) {
             $rekap4 = [
@@ -91,6 +90,15 @@ class DashboardController extends Controller
             ];
         }
 
+        // --- PERBAIKAN TOTAL VOLUME & REVENUE ---
+        // Mengambil total dari penjumlahan array real rekap4
+        $totalVolume = array_sum($rekap4['volume_real']); 
+        $totalRevenue = array_sum($rekap4['revenue_real']); // Ini dalam satuan Milyar sesuai data Anda (misal 134.0)
+
+        // RKAP Kumulatif (Target sampai bulan berjalan)
+        $rkapVolume = array_sum($rekap4['volume_rkap']);
+        $rkapRevenue = array_sum($rekap4['revenue_rkap']);
+        // dd($rekap4['volume_rkap'], $rkapVolume);
         // 3. Olah Top Buyers & Products
         $topBuyers = [];
         if (!empty($rawBatch["Katalog!B4:B23"])) {
@@ -172,39 +180,39 @@ class DashboardController extends Controller
         ];
 
         // 6. Hitung Kalkulasi Realtime dari Kontrak (Database)
-        try {
-            $kontrakRecords = Kontrak::all();
-            $totalVolume = 0;
-            $totalRevenue = 0;
-            $dbTopBuyers = [];
+        // try {
+        //     $kontrakRecords = Kontrak::all();
+        //     $totalVolume = 0;
+        //     $totalRevenue = 0;
+        //     $dbTopBuyers = [];
             
-            foreach ($kontrakRecords as $k) {
-                $volume = (float)($k->volume ?? 0);
-                $harga = (float)($k->harga ?? 0);
+        //     foreach ($kontrakRecords as $k) {
+        //         $volume = (float)($k->volume ?? 0);
+        //         $harga = (float)($k->harga ?? 0);
                 
-                $totalVolume += $volume;
-                $totalRevenue += ($volume * $harga);
+        //         $totalVolume += $volume;
+        //         $totalRevenue += ($volume * $harga);
                 
-                $buyer = $k->nama_pembeli ?? 'Unknown';
-                $dbTopBuyers[$buyer] = ($dbTopBuyers[$buyer] ?? 0) + $volume;
-            }
+        //         $buyer = $k->nama_pembeli ?? 'Unknown';
+        //         $dbTopBuyers[$buyer] = ($dbTopBuyers[$buyer] ?? 0) + $volume;
+        //     }
             
-            // Use database top buyers jika Google Sheets kosong
-            if (empty($topBuyers)) {
-                arsort($dbTopBuyers);
-                $topBuyers = array_slice($dbTopBuyers, 0, 5);
-            }
+        //     // Use database top buyers jika Google Sheets kosong
+        //     if (empty($topBuyers)) {
+        //         arsort($dbTopBuyers);
+        //         $topBuyers = array_slice($dbTopBuyers, 0, 5);
+        //     }
             
-        } catch (\Exception $e) {
-            \Log::error('Error fetching database records: ' . $e->getMessage());
-            $totalVolume = 0;
-            $totalRevenue = 0;
-        }
-
+        // } catch (\Exception $e) {
+        //     \Log::error('Error fetching database records: ' . $e->getMessage());
+        //     $totalVolume = 0;
+        //     $totalRevenue = 0;
+        // }
+        // dd($totalVolume);
         // 7. Calculate RKAP targets
-        $currentMonthIdx = date('n') - 1;
-        $rkapVolume = array_sum(array_slice($rekap4['volume_rkap'], 0, $currentMonthIdx + 1)) * 1000;
-        $rkapRevenue = array_sum(array_slice($rekap4['revenue_rkap'], 0, $currentMonthIdx + 1)) * 1000000000;
+        // $currentMonthIdx = date('n') - 1;
+        // $rkapVolume = array_sum(array_slice($rekap4['volume_rkap'], 0, $currentMonthIdx + 1)) * 1000;
+        // $rkapRevenue = array_sum(array_slice($rekap4['revenue_rkap'], 0, $currentMonthIdx + 1)) * 1000000000;
 
         return view('dashboard.index', compact(
             'totalVolume', 'totalRevenue', 'rkapVolume', 'rkapRevenue',
