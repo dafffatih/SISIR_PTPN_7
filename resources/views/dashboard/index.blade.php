@@ -8,7 +8,7 @@
     use Carbon\Carbon;
     use Illuminate\Support\Str;
 
-    // 1. Data Cleaning Top Buyers (Sama seperti sebelumnya)
+    // 1. Data Cleaning Top Buyers
     $cleanTopBuyers = [];
     $fixedBuyers = [];
     foreach($topBuyers as $name => $val) {
@@ -29,10 +29,6 @@
         }
         $buyerInitials[] = $initial ?: substr($name, 0, 3);
     }
-
-    // 3. DATA MANUAL UNTUK RINCIAN MUTU (DATA MAPPING)
-    // Dibuat agar sesuai dengan snippet 'Rincian Mutu' yang Anda minta.
-    // Angka diambil dari screenshot Excel Anda (Rekap4) agar presisi.
 @endphp
 
 <link rel="stylesheet" href="{{ asset('css/dashboard-custom.css') }}">
@@ -72,7 +68,7 @@
                         </div>
                     </div>
                     <div class="icon-box bg-dark">
-                        <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     </div>
                 </div>
             </div>
@@ -84,7 +80,7 @@
                     <span class="metric-label">Total Revenue</span>
                     <div class="metric-value-group">
                         <span class="metric-number">Rp {{ number_format($totalRevenue / 1000000000, 0, ',', '.') }}</span>
-                        <span class="metric-unit">B</span>
+                        <span class="metric-unit">M</span>
                     </div>
                     <div class="metric-progress">
                         Progress: <span class="progress-val">{{ $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 1) : 0 }}%</span>
@@ -94,8 +90,8 @@
                     <div class="rkap-info">
                         <span class="metric-label">Total Revenue RKAP</span>
                         <div class="metric-value-group right-align">
-                            <span class="metric-number-small">Rp {{ number_format($rkapRevenue/1000000000, 1, ',', '.') }}</span>
-                            <span class="metric-unit-small">B</span>
+                            <span class="metric-number-small">Rp {{ number_format($rkapRevenue/1000000000, 0, ',', '.') }}</span>
+                            <span class="metric-unit-small">M</span>
                         </div>
                     </div>
                     <div class="icon-box bg-orange">
@@ -106,13 +102,35 @@
         </div>
     </div>
 
-    {{-- BARIS 2: TREND & DONUTS --}}
+    {{-- BARIS 2: TREND, LAST PRICE & DONUTS --}}
     <div class="row-grid-2">
-        <div class="card-std">
-            <div class="card-header">
-                <h3>Average Selling Price Trend (Monthly)</h3>
+        <div class="col-stacked">
+            {{-- 1. GRAFIK TREND --}}
+            <div class="card-std">
+                <div class="card-header">
+                    <h3>Average Selling Price Trend (Monthly)</h3>
+                </div>
+                <div id="chart-price-monthly"></div>
             </div>
-            <div id="chart-price-monthly"></div>
+
+            {{-- 2. LAST TENDER PRICE (BARU) --}}
+            <div class="card-std" style="padding: 24px;">
+                <div style="margin-bottom: 16px; font-size: 14px; color: #64748B;">Last Tender Price/Kg</div>
+                <div class="tender-grid">
+                    <div class="tender-item">
+                        <span class="tender-price">Rp {{ number_format($lastTender['sir20']['price'], 0, ',', '.') }}</span>
+                        <span class="tender-meta">SIR20 - {{ $lastTender['sir20']['date'] }}</span>
+                    </div>
+                    <div class="tender-item">
+                        <span class="tender-price">Rp {{ number_format($lastTender['rss']['price'], 0, ',', '.') }}</span>
+                        <span class="tender-meta">RSS - {{ $lastTender['rss']['date'] }}</span>
+                    </div>
+                    <div class="tender-item">
+                        <span class="tender-price">Rp {{ number_format($lastTender['sir3l']['price'], 0, ',', '.') }}</span>
+                        <span class="tender-meta">SIR3L - {{ $lastTender['sir3l']['date'] }}</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="col-stacked">
@@ -120,7 +138,6 @@
                 <div class="card-header"><h3>Top 5 Buyers</h3></div>
                 <div class="donut-container">
                     <div id="chart-buyer" class="chart-donut"></div>
-                    
                     <div class="custom-legend">
                         @php $colors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8']; $i=0; @endphp
                         @foreach($cleanTopBuyers as $buyer => $vol)
@@ -135,7 +152,6 @@
                         @php $i++; @endphp
                         @endforeach
                     </div>
-                    
                     <div class="donut-center-label">
                         <span class="lbl">Total Ton</span>
                         <span class="num">{{ number_format($totalVolume, 0, ',', '.') }}</span>
@@ -148,10 +164,7 @@
                 <div class="donut-container">
                     <div id="chart-product" class="chart-donut"></div>
                     <div class="custom-legend">
-                        @php
-                            $colors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8', '#EF4444', '#10B981', '#F59E0B', '#6366F1', '#EC4899'];
-                            $i=0; 
-                        @endphp
+                        @php $colors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8', '#EF4444', '#10B981', '#F59E0B', '#6366F1', '#EC4899']; $i=0; @endphp
                         @foreach($topProducts as $prod => $vol)
                         <div class="legend-item">
                             <span class="dot" style="background: {{ $colors[$i % count($colors)] }}"></span>
@@ -163,14 +176,14 @@
                     </div>
                     <div class="donut-center-label">
                         <span class="lbl">Total Ton</span>
-                        <span class="num">{{ number_format($totalVolume/1000, 0, ',', '.') }}</span>
+                        <span class="num">{{ number_format($totalVolume, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- BARIS 3: TABEL STOK --}}
+    {{-- BARIS 3: TABEL STOK (Sama) --}}
     <div class="row-grid-2">
         <div class="card-std card-table-compact">
             <div class="card-header flex-between">
@@ -190,7 +203,6 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {{-- STOK PRODUKSI --}}
                         @php
                             $StokSir20  = $stokData['produksi']['sir20'];
                             $StokRss    = $stokData['produksi']['rss'];
@@ -206,9 +218,7 @@
                             <td>{{ number_format($StokSir3wf, 0, ',', '.') }}</td>
                             <td class="font-bold">{{ number_format($StokTotal, 0, ',', '.') }}</td>
                         </tr>
-
                         <tr class="separator-header"><td colspan="5">OUTSTANDING CONTRACT</td></tr>
-                        
                         @php
                             $StokSbSir20  = $stokData['sudah_bayar']['sir20'];
                             $StokSbRss    = $stokData['sudah_bayar']['rss'];
@@ -239,8 +249,6 @@
                             <td>{{ number_format($StokBbSir3wf, 0, ',', '.') }}</td>
                             <td class="font-bold">{{ number_format($StokBbTotal, 0, ',', '.') }}</td>
                         </tr>
-
-                        {{-- JUMLAH OUTSTANDING --}}
                         @php
                             $jmlSir20  = $StokSbSir20 + $StokBbSir20;
                             $jmlRss    = $StokSbRss + $StokBbRss;
@@ -256,8 +264,6 @@
                             <td>{{ number_format($jmlSir3wf, 0, ',', '.') }}</td>
                             <td>{{ number_format($jmlTotal, 0, ',', '.') }}</td>
                         </tr>
-
-                        {{-- STOK BEBAS PRODUKSI --}}
                         @php
                             $StokBebasSir20  = $StokSir20 - $jmlSir20;
                             $StokBebasRss    = $StokRss - $jmlRss;
@@ -267,24 +273,12 @@
                         @endphp
                         <tr class="row-highlight">
                             <td>Stok Bebas (Prod)</td>
-                            <td class="{{ $StokBebasSir20 < 0 ? 'text-red-600 font-bold' : '' }}">
-                                {{ number_format($StokBebasSir20, 0, ',', '.') }}
-                            </td>
-                            <td class="{{ $StokBebasRss < 0 ? 'text-red-600 font-bold' : '' }}">
-                                {{ number_format($StokBebasRss, 0, ',', '.') }}
-                            </td>
-                            <td class="{{ $StokBebasSir3l < 0 ? 'text-red-600 font-bold' : '' }}">
-                                {{ number_format($StokBebasSir3l, 0, ',', '.') }}
-                            </td>
-                            <td class="{{ $StokBebasSir3wf < 0 ? 'text-red-600 font-bold' : '' }}">
-                                {{ number_format($StokBebasSir3wf, 0, ',', '.') }}
-                            </td>
-                            <td class="{{ $StokBebasTotal < 0 ? 'text-red-700 font-black' : 'font-black' }}">
-                                {{ number_format($StokBebasTotal, 0, ',', '.') }}
-                            </td>
+                            <td class="{{ $StokBebasSir20 < 0 ? 'text-red-600 font-bold' : '' }}">{{ number_format($StokBebasSir20, 0, ',', '.') }}</td>
+                            <td class="{{ $StokBebasRss < 0 ? 'text-red-600 font-bold' : '' }}">{{ number_format($StokBebasRss, 0, ',', '.') }}</td>
+                            <td class="{{ $StokBebasSir3l < 0 ? 'text-red-600 font-bold' : '' }}">{{ number_format($StokBebasSir3l, 0, ',', '.') }}</td>
+                            <td class="{{ $StokBebasSir3wf < 0 ? 'text-red-600 font-bold' : '' }}">{{ number_format($StokBebasSir3wf, 0, ',', '.') }}</td>
+                            <td class="{{ $StokBebasTotal < 0 ? 'text-red-700 font-black' : 'font-black' }}">{{ number_format($StokBebasTotal, 0, ',', '.') }}</td>
                         </tr>
-
-
                         @php
                             $StokBahanBakuSir20  = $stokData['bahan_baku']['sir20'];
                             $StokBahanBakuRss    = $stokData['bahan_baku']['rss'];
@@ -300,8 +294,6 @@
                             <td>{{ number_format($StokBahanBakuSir3wf, 0, ',', '.') }}</td>
                             <td>{{ number_format($StokBahanBakuTotal, 0, ',', '.') }}</td>
                         </tr>
-
-                        {{-- STOK BEBAS AKHIR --}}
                         @php
                             $StokBebasFixSir20  = $StokBebasSir20 + $StokBahanBakuSir20;
                             $StokBebasFixRss    = $StokBebasRss + $StokBahanBakuRss;
@@ -311,26 +303,11 @@
                         @endphp
                         <tr class="row-highlight-final">
                             <td>STOK BEBAS AKHIR</td>
-
-                            <td class="{{ $StokBebasFixSir20 < 0 ? 'text-red font-bold' : '' }}">
-                                {{ number_format($StokBebasFixSir20, 0, ',', '.') }}
-                            </td>
-
-                            <td class="{{ $StokBebasFixRss < 0 ? 'text-red font-bold' : '' }}">
-                                {{ number_format($StokBebasFixRss, 0, ',', '.') }}
-                            </td>
-
-                            <td class="{{ $StokBebasFixSir3l < 0 ? 'text-red font-bold' : '' }}">
-                                {{ number_format($StokBebasFixSir3l, 0, ',', '.') }}
-                            </td>
-
-                            <td class="{{ $StokBebasFixSir3wf < 0 ? 'text-red font-bold' : '' }}">
-                                {{ number_format($StokBebasFixSir3wf, 0, ',', '.') }}
-                            </td>
-
-                            <td class="{{ $StokBebasFixTotal < 0 ? 'text-red font-black' : 'font-black' }}">
-                                {{ number_format($StokBebasFixTotal, 0, ',', '.') }}
-                            </td>
+                            <td class="{{ $StokBebasFixSir20 < 0 ? 'text-red font-bold' : '' }}">{{ number_format($StokBebasFixSir20, 0, ',', '.') }}</td>
+                            <td class="{{ $StokBebasFixRss < 0 ? 'text-red font-bold' : '' }}">{{ number_format($StokBebasFixRss, 0, ',', '.') }}</td>
+                            <td class="{{ $StokBebasFixSir3l < 0 ? 'text-red font-bold' : '' }}">{{ number_format($StokBebasFixSir3l, 0, ',', '.') }}</td>
+                            <td class="{{ $StokBebasFixSir3wf < 0 ? 'text-red font-bold' : '' }}">{{ number_format($StokBebasFixSir3wf, 0, ',', '.') }}</td>
+                            <td class="{{ $StokBebasFixTotal < 0 ? 'text-red font-black' : 'font-black' }}">{{ number_format($StokBebasFixTotal, 0, ',', '.') }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -339,7 +316,7 @@
         <div class="empty-placeholder"></div>
     </div>
 
-    {{-- BARIS 4: MONTHLY VOLUME (UPDATED) --}}
+    {{-- BARIS 4: MONTHLY VOLUME (Sama) --}}
     <div class="card-std p-0 full-row-card">
         <div class="chart-header-padded">
             <h3>Monthly Volume (Real vs RKAP)</h3>
@@ -348,54 +325,39 @@
             <div class="col-chart">
                 <div id="chart-monthly-vol"></div>
             </div>
-
             <div class="col-middle bg-light">
-                    <p class="sidebar-title">Rincian Mutu (Volume)</p>
-                    <div class="mutu-list">
+                <p class="sidebar-title">Rincian Mutu (Volume)</p>
+                <div class="mutu-list">
+                    @foreach($mutu['label'] as $index => $label)
+                        @if(strtoupper($label) === 'TOTAL') @continue @endif
                         @php
-                            // Ambil Total Volume dari array mutu index ke-4 (Total)
-                            $totalVolumeMutu = $mutu['volume'][4] ?? 0;
+                            $vol = $mutu['volume'][$index] ?? 0;
+                            $pct = $totalVolume > 0 ? round(($vol / $totalVolume) * 100, 1) : 0;
                         @endphp
-
-                        @foreach($mutu['label'] as $index => $label)
-                            {{-- Kita lewati baris 'Total' agar tidak muncul di list --}}
-                            @if($label === 'Total') @continue @endif
-
-                            @php
-                                $vol = $mutu['volume'][$index] ?? 0;
-                                // Hitung persentase terhadap total volume
-                                $pct = $totalVolumeMutu > 0 ? round(($vol / $totalVolumeMutu) * 100, 1) : 0;
-                            @endphp
-
-                            <div class="mutu-item">
-                                <div class="mutu-info">
-                                    <span class="mutu-name">{{ $label }}</span>
-                                    <span class="mutu-pct">{{ $pct }}%</span>
-                                </div>
-                                <div class="progress-bar-bg">
-                                    <div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div>
-                                </div>
-                                <span class="mutu-val">{{ number_format($vol, 0, ',', '.') }} Ton</span>
+                        <div class="mutu-item">
+                            <div class="mutu-info">
+                                <span class="mutu-name">{{ $label }}</span>
+                                <span class="mutu-pct">{{ $pct }}%</span>
                             </div>
-                        @endforeach
-                    </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div>
+                            </div>
+                            <span class="mutu-val">{{ number_format($vol, 0, ',', '.') }} Ton</span>
+                        </div>
+                    @endforeach
                 </div>
-
+            </div>
             <div class="col-right bg-light border-left">
                 <p class="sidebar-title">Ringkasan Total</p>
                 <div class="stats-container">
-                    {{-- TOTAL REAL (Presisi 2 Desimal, tanpa /1000) --}}
                     <div class="summary-item">
                         <span class="sum-label">Total Real</span>
-                        <span class="sum-val orange">{{ number_format($totalVolume, 2, ',', '.') }} <small>Ton</small></span>
+                        <span class="sum-val orange">{{ number_format($totalVolume, 0, ',', '.') }} <small>Ton</small></span>
                     </div>
-                    
-                    {{-- TOTAL RKAP (Presisi 2 Desimal, tanpa /1000) --}}
                     <div class="summary-item">
                         <span class="sum-label">Total RKAP</span>
-                        <span class="sum-val dark">{{ number_format($rkapVolume, 2, ',', '.') }} <small>Ton</small></span>
+                        <span class="sum-val dark">{{ number_format($rkapVolume, 0, ',', '.') }} <small>Ton</small></span>
                     </div>
-
                     <div class="summary-item">
                         <span class="sum-label">Percentage</span>
                         <span class="sum-val huge">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%</span>
@@ -405,7 +367,7 @@
         </div>
     </div>
 
-    {{-- BARIS 5: MONTHLY REVENUE (UPDATED) --}}
+    {{-- BARIS 5: MONTHLY REVENUE (Sama) --}}
     <div class="card-std p-0 full-row-card">
         <div class="chart-header-padded">
             <h3>Monthly Revenue (Real vs RKAP)</h3>
@@ -414,62 +376,43 @@
             <div class="col-chart">
                 <div id="chart-monthly-rev"></div>
             </div>
-
             <div class="col-middle bg-light">
-                    <p class="sidebar-title">Rincian Mutu (Revenue)</p>
-                    <div class="mutu-list">
+                <p class="sidebar-title">Rincian Mutu (Revenue)</p>
+                <div class="mutu-list">
+                    @foreach($mutu['label'] as $index => $label)
+                        @if(strtoupper($label) === 'TOTAL') @continue @endif
                         @php
-                            // Ambil Total Revenue dari array mutu index ke-4 (Total)
-                            $totalRevenueMutu = $mutu['revenue'][4] ?? 0;
+                            $revValue = $mutu['revenue'][$index] ?? 0;
+                            $totalRevRaw = $totalRevenue / 1000000000;
+                            $pctRev = $totalRevRaw > 0 ? round(($revValue / $totalRevRaw) * 100, 1) : 0;
                         @endphp
-
-                        @foreach($mutu['label'] as $index => $label)
-                            {{-- Lewati baris 'Total' agar tidak duplikat dengan kolom kanan --}}
-                            @if($label === 'Total') @continue @endif
-
-                            @php
-                                $revValue = $mutu['revenue'][$index] ?? 0;
-                                // Hitung persentase revenue mutu terhadap total revenue
-                                $pctRev = $totalRevenueMutu > 0 ? round(($revValue / $totalRevenueMutu) * 100, 1) : 0;
-                            @endphp
-
-                            <div class="mutu-item">
-                                <div class="mutu-info">
-                                    <span class="mutu-name">{{ $label }}</span>
-                                    <span class="mutu-pct">{{ $pctRev }}%</span>
-                                </div>
-                                <div class="progress-bar-bg">
-                                    {{-- Gunakan class 'orange' agar sesuai dengan tema revenue --}}
-                                    <div class="progress-bar-fill" style="width: {{ $pctRev }}%"></div>
-                                </div>
-                                <span class="mutu-val">Rp {{ number_format($revValue, 0, ',', '.') }} M</span>
+                        <div class="mutu-item">
+                            <div class="mutu-info">
+                                <span class="mutu-name">{{ $label }}</span>
+                                <span class="mutu-pct">{{ $pctRev }}%</span>
                             </div>
-                        @endforeach
-                    </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill orange" style="width: {{ $pctRev }}%"></div>
+                            </div>
+                            <span class="mutu-val">Rp {{ number_format($revValue, 0, ',', '.') }} M</span>
+                        </div>
+                    @endforeach
                 </div>
-
+            </div>
             <div class="col-right bg-light border-left">
                 <p class="sidebar-title">Ringkasan Total</p>
                 <div class="stats-container">
                     <div class="summary-item">
                         <span class="sum-label">Total Real</span>
-                        <span class="sum-val orange">
-                            Rp {{ number_format($totalRevenueMutu, 0, ',', '.') }}<small>B</small>
-                        </span>
+                        <span class="sum-val orange">Rp {{ number_format($totalRevenue / 1000000000, 0, ',', '.') }}<small>M</small></span>
                     </div>
                     <div class="summary-item">
                         <span class="sum-label">Total RKAP</span>
-                        <span class="sum-val dark">
-                            Rp {{ number_format($rkapRevenue / 1000000000, 0, ',', '.') }}<small>B</small>
-                        </span>
+                        <span class="sum-val dark">Rp {{ number_format($rkapRevenue / 1000000000, 0, ',', '.') }}<small>M</small></span>
                     </div>
                     <div class="summary-item">
                         <span class="sum-label">Percentage</span>
-                        @php
-                            // Gunakan RKAP Revenue global yg sudah dikonversi ke satuan yg sebanding jika perlu
-                            // Atau hitung ulang dari komponen mutu jika ada RKAP mutu
-                            $totalPercentageRev = $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 0) : 0;
-                        @endphp
+                        @php $totalPercentageRev = $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 0) : 0; @endphp
                         <span class="sum-val huge">{{ $totalPercentageRev }}%</span>
                     </div>
                 </div>

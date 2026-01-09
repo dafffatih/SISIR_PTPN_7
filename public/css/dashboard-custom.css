@@ -168,7 +168,27 @@
 .dashboard-container .row-highlight { background-color: #475569; }
 .dashboard-container .row-highlight td { color: white !important; padding: 10px; }
 .dashboard-container .badge-date { background: #F1F5F9; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: #64748B; font-weight: 600; }
-
+.tender-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        padding: 10px 0;
+    }
+    .tender-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .tender-price {
+        font-size: 24px;
+        font-weight: 800;
+        color: #0F172A; /* Text Dark */
+    }
+    .tender-meta {
+        font-size: 12px;
+        color: #64748B; /* Text Gray */
+        font-weight: 500;
+    }
 /* Responsive adjustments */
 @media (max-width: 1200px) {
     .dashboard-container .row-grid-2 { grid-template-columns: 1fr; }
