@@ -13,8 +13,8 @@
         {{-- KIRI: Branding --}}
         <div class="hidden lg:flex items-center justify-center bg-white">
             <div class="text-center px-10">
-                <div class="mx-auto w-32 h-32 rounded-full bg-slate-100 flex items-center justify-center text-4xl">
-                    🏭
+                <div class="mx-auto w-32 h-32 flex items-center justify-center">
+                    <img src="{{ asset('images/SisirLogo.png') }}" alt="Logo Sisir" class="w-full h-full object-contain">
                 </div>
                 <h1 class="mt-6 text-3xl font-extrabold text-slate-900">SISIR</h1>
                 <p class="mt-2 text-slate-600">PTPN 1 Regional 7</p>
