@@ -22,143 +22,185 @@ class SheetController extends Controller
     /**
      * Halaman Manajemen Kontrak - Data REALTIME dari Google Sheets
      */
+    /**
+     * Halaman Manajemen Kontrak - Data REALTIME dari Google Sheets
+     */
     public function index(Request $request, GoogleSheetService $sheetService)
     {
-        // Ambil SEMUA data langsung dari Google Sheets (real-time)
-        $allData = $sheetService->getData();
+        // 1. Ambil Parameter Request
         $search = $request->input('search');
         $perPage = (int) $request->input('per_page', 10);
-        $sort = $request->input('sort', 'nomor_dosi');
-        $direction = strtolower($request->input('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
-        $startDate = $request->input('start_date');
+        $sort = $request->input('sort', 'nomor_dosi'); // Default sort
+        $direction = $request->input('direction', 'asc'); // asc atau desc
+        $startDate = $request->input('start_date'); // Input Y-m-d dari HTML5
         $endDate = $request->input('end_date');
 
+        // 2. Ambil Data Raw dari Google Sheets
+        $allData = $sheetService->getData();
         $filteredData = [];
 
-        // Process data dari Google Sheets dengan filtering
-        foreach ($allData as $index => $row) {
-            // Row number di Google Sheets dimulai dari A4 (index 0 = baris 4)
-            $realRowIndex = $index + 4;
+        // --- HELPER DATE PARSING (FIXED) ---
+        // Menangani format "18-Jul-2024" dan variasi lainnya
+        $parseDate = function ($val) {
+            if (empty($val) || $val === '-' || $val === '0') return null;
+            
+            try {
+                // Prioritas 1: Format spesifik "18-Jul-2024" (d-M-Y)
+                // Hati-hati: Carbon butuh locale English untuk "Jul", "Aug", "Oct".
+                // Jika sheet menggunakan bahasa Indo (Mei, Agt, Okt), perlu mapping manual atau set locale.
+                return Carbon::createFromFormat('d-M-Y', $val);
+            } catch (\Exception $e) {
+                try {
+                    // Prioritas 2: Format tanggal Excel / Universal (Y-m-d atau d/m/Y)
+                    return Carbon::parse($val);
+                } catch (\Exception $ex) {
+                    return null; // Gagal parsing
+                }
+            }
+        };
 
-            // Kolom I = Nomor Kontrak (index 8)
-            $I = $row[8] ?? '';
+        $formatNumber = function ($val) {
+            if (!$val && $val !== 0 && $val !== '0') return '';
+            $cleaned = str_replace(['.', ','], ['', '.'], $val);
+            return number_format((float)$cleaned, 0, ',', '.');
+        };
+
+        // 3. Mapping & Filtering
+        foreach ($allData as $index => $row) {
+            $realRowIndex = $index + 4; 
+            $I = $row[8] ?? ''; // Nomor Kontrak
+
             if (empty($I)) continue; // Skip baris kosong
 
-            // Format date helper
-            $formatDate = function ($val) {
-                if (!$val) return '';
-                try {
-                    return Carbon::parse($val)->format('d-M-Y');
-                } catch (\Exception $e) {
-                    return $val;
+            // Parsing Tanggal Kontrak
+            $rawTgl = $row[10] ?? '';
+            $tglKontrakObj = $parseDate($rawTgl);
+
+            // --- FILTERING TANGGAL (RANGE) ---
+            if ($startDate || $endDate) {
+                // Jika filter aktif tapi data ini tdk punya tanggal valid, skip
+                if (!$tglKontrakObj) {
+                    continue; 
                 }
-            };
 
-            // Format number helper
-            $formatNumber = function ($val) {
-                if (!$val && $val !== 0 && $val !== '0') return '';
-                $cleaned = str_replace(['.', ','], ['', '.'], $val);
-                return number_format((float)$cleaned, 0, ',', '.');
-            };
+                if ($startDate) {
+                    // Start of Day agar inklusif
+                    $startFilter = Carbon::parse($startDate)->startOfDay();
+                    if ($tglKontrakObj->lt($startFilter)) continue;
+                }
 
-            // Map data dari row Google Sheets
-            $rowDataMapped = [
-                'row' => $realRowIndex, // Row number untuk update/delete
-                'id' => $realRowIndex, // Gunakan row number sebagai ID
-                'H' => $row[7] ?? '',  // LO/EX
-                'I' => $I,             // Nomor Kontrak
-                'J' => $row[9] ?? '',  // Nama Pembeli
-                'K' => $formatDate($row[10] ?? ''),  // Tgl Kontrak
-                'K_raw' => $row[10] ?? '',           // Raw date for input
-                'L' => $formatNumber($row[11] ?? '0'),  // Volume
-                'M' => $formatNumber($row[12] ?? '0'),  // Harga
-                'N' => $formatNumber($row[13] ?? '0'),  // Nilai
-                'O' => $row[14] ?? '',  // Inc PPN
-                'P' => $formatDate($row[15] ?? ''),  // Tgl Bayar
-                'P_raw' => $row[15] ?? '',           // Raw date for input
-                'Q' => $row[16] ?? '',  // Unit
-                'R' => $row[17] ?? '',  // Mutu
-                'S' => $row[18] ?? '',  // Nomor DO/SI
-                'T' => $formatDate($row[19] ?? ''),  // Tgl DO/SI
-                'T_raw' => $row[19] ?? '',           // Raw date for input
-                'U' => $row[20] ?? '',  // PORT
-                'V' => $row[21] ?? '',  // Kontrak SAP
-                'W' => $row[22] ?? '',  // DP SAP
-                'X' => $row[23] ?? '',  // SO SAP
-                'Y' => $row[24] ?? '',  // Kode DO
-                'Z' => $formatNumber($row[25] ?? '0'),  // Sisa Awal
-                'AA' => $formatNumber($row[26] ?? '0'), // Total Layan
-                'AB' => $formatNumber($row[27] ?? '0'), // Sisa Akhir
-                'BA' => $formatDate($row[52] ?? ''),    // Jatuh Tempo
-                'BA_raw' => $row[52] ?? '',             // Raw date for input
+                if ($endDate) {
+                    // End of Day agar inklusif sampai jam 23:59
+                    $endFilter = Carbon::parse($endDate)->endOfDay();
+                    if ($tglKontrakObj->gt($endFilter)) continue;
+                }
+            }
+
+            // Mapping Data
+            $item = [
+                'row' => $realRowIndex,
+                'id' => $realRowIndex,
+                'H' => $row[7] ?? '',
+                'I' => $I,
+                'J' => $row[9] ?? '',
+                'K' => $tglKontrakObj ? $tglKontrakObj->format('d-M-Y') : $rawTgl, // Tampilan UI
+                'K_date' => $tglKontrakObj, // Object Carbon untuk sorting/filtering
+                'L' => $formatNumber($row[11] ?? '0'),
+                'M' => $formatNumber($row[12] ?? '0'),
+                'N' => $formatNumber($row[13] ?? '0'),
+                'O' => $row[14] ?? '',
+                'P' => $row[15] ?? '', 
+                'Q' => $row[16] ?? '',
+                'R' => $row[17] ?? '',
+                'S' => $row[18] ?? '', 
+                'T' => $row[19] ?? '',
+                'U' => $row[20] ?? '',
+                'V' => $row[21] ?? '',
+                'W' => $row[22] ?? '',
+                'X' => $row[23] ?? '',
+                'Y' => $row[24] ?? '',
+                'Z' => $formatNumber($row[25] ?? '0'),
+                'AA' => $formatNumber($row[26] ?? '0'),
+                'AB' => $formatNumber($row[27] ?? '0'),
+                'BA' => $row[52] ?? '',
             ];
 
-            // Filter berdasarkan search
+            // --- FILTERING SEARCH ---
             if ($search) {
                 $searchLower = strtolower($search);
-                if (!str_contains(strtolower($I), $searchLower) && 
-                    !str_contains(strtolower($rowDataMapped['J']), $searchLower) &&
-                    !str_contains(strtolower($rowDataMapped['S']), $searchLower) &&
-                    !str_contains(strtolower($rowDataMapped['V']), $searchLower) &&
-                    !str_contains(strtolower($rowDataMapped['X']), $searchLower)) {
+                if (!str_contains(strtolower($item['I']), $searchLower) && 
+                    !str_contains(strtolower($item['J']), $searchLower) &&
+                    !str_contains(strtolower($item['S']), $searchLower) &&
+                    !str_contains(strtolower($item['V']), $searchLower) && // Tambahan search SAP
+                    !str_contains(strtolower($item['X']), $searchLower)) {
                     continue;
                 }
             }
 
-            // Filter berdasarkan date range
-            if ($startDate || $endDate) {
-                try {
-                    $tglKontrak = !empty($row[10]) ? Carbon::parse($row[10]) : null;
-                    if ($startDate && $tglKontrak) {
-                        $start = Carbon::createFromFormat('Y-m-d', $startDate);
-                        if ($tglKontrak->lt($start)) continue;
-                    }
-                    if ($endDate && $tglKontrak) {
-                        $end = Carbon::createFromFormat('Y-m-d', $endDate);
-                        if ($tglKontrak->gt($end)) continue;
-                    }
-                } catch (\Exception $e) {}
-            }
-
-            $filteredData[] = $rowDataMapped;
+            $filteredData[] = $item;
         }
 
-        // Sorting
-        if ($sort === 'nomor_dosi') {
-            usort($filteredData, function ($a, $b) use ($direction) {
-                $parseDoSi = function ($doSi) {
+        // 4. Sorting Logic (FIXED)
+        usort($filteredData, function ($a, $b) use ($sort, $direction) {
+            // A. Sorting Tanggal
+            if ($sort === 'tgl_kontrak' || $sort === 'K_date') {
+                $valA = $a['K_date'];
+                $valB = $b['K_date'];
+
+                // 1. Cek Null (Kosong)
+                $nullA = is_null($valA);
+                $nullB = is_null($valB);
+
+                if ($nullA && $nullB) return 0;
+                
+                // Jika Ascending: Null ditaruh paling ATAS (-1)
+                // Jika Descending: Null ditaruh paling BAWAH (1)
+                if ($nullA) return ($direction === 'asc') ? -1 : 1;
+                if ($nullB) return ($direction === 'asc') ? 1 : -1;
+
+                // 2. Bandingkan Value Valid
+                if ($valA->eq($valB)) return 0;
+                
+                // Logika dasar compare: A < B return -1
+                $comparison = $valA->lt($valB) ? -1 : 1;
+                
+                // Balik jika Descending
+                return ($direction === 'asc') ? $comparison : -$comparison;
+            } 
+            
+            // B. Sorting Nomor DO/SI (Logic String Parsed)
+            elseif ($sort === 'nomor_dosi') {
+                 $parseDoSi = function ($doSi) {
                     if (!$doSi) return [0, 0];
                     $parts = explode('/', $doSi);
                     $number = (int) ($parts[0] ?? 0);
                     $year = (int) ($parts[2] ?? 0);
                     return [$year, $number];
-                };
-
-                [$yearA, $numA] = $parseDoSi($a['S']);
-                [$yearB, $numB] = $parseDoSi($b['S']);
-
-                if ($yearA !== $yearB) {
+                 };
+                 [$yearA, $numA] = $parseDoSi($a['S']);
+                 [$yearB, $numB] = $parseDoSi($b['S']);
+                 
+                 if ($yearA !== $yearB) {
                     return $direction === 'asc' ? $yearA <=> $yearB : $yearB <=> $yearA;
-                }
-                return $direction === 'asc' ? $numA <=> $numB : $numB <=> $numA;
-            });
-        } else {
-            $sortMap = [
-                'nomor_kontrak' => 'I',
-                'tgl_kontrak' => 'K',
-                'created_at' => 'K',
-            ];
-            $sortField = $sortMap[$sort] ?? 'S';
-            usort($filteredData, function ($a, $b) use ($sortField, $direction) {
-                $valA = $a[$sortField] ?? '';
-                $valB = $b[$sortField] ?? '';
+                 }
+                 return $direction === 'asc' ? $numA <=> $numB : $numB <=> $numA;
+            } 
+            
+            // C. Sorting String Biasa (No Kontrak, dll)
+            else {
+                $keyMap = ['nomor_kontrak' => 'I', 'pembeli' => 'J'];
+                $key = $keyMap[$sort] ?? 'I';
+                $valA = strtolower($a[$key] ?? '');
+                $valB = strtolower($b[$key] ?? '');
+                
+                if ($valA == $valB) return 0;
                 $cmp = strcmp($valA, $valB);
-                return $direction === 'asc' ? $cmp : -$cmp;
-            });
-        }
+                return ($direction === 'asc') ? $cmp : -$cmp;
+            }
+        });
 
-        // Pagination
-        $currentPage = (int) $request->get('page', 1);
+        // 5. Pagination
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $itemCollection = collect($filteredData);
         $currentPageItems = $itemCollection->slice(($currentPage - 1) * $perPage, $perPage)->all();
 
