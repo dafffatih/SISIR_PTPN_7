@@ -74,9 +74,10 @@
     }
 
     .users-table{
-      width: max-content;   /* ✅ bikin tabel ikut isi */
-      min-width: 980px;     /* ✅ paksa ada scroll di layar kecil */
-      border-collapse:collapse;
+    width: 100%;          /* ✅ tabel ikut full container */
+    min-width: 980px;     /* ✅ tetap bisa scroll di layar kecil */
+    border-collapse: collapse;
+    table-layout: auto;
     }
 
     .users-table thead {
