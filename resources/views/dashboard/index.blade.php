@@ -8,7 +8,7 @@
     use Carbon\Carbon;
     use Illuminate\Support\Str;
 
-    // 1. Data Cleaning (Sama seperti sebelumnya)
+    // 1. Data Cleaning Top Buyers (Sama seperti sebelumnya)
     $cleanTopBuyers = [];
     $fixedBuyers = [];
     foreach($topBuyers as $name => $val) {
@@ -19,28 +19,20 @@
     arsort($fixedBuyers);
     $cleanTopBuyers = array_slice($fixedBuyers, 0, 5);
 
-    // 2. FUNGSI MEMBUAT SINGKATAN (INISIAL)
-    // Contoh: "Wilson Tunggal Perkasa" -> "WTP"
+    // 2. Initials Buyer
     $buyerInitials = [];
     foreach(array_keys($cleanTopBuyers) as $name) {
         $words = explode(' ', $name);
         $initial = '';
         foreach($words as $w) {
-            // Ambil huruf pertama, abaikan karakter aneh, pastikan uppercase
             $initial .= strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $w), 0, 1));
         }
-        // Jika hasil kosong (misal simbol), pakai 3 huruf pertama nama asli
         $buyerInitials[] = $initial ?: substr($name, 0, 3);
     }
 
-    // 3. Simulasi Data Breakdown Mutu
-    $mutuBreakdown = [
-        ['name' => 'SIR 20', 'val' => 25200, 'pct' => 42],
-        ['name' => 'RSS 1', 'val' => 12500, 'pct' => 21],
-        ['name' => 'SIR 3L', 'val' => 10200, 'pct' => 17],
-        ['name' => 'SIR 3WF', 'val' => 8500, 'pct' => 14],
-        ['name' => 'OFF GRADE', 'val' => 2477, 'pct' => 6],
-    ];
+    // 3. DATA MANUAL UNTUK RINCIAN MUTU (DATA MAPPING)
+    // Dibuat agar sesuai dengan snippet 'Rincian Mutu' yang Anda minta.
+    // Angka diambil dari screenshot Excel Anda (Rekap4) agar presisi.
 @endphp
 
 <link rel="stylesheet" href="{{ asset('css/dashboard-custom.css') }}">
@@ -57,13 +49,14 @@
         </div>
     </div>
 
+    {{-- BARIS 1: KEY METRICS --}}
     <div class="row-grid-2">
         <div class="card-metric">
             <div class="metric-content">
                 <div class="metric-left">
                     <span class="metric-label">Total Volume</span>
                     <div class="metric-value-group">
-                        <span class="metric-number">{{ number_format($totalVolume, 2, ',', '.') }}</span>
+                        <span class="metric-number">{{ number_format($totalVolume, 0, ',', '.') }}</span>
                         <span class="metric-unit">Ton</span>
                     </div>
                     <div class="metric-progress">
@@ -90,7 +83,7 @@
                 <div class="metric-left">
                     <span class="metric-label">Total Revenue</span>
                     <div class="metric-value-group">
-                        <span class="metric-number">Rp {{ number_format($totalRevenue / 1000000000, 1, ',', '.') }}</span>
+                        <span class="metric-number">Rp {{ number_format($totalRevenue / 1000000000, 0, ',', '.') }}</span>
                         <span class="metric-unit">B</span>
                     </div>
                     <div class="metric-progress">
@@ -113,6 +106,7 @@
         </div>
     </div>
 
+    {{-- BARIS 2: TREND & DONUTS --}}
     <div class="row-grid-2">
         <div class="card-std">
             <div class="card-header">
@@ -134,7 +128,6 @@
                             <span class="dot" style="background: {{ $colors[$i % count($colors)] }}"></span>
                             <span class="name" title="{{ $buyer }}">
                                 {{ Str::limit($buyer, 15) }} 
-                                {{-- Opsional: Tampilkan singkatan juga di list --}}
                                 <span class="text-xs text-gray-400">({{ $buyerInitials[$i] }})</span>
                             </span>
                             <span class="val">{{ $totalVolume > 0 ? round(($vol/$totalVolume)*100, 0) : 0 }}%</span>
@@ -145,7 +138,7 @@
                     
                     <div class="donut-center-label">
                         <span class="lbl">Total Ton</span>
-                        <span class="num">{{ number_format($totalVolume/1000, 0, ',', '.') }}</span>
+                        <span class="num">{{ number_format($totalVolume, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
@@ -177,6 +170,7 @@
         </div>
     </div>
 
+    {{-- BARIS 3: TABEL STOK --}}
     <div class="row-grid-2">
         <div class="card-std card-table-compact">
             <div class="card-header flex-between">
@@ -345,6 +339,7 @@
         <div class="empty-placeholder"></div>
     </div>
 
+    {{-- BARIS 4: MONTHLY VOLUME (UPDATED) --}}
     <div class="card-std p-0 full-row-card">
         <div class="chart-header-padded">
             <h3>Monthly Volume (Real vs RKAP)</h3>
@@ -353,34 +348,54 @@
             <div class="col-chart">
                 <div id="chart-monthly-vol"></div>
             </div>
+
             <div class="col-middle bg-light">
-                <p class="sidebar-title">Rincian Mutu</p>
-                <div class="mutu-list">
-                    @foreach($mutuBreakdown as $m)
-                    <div class="mutu-item">
-                        <div class="mutu-info">
-                            <span class="mutu-name">{{ $m['name'] }}</span>
-                            <span class="mutu-pct">{{ $m['pct'] }}%</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="width: {{ $m['pct'] }}%"></div>
-                        </div>
-                        <span class="mutu-val">{{ number_format($m['val'], 0, ',', '.') }}</span>
+                    <p class="sidebar-title">Rincian Mutu (Volume)</p>
+                    <div class="mutu-list">
+                        @php
+                            // Ambil Total Volume dari array mutu index ke-4 (Total)
+                            $totalVolumeMutu = $mutu['volume'][4] ?? 0;
+                        @endphp
+
+                        @foreach($mutu['label'] as $index => $label)
+                            {{-- Kita lewati baris 'Total' agar tidak muncul di list --}}
+                            @if($label === 'Total') @continue @endif
+
+                            @php
+                                $vol = $mutu['volume'][$index] ?? 0;
+                                // Hitung persentase terhadap total volume
+                                $pct = $totalVolumeMutu > 0 ? round(($vol / $totalVolumeMutu) * 100, 1) : 0;
+                            @endphp
+
+                            <div class="mutu-item">
+                                <div class="mutu-info">
+                                    <span class="mutu-name">{{ $label }}</span>
+                                    <span class="mutu-pct">{{ $pct }}%</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div>
+                                </div>
+                                <span class="mutu-val">{{ number_format($vol, 0, ',', '.') }} Ton</span>
+                            </div>
+                        @endforeach
                     </div>
-                    @endforeach
                 </div>
-            </div>
+
             <div class="col-right bg-light border-left">
                 <p class="sidebar-title">Ringkasan Total</p>
                 <div class="stats-container">
+                    {{-- TOTAL REAL (Presisi 2 Desimal, tanpa /1000) --}}
                     <div class="summary-item">
                         <span class="sum-label">Total Real</span>
-                        <span class="sum-val orange">{{ number_format($totalVolume / 1000, 0, ',', '.') }} <small>Ton</small></span>
+                        <span class="sum-val orange">{{ number_format($totalVolume, 2, ',', '.') }} <small>Ton</small></span>
                     </div>
+                    
+                    {{-- TOTAL RKAP (Presisi 2 Desimal, tanpa /1000) --}}
                     <div class="summary-item">
                         <span class="sum-label">Total RKAP</span>
-                        <span class="sum-val dark">{{ number_format($rkapVolume / 1000, 0, ',', '.') }} <small>Ton</small></span>
+                        <span class="sum-val dark">{{ number_format($rkapVolume, 2, ',', '.') }} <small>Ton</small></span>
                     </div>
+
                     <div class="summary-item">
                         <span class="sum-label">Percentage</span>
                         <span class="sum-val huge">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%</span>
@@ -390,6 +405,7 @@
         </div>
     </div>
 
+    {{-- BARIS 5: MONTHLY REVENUE (UPDATED) --}}
     <div class="card-std p-0 full-row-card">
         <div class="chart-header-padded">
             <h3>Monthly Revenue (Real vs RKAP)</h3>
@@ -398,37 +414,63 @@
             <div class="col-chart">
                 <div id="chart-monthly-rev"></div>
             </div>
+
             <div class="col-middle bg-light">
-                <p class="sidebar-title">Rincian Mutu</p>
-                <div class="mutu-list">
-                    @foreach($mutuBreakdown as $m)
-                    <div class="mutu-item">
-                        <div class="mutu-info">
-                            <span class="mutu-name">{{ $m['name'] }}</span>
-                            <span class="mutu-pct">{{ $m['pct'] }}%</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill orange" style="width: {{ $m['pct'] }}%"></div>
-                        </div>
-                        <span class="mutu-val">Rp {{ number_format(($m['val'] * 25000)/1000000, 0, ',', '.') }}M</span>
+                    <p class="sidebar-title">Rincian Mutu (Revenue)</p>
+                    <div class="mutu-list">
+                        @php
+                            // Ambil Total Revenue dari array mutu index ke-4 (Total)
+                            $totalRevenueMutu = $mutu['revenue'][4] ?? 0;
+                        @endphp
+
+                        @foreach($mutu['label'] as $index => $label)
+                            {{-- Lewati baris 'Total' agar tidak duplikat dengan kolom kanan --}}
+                            @if($label === 'Total') @continue @endif
+
+                            @php
+                                $revValue = $mutu['revenue'][$index] ?? 0;
+                                // Hitung persentase revenue mutu terhadap total revenue
+                                $pctRev = $totalRevenueMutu > 0 ? round(($revValue / $totalRevenueMutu) * 100, 1) : 0;
+                            @endphp
+
+                            <div class="mutu-item">
+                                <div class="mutu-info">
+                                    <span class="mutu-name">{{ $label }}</span>
+                                    <span class="mutu-pct">{{ $pctRev }}%</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    {{-- Gunakan class 'orange' agar sesuai dengan tema revenue --}}
+                                    <div class="progress-bar-fill" style="width: {{ $pctRev }}%"></div>
+                                </div>
+                                <span class="mutu-val">Rp {{ number_format($revValue, 0, ',', '.') }} M</span>
+                            </div>
+                        @endforeach
                     </div>
-                    @endforeach
                 </div>
-            </div>
+
             <div class="col-right bg-light border-left">
                 <p class="sidebar-title">Ringkasan Total</p>
                 <div class="stats-container">
                     <div class="summary-item">
                         <span class="sum-label">Total Real</span>
-                        <span class="sum-val orange">Rp {{ number_format($totalRevenue / 1000000000, 1, ',', '.') }}<small>B</small></span>
+                        <span class="sum-val orange">
+                            Rp {{ number_format($totalRevenueMutu, 0, ',', '.') }}<small>B</small>
+                        </span>
                     </div>
                     <div class="summary-item">
                         <span class="sum-label">Total RKAP</span>
-                        <span class="sum-val dark">Rp {{ number_format($rkapRevenue / 1000000000, 1, ',', '.') }}<small>B</small></span>
+                        <span class="sum-val dark">
+                            Rp {{ number_format($rkapRevenue / 1000000000, 0, ',', '.') }}<small>B</small>
+                        </span>
                     </div>
                     <div class="summary-item">
                         <span class="sum-label">Percentage</span>
-                        <span class="sum-val huge">{{ $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 0) : 0 }}%</span>
+                        @php
+                            // Gunakan RKAP Revenue global yg sudah dikonversi ke satuan yg sebanding jika perlu
+                            // Atau hitung ulang dari komponen mutu jika ada RKAP mutu
+                            $totalPercentageRev = $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 0) : 0;
+                        @endphp
+                        <span class="sum-val huge">{{ $totalPercentageRev }}%</span>
                     </div>
                 </div>
             </div>
