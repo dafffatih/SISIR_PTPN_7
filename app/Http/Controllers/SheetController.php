@@ -25,36 +25,55 @@ class SheetController extends Controller
     /**
      * Halaman Manajemen Kontrak - Data REALTIME dari Google Sheets
      */
+    /**
+     * Halaman Manajemen Kontrak - Data REALTIME dari Google Sheets
+     */
     public function index(Request $request, GoogleSheetService $sheetService)
     {
         // 1. Ambil Parameter Request
         $search = $request->input('search');
         $perPage = (int) $request->input('per_page', 10);
-        $sort = $request->input('sort', 'nomor_dosi'); // Default sort
-        $direction = $request->input('direction', 'asc'); // asc atau desc
-        $startDate = $request->input('start_date'); // Input Y-m-d dari HTML5
+        $sort = $request->input('sort', 'nomor_dosi'); 
+        $direction = $request->input('direction', 'asc');
+        $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 
         // 2. Ambil Data Raw dari Google Sheets
         $allData = $sheetService->getData();
         $filteredData = [];
 
-        // --- HELPER DATE PARSING (FIXED) ---
-        // Menangani format "18-Jul-2024" dan variasi lainnya
-        $parseDate = function ($val) {
+        // --- HELPER TRANSLATE BULAN (INDO -> ENG) ---
+        // Ini kunci perbaikannya agar "Okt", "Agu", "Mei" terbaca
+        $translateMonth = function($dateStr) {
+            $map = [
+                'Jan' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Apr',
+                'Mei' => 'May', 'Jun' => 'Jun', 'Jul' => 'Jul', 
+                'Agt' => 'Aug', 'Agu' => 'Aug', // Handle Agt & Agu
+                'Sep' => 'Sep', 'Okt' => 'Oct', 'Nov' => 'Nov', 'Des' => 'Dec'
+            ];
+            // Case insensitive replace
+            return str_ireplace(array_keys($map), array_values($map), $dateStr);
+        };
+
+        // --- HELPER DATE PARSING ---
+        $parseDate = function ($val) use ($translateMonth) {
             if (empty($val) || $val === '-' || $val === '0') return null;
             
+            // Bersihkan spasi berlebih
+            $val = trim($val);
+            
+            // Terjemahkan dulu ke Inggris biar Carbon ngerti
+            $valEnglish = $translateMonth($val);
+
             try {
-                // Prioritas 1: Format spesifik "18-Jul-2024" (d-M-Y)
-                // Hati-hati: Carbon butuh locale English untuk "Jul", "Aug", "Oct".
-                // Jika sheet menggunakan bahasa Indo (Mei, Agt, Okt), perlu mapping manual atau set locale.
-                return Carbon::createFromFormat('d-M-Y', $val);
+                // Prioritas 1: Format "18-Jul-2024" (d-M-Y)
+                return Carbon::createFromFormat('d-M-Y', $valEnglish);
             } catch (\Exception $e) {
                 try {
-                    // Prioritas 2: Format tanggal Excel / Universal (Y-m-d atau d/m/Y)
-                    return Carbon::parse($val);
+                    // Prioritas 2: Format Excel/Universal
+                    return Carbon::parse($valEnglish);
                 } catch (\Exception $ex) {
-                    return null; // Gagal parsing
+                    return null; 
                 }
             }
         };
@@ -68,29 +87,24 @@ class SheetController extends Controller
         // 3. Mapping & Filtering
         foreach ($allData as $index => $row) {
             $realRowIndex = $index + 4; 
-            $I = $row[8] ?? ''; // Nomor Kontrak
+            $I = $row[8] ?? ''; 
 
-            if (empty($I)) continue; // Skip baris kosong
+            if (empty($I)) continue; 
 
             // Parsing Tanggal Kontrak
             $rawTgl = $row[10] ?? '';
-            $tglKontrakObj = $parseDate($rawTgl);
+            $tglKontrakObj = $parseDate($rawTgl); // Menggunakan helper baru
 
             // --- FILTERING TANGGAL (RANGE) ---
             if ($startDate || $endDate) {
-                // Jika filter aktif tapi data ini tdk punya tanggal valid, skip
-                if (!$tglKontrakObj) {
-                    continue; 
-                }
+                if (!$tglKontrakObj) continue; 
 
                 if ($startDate) {
-                    // Start of Day agar inklusif
                     $startFilter = Carbon::parse($startDate)->startOfDay();
                     if ($tglKontrakObj->lt($startFilter)) continue;
                 }
 
                 if ($endDate) {
-                    // End of Day agar inklusif sampai jam 23:59
                     $endFilter = Carbon::parse($endDate)->endOfDay();
                     if ($tglKontrakObj->gt($endFilter)) continue;
                 }
@@ -103,8 +117,8 @@ class SheetController extends Controller
                 'H' => $row[7] ?? '',
                 'I' => $I,
                 'J' => $row[9] ?? '',
-                'K' => $tglKontrakObj ? $tglKontrakObj->format('d-M-Y') : $rawTgl, // Tampilan UI
-                'K_date' => $tglKontrakObj, // Object Carbon untuk sorting/filtering
+                'K' => $tglKontrakObj ? $tglKontrakObj->format('d-M-Y') : $rawTgl, 
+                'K_date' => $tglKontrakObj, // Object Carbon yg sudah valid
                 'L' => $formatNumber($row[11] ?? '0'),
                 'M' => $formatNumber($row[12] ?? '0'),
                 'N' => $formatNumber($row[13] ?? '0'),
@@ -131,7 +145,7 @@ class SheetController extends Controller
                 if (!str_contains(strtolower($item['I']), $searchLower) && 
                     !str_contains(strtolower($item['J']), $searchLower) &&
                     !str_contains(strtolower($item['S']), $searchLower) &&
-                    !str_contains(strtolower($item['V']), $searchLower) && // Tambahan search SAP
+                    !str_contains(strtolower($item['V']), $searchLower) && 
                     !str_contains(strtolower($item['X']), $searchLower)) {
                     continue;
                 }
@@ -140,35 +154,39 @@ class SheetController extends Controller
             $filteredData[] = $item;
         }
 
-        // 4. Sorting Logic (FIXED)
+        // 4. Sorting Logic (Fixed for Ascending Nulls First)
         usort($filteredData, function ($a, $b) use ($sort, $direction) {
+            
             // A. Sorting Tanggal
             if ($sort === 'tgl_kontrak' || $sort === 'K_date') {
                 $valA = $a['K_date'];
                 $valB = $b['K_date'];
 
-                // 1. Cek Null (Kosong)
+                // Cek Null
                 $nullA = is_null($valA);
                 $nullB = is_null($valB);
 
                 if ($nullA && $nullB) return 0;
-                
-                // Jika Ascending: Null ditaruh paling ATAS (-1)
-                // Jika Descending: Null ditaruh paling BAWAH (1)
-                if ($nullA) return ($direction === 'asc') ? -1 : 1;
-                if ($nullB) return ($direction === 'asc') ? 1 : -1;
 
-                // 2. Bandingkan Value Valid
+                // LOGIKA UTAMA: Data kosong ditaruh DI ATAS saat Ascending
+                if ($nullA) {
+                    // Jika Ascending, A dianggap lebih kecil (-1) -> Naik ke atas
+                    return ($direction === 'asc') ? -1 : 1;
+                }
+                if ($nullB) {
+                    return ($direction === 'asc') ? 1 : -1;
+                }
+
+                // Bandingkan Tanggal Valid (Agustus < Oktober)
                 if ($valA->eq($valB)) return 0;
                 
-                // Logika dasar compare: A < B return -1
+                // Logic dasar: A < B return -1
                 $comparison = $valA->lt($valB) ? -1 : 1;
                 
-                // Balik jika Descending
                 return ($direction === 'asc') ? $comparison : -$comparison;
             } 
             
-            // B. Sorting Nomor DO/SI (Logic String Parsed)
+            // B. Sorting Nomor DO/SI
             elseif ($sort === 'nomor_dosi') {
                  $parseDoSi = function ($doSi) {
                     if (!$doSi) return [0, 0];
@@ -186,7 +204,7 @@ class SheetController extends Controller
                  return $direction === 'asc' ? $numA <=> $numB : $numB <=> $numA;
             } 
             
-            // C. Sorting String Biasa (No Kontrak, dll)
+            // C. Sorting Lainnya
             else {
                 $keyMap = ['nomor_kontrak' => 'I', 'pembeli' => 'J'];
                 $key = $keyMap[$sort] ?? 'I';
