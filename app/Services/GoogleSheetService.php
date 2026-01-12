@@ -6,6 +6,10 @@ use Google_Client;
 use Google_Service_Sheets;
 use Google_Service_Sheets_ValueRange;
 use Google_Service_Drive;
+use Google_Service_Sheets_Request;
+use Google_Service_Sheets_BatchUpdateSpreadsheetRequest;
+use Google_Service_Sheets_BatchUpdateValuesRequest;
+use App\Models\Setting; 
 
 class GoogleSheetService
 {
@@ -16,10 +20,9 @@ class GoogleSheetService
     public function __construct()
     {
         try {
-            // Load credentials path
+            // 1. Load Credentials
             $credentialsPath = storage_path('app/google/service-account.json');
             
-            // Validate credentials file exists
             if (!file_exists($credentialsPath)) {
                 throw new \Exception("Service account credentials file not found at: {$credentialsPath}");
             }
@@ -32,150 +35,122 @@ class GoogleSheetService
             $this->sheetsService = new Google_Service_Sheets($client);
             $this->driveService = new Google_Service_Drive($client);
             
-            // Load spreadsheet ID - try multiple methods
-            $this->spreadsheetId = config('services.google.sheet_id') 
-                                  ?? env('GOOGLE_SHEET_ID')
-                                  ?? $_ENV['GOOGLE_SHEET_ID']
-                                  ?? null;
+            // 2. Load Spreadsheet ID (Prioritas: Database -> Config -> Env)
+            $setting = Setting::where('key', 'google_sheet_id')->first();
+            $dbSheetId = $setting ? $setting->value : null;
+
+            $this->spreadsheetId = $dbSheetId 
+                                   ?? config('services.google.sheet_id') 
+                                   ?? env('GOOGLE_SHEET_ID')
+                                   ?? null;
             
-            // Debug log
-            \Log::info('GoogleSheetService initialized - Sheet ID: ' . ($this->spreadsheetId ? 'SET' : 'NOT SET'));
-            
-            // Throw error jika spreadsheetId tidak ditemukan
             if (!$this->spreadsheetId) {
-                throw new \Exception('GOOGLE_SHEET_ID is not configured. Please add it to .env file with key: GOOGLE_SHEET_ID');
+                \Log::warning('GOOGLE_SHEET_ID belum dikonfigurasi di Database maupun .env');
             }
+
         } catch (\Exception $e) {
             \Log::error('GoogleSheetService initialization error: ' . $e->getMessage());
             throw $e;
         }
     }
 
-    // Mengambil data dari sheet tertentu dengan error handling yang lebih baik
+    // Helper: Cari Sheet ID berdasarkan Nama
+    private function getSheetIdFromTitle($sheetName)
+    {
+        $spreadsheet = $this->sheetsService->spreadsheets->get($this->spreadsheetId);
+        foreach ($spreadsheet->getSheets() as $sheet) {
+            if ($sheet->getProperties()->getTitle() === $sheetName) {
+                return $sheet->getProperties()->getSheetId();
+            }
+        }
+        return null;
+    }
+
+    // 1. GET DATA SINGLE
     public function getData($spreadsheetId = null, $range = "'SC Sudah Bayar'!A4:BA")
     {
         try {
             $id = $spreadsheetId ?? $this->spreadsheetId;
-            
-            // Validate spreadsheetId
-            if (empty($id)) {
-                throw new \Exception('Spreadsheet ID is empty. Please check GOOGLE_SHEET_ID in .env');
-            }
-            
-            \Log::info('Fetching data from Google Sheets - ID: ' . $id . ' - Range: ' . $range);
+            if (empty($id)) throw new \Exception('Spreadsheet ID missing.');
             
             $response = $this->sheetsService->spreadsheets_values->get($id, $range);
-            $values = $response->getValues() ?? [];
-            
-            if (empty($values)) {
-                \Log::warning('Empty response from Google Sheets for range: ' . $range);
-            }
-            
-            return $values;
+            return $response->getValues() ?? [];
         } catch (\Exception $e) {
-            \Log::error('Error fetching data from Google Sheets - Range: ' . $range . ' - Error: ' . $e->getMessage());
+            \Log::error('Error fetching data: ' . $e->getMessage());
             throw $e;
         }
     }
 
-    // Fungsi helper untuk get multiple ranges sekaligus (batch)
+    // 2. GET BATCH DATA (FIXED HERE)
     public function getBatchData($ranges)
     {
         try {
-            $response = $this->sheetsService->spreadsheets_values->batchGet($this->spreadsheetId, ['ranges' => $ranges]);
+            if (empty($this->spreadsheetId)) throw new \Exception('Spreadsheet ID missing');
+
+            $params = ['ranges' => $ranges];
             
-            $result = [];
-            $valueRanges = $response->getValueRanges();
+            // --- PERBAIKAN DI SINI ---
+            // Menggunakan method bawaan Google: batchGet
+            $result = $this->sheetsService->spreadsheets_values->batchGet($this->spreadsheetId, $params);
             
-            if (!empty($valueRanges)) {
-                foreach ($valueRanges as $index => $valueRange) {
-                    $result[$ranges[$index]] = $valueRange->getValues() ?? [];
+            // Mapping hasil agar Key Array sesuai dengan Range yang diminta
+            // Google mengembalikan hasil sesuai urutan request
+            $mappedData = [];
+            $valueRanges = $result->getValueRanges();
+
+            foreach ($ranges as $index => $range) {
+                // Pastikan ada datanya, jika tidak return array kosong
+                if (isset($valueRanges[$index])) {
+                    $mappedData[$range] = $valueRanges[$index]->getValues() ?? [];
+                } else {
+                    $mappedData[$range] = [];
                 }
             }
             
-            return $result;
+            return $mappedData;
+
         } catch (\Exception $e) {
-            \Log::error('Error fetching batch data from Google Sheets: ' . $e->getMessage());
+            \Log::error('Batch get failed: ' . $e->getMessage());
             return [];
         }
     }
 
-    // List spreadsheets dalam folder tertentu menggunakan Google Drive API
-    public function listSpreadsheetsInFolder($folderId)
-    {
-        $query = "mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false and '{$folderId}' in parents";
-        
-        $optParams = [
-            'q' => $query,
-            'spaces' => 'drive',
-            'fields' => 'files(id, name)',
-            'pageSize' => 100,
-        ];
-
-        try {
-            $results = $this->driveService->files->listFiles($optParams);
-            $files = $results->getFiles();
-            
-            $spreadsheets = [];
-            foreach ($files as $file) {
-                $spreadsheets[] = [
-                    'id' => $file->getId(),
-                    'name' => $file->getName(),
-                ];
-            }
-            
-            return $spreadsheets;
-        } catch (\Exception $e) {
-            throw new \Exception('Error fetching files from Google Drive: ' . $e->getMessage());
-        }
-    }
-
-    // Update data berdasarkan nomor baris
+    // 3. UPDATE DATA
     public function updateData($row, $data, $sheetName = 'SC Sudah Bayar')
     {
-        $body = new Google_Service_Sheets_ValueRange([
-            'values' => [$data]
-        ]);
+        if (empty($this->spreadsheetId)) throw new \Exception('Spreadsheet ID missing');
 
+        $body = new Google_Service_Sheets_ValueRange(['values' => [$data]]);
         $params = ['valueInputOption' => 'USER_ENTERED'];
         $range = "'{$sheetName}'!A{$row}:BA{$row}";
 
-        $this->sheetsService->spreadsheets_values->update(
-            $this->spreadsheetId,
-            $range,
-            $body,
-            $params
-        );
+        $this->sheetsService->spreadsheets_values->update($this->spreadsheetId, $range, $body, $params);
     }
 
-    // Tambah data baru (Append)
+    // 4. STORE DATA
     public function storeData($data, $sheetName = 'SC Sudah Bayar')
     {
-        $body = new Google_Service_Sheets_ValueRange([
-            'values' => [$data]
-        ]);
+        if (empty($this->spreadsheetId)) throw new \Exception('Spreadsheet ID missing');
 
+        $body = new Google_Service_Sheets_ValueRange(['values' => [$data]]);
         $params = ['valueInputOption' => 'USER_ENTERED'];
-
-        // UBAH DISINI: 
-        // Menggunakan A:A memaksa Google API mencari baris kosong pertama 
-        // berdasarkan kolom A, lalu memasukkan array data mulai dari kolom A.
         $range = "'{$sheetName}'!A:AB"; 
 
-        $this->sheetsService->spreadsheets_values->append(
-            $this->spreadsheetId,
-            $range,
-            $body,
-            $params
-        );
+        $this->sheetsService->spreadsheets_values->append($this->spreadsheetId, $range, $body, $params);
     }
 
-    public function deleteData($row)
+    // 5. DELETE DATA
+    public function deleteData($row, $sheetName = 'SC Sudah Bayar')
     {
-        $sheetId = 2061910826; // GANTI dengan GID tab 'SC Sudah Bayar' Anda
+        if (empty($this->spreadsheetId)) throw new \Exception('Spreadsheet ID missing');
+
+        $sheetId = $this->getSheetIdFromTitle($sheetName);
+        if ($sheetId === null) {
+            throw new \Exception("Sheet '{$sheetName}' not found.");
+        }
 
         $requests = [
-            new \Google_Service_Sheets_Request([
+            new Google_Service_Sheets_Request([
                 'deleteDimension' => [
                     'range' => [
                         'sheetId' => $sheetId,
@@ -187,68 +162,54 @@ class GoogleSheetService
             ])
         ];
 
-        $batchUpdateRequest = new \Google_Service_Sheets_BatchUpdateSpreadsheetRequest([
-            'requests' => $requests
-        ]);
-
+        $batchUpdateRequest = new Google_Service_Sheets_BatchUpdateSpreadsheetRequest(['requests' => $requests]);
         $this->sheetsService->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
     }
 
-    /**
-     * Batch update multiple cells - update hanya kolom yang berubah
-     * Format: ['range' => value, 'range2' => value2]
-     * Range contoh: "'{sheet}'!H4" atau "'{sheet}'!I5:J5"
-     */
+    // 6. BATCH UPDATE (WRITE)
     public function batchUpdate($updates, $sheetName = 'SC Sudah Bayar')
     {
         try {
-            $body = new \Google_Service_Sheets_ValueRange();
+            if (empty($this->spreadsheetId)) throw new \Exception('Spreadsheet ID missing');
+
             $data = [];
-
-            // Build requests untuk setiap range
             foreach ($updates as $range => $value) {
-                // Replace '{sheet}' dengan actual sheet name
                 $actualRange = str_replace('{sheet}', $sheetName, $range);
-                
-                $valueRange = new \Google_Service_Sheets_ValueRange([
+                $data[] = new Google_Service_Sheets_ValueRange([
                     'range' => $actualRange,
-                    'values' => [[$value]]  // Wrap dalam array untuk single cell
+                    'values' => [[$value]]
                 ]);
-                $data[] = $valueRange;
             }
 
-            if (empty($data)) {
-                throw new \Exception('No data to update');
-            }
+            if (empty($data)) return;
 
-            // Use batchUpdate untuk update multiple ranges
-            $batchBody = new \Google_Service_Sheets_BatchUpdateValuesRequest([
+            $batchBody = new Google_Service_Sheets_BatchUpdateValuesRequest([
                 'data' => $data,
                 'valueInputOption' => 'USER_ENTERED'
             ]);
 
-            $response = $this->sheetsService->spreadsheets_values->batchUpdate(
-                $this->spreadsheetId,
-                $batchBody
-            );
-
-            \Log::info('Batch update successful - Response: ' . json_encode($response));
-            return $response;
+            return $this->sheetsService->spreadsheets_values->batchUpdate($this->spreadsheetId, $batchBody);
         } catch (\Exception $e) {
             \Log::error('Batch update failed: ' . $e->getMessage());
             throw $e;
         }
     }
 
-    public function batchGet($ranges)
+    // 7. LIST FILES
+    public function listSpreadsheetsInFolder($folderId)
     {
-        $params = ['ranges' => $ranges];
-        $result = $this->service->spreadsheets_values->batchGet($this->spreadsheetId, $params);
-        
-        $data = [];
-        foreach ($result->getValueRanges() as $valueRange) {
-            $data[$valueRange->getRange()] = $valueRange->getValues() ?? [];
+        $query = "mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false and '{$folderId}' in parents";
+        $optParams = ['q' => $query, 'spaces' => 'drive', 'fields' => 'files(id, name)', 'pageSize' => 100];
+
+        try {
+            $results = $this->driveService->files->listFiles($optParams);
+            $spreadsheets = [];
+            foreach ($results->getFiles() as $file) {
+                $spreadsheets[] = ['id' => $file->getId(), 'name' => $file->getName()];
+            }
+            return $spreadsheets;
+        } catch (\Exception $e) {
+            throw new \Exception('Error fetching drive files: ' . $e->getMessage());
         }
-        return $data;
     }
 }
