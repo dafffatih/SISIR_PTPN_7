@@ -22,7 +22,7 @@ $menus = [
 
     min-height: 100vh;
     height: 100vh;
-    height: 100dvh; /* ✅ mobile safe */
+    height: 100dvh;
 
     background: #1e293b;
     color: #fff;
@@ -40,12 +40,9 @@ $menus = [
 
     box-sizing: border-box;
     flex-shrink: 0;
-
-    /* ✅ penting biar sidebar gak bikin overflow horizontal */
     overflow-x: hidden;
   }
 
-  /* tablet width pakai variable yang sama dengan app.blade.php */
   @media (max-width: 1024px) and (min-width: 769px){
     .sisir-sidebar{
       width: var(--sidebar-w-tablet, 220px);
@@ -53,7 +50,6 @@ $menus = [
     }
   }
 
-  /* mobile width (off-canvas) */
   @media (max-width: 480px){
     .sisir-sidebar{
       width: 280px;
@@ -90,54 +86,59 @@ $menus = [
     -webkit-overflow-scrolling: touch;
   }
 
-  /* brand */
+  /* =========================
+     BRAND (LOGO DI ATAS)
+  ========================= */
   .sisir-brand-container{
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 24px;
     padding: 0 8px;
   }
 
-  .sisir-brand-left{
+  .sisir-brand-center{
+    flex: 1;
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    align-items: center;  /* ✅ center */
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
     min-width: 0;
+    padding-right: 6px;
   }
 
   .sisir-logo{
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
+    width: 150px;        /* ✅ wordmark lebih enak */
+    max-width: 100%;
+    height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+  }
+  .sisir-logo img{
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
   }
 
-  .sisir-brand-text{
-    display: flex;
-    flex-direction: column;
-    line-height: 1.1;
-    min-width: 0;
-  }
-  .sisir-brand-title{
-    font-weight: 800;
-    font-size: 18px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .sisir-brand-subtitle{
-    font-size: 12px;
-    color: #94a3b8;
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+.sisir-brand-subtitle{
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: .2px;
+
+  white-space: normal;      /* ✅ boleh pindah baris */
+  overflow: visible;        /* ✅ tidak dipotong */
+  text-overflow: unset;
+
+  line-height: 1.35;
+  max-width: 220px;         /* ✅ biar rapi & center */
+}
+
 
   /* tombol collapse desktop */
   .sisir-collapse-btn{
@@ -152,6 +153,8 @@ $menus = [
     align-items: center;
     justify-content: center;
     transition: .2s;
+    flex-shrink: 0;
+    margin-top: 2px;
   }
   .sisir-collapse-btn:hover{ background: rgba(255,255,255,.14); }
 
@@ -159,13 +162,16 @@ $menus = [
     .sisir-collapse-btn{ display: none; }
   }
 
-  /* nav */
+  /* =========================
+     NAV
+  ========================= */
   .sisir-nav{
     display: flex;
     flex-direction: column;
     gap: 6px;
     padding: 0 6px;
   }
+
   .sisir-link{
     text-decoration: none;
     color: #e2e8f0;
@@ -177,19 +183,31 @@ $menus = [
     transition: .2s;
     font-size: 16px;
   }
-  .sisir-link:hover{ background: rgba(255,255,255,.06); color: #fff; }
+
+  .sisir-link:hover{
+    background: rgba(255,255,255,.06);
+    color: #fff;
+  }
+
   .sisir-link.is-active{
     background: linear-gradient(90deg,#f97316 0%,#ef4444 100%);
     color: #fff;
     font-weight: 600;
   }
-  .sisir-link i{ width: 20px; text-align: center; }
 
-  /* logout */
+  .sisir-link i{
+    width: 20px;
+    text-align: center;
+  }
+
+  /* =========================
+     LOGOUT
+  ========================= */
   .sisir-logout-container{
     padding: 16px;
     border-top: 1px solid rgba(255,255,255,.1);
   }
+
   .sisir-logout-btn{
     width: 100%;
     padding: 12px 14px;
@@ -205,21 +223,22 @@ $menus = [
     font-weight: 600;
     transition: .2s;
   }
+
   .sisir-logout-btn:hover{ background:#475569; }
 </style>
 
 <aside class="sisir-sidebar" id="sidebar">
   <div class="sisir-sidebar-content">
+
+    {{-- BRAND HEADER (LOGO ATAS + SUBTITLE) --}}
     <div class="sisir-brand-container">
-      <div class="sisir-brand-left">
+      <div class="sisir-brand-center">
         <div class="sisir-logo">
-          <img src="{{ asset('images/SisirLogo.png') }}" alt="Logo Sisir" style="max-height: 40px;">
+          {{-- ✅ Pakai wordmark logo (transparan) --}}
+          <img src="{{ asset('images/SisirLogo.png') }}" alt="SISIR">
         </div>
 
-        <div class="sisir-brand-text">
-          <div class="sisir-brand-title">SISIR</div>
-          <div class="sisir-brand-subtitle">PTPN 1 Regional 7</div>
-        </div>
+        <div class="sisir-brand-subtitle"> Sales and Inventories Statistic of Rubber</div>
       </div>
 
       <button class="sisir-collapse-btn" type="button" title="Collapse Sidebar"
@@ -228,6 +247,7 @@ $menus = [
       </button>
     </div>
 
+    {{-- NAV MENU --}}
     <nav class="sisir-nav">
       @foreach($menus as $m)
         @if(in_array($role, $m['roles']))
@@ -239,8 +259,10 @@ $menus = [
         @endif
       @endforeach
     </nav>
+
   </div>
 
+  {{-- LOGOUT --}}
   <div class="sisir-logout-container">
     <form method="POST" action="{{ route('logout') }}">
       @csrf
