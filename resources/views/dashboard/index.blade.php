@@ -3,25 +3,24 @@
 @section('title', 'Dashboard Overview')
 
 @section('content')
-{{-- BLOK PHP: DATA PRE-PROCESSING --}}
+{{-- BLOK PHP: INITIALIZATION --}}
 @php
-    use Carbon\Carbon;
     use Illuminate\Support\Str;
 
-    // 1. Data Cleaning Top Buyers
-    $cleanTopBuyers = [];
-    $fixedBuyers = [];
-    foreach($topBuyers as $name => $val) {
-        $upperName = strtoupper($name);
-        if(!isset($fixedBuyers[$upperName])) $fixedBuyers[$upperName] = 0;
-        $fixedBuyers[$upperName] += $val;
-    }
-    arsort($fixedBuyers);
-    $cleanTopBuyers = array_slice($fixedBuyers, 0, 5);
-
-    // 2. Initials Buyer
+    // KITA GUNAKAN DATA YANG SUDAH DIOLAH CONTROLLER ($top5Buyers & $top5Products)
+    // Default tampilkan kategori 'TOTAL'
+    
+    // 1. Prepare Top Buyers (Ambil kategori TOTAL)
+    // Struktur: ['BuyerA' => 100, 'BuyerB' => 50, 'TOTAL' => 150]
+    $initBuyers = $top5Buyers['TOTAL'] ?? [];
+    // Pisahkan 'TOTAL' (grand total) dari list buyer
+    $buyersTotalVol = $initBuyers['TOTAL'] ?? 0;
+    if(isset($initBuyers['TOTAL'])) unset($initBuyers['TOTAL']); 
+    
+    // Generate Initials
     $buyerInitials = [];
-    foreach(array_keys($cleanTopBuyers) as $name) {
+    foreach(array_keys($initBuyers) as $name) {
+        $name = (string)$name; // Paksa string untuk keamanan
         $words = explode(' ', $name);
         $initial = '';
         foreach($words as $w) {
@@ -29,6 +28,15 @@
         }
         $buyerInitials[] = $initial ?: substr($name, 0, 3);
     }
+
+    // 2. Prepare Top Products (Ambil kategori TOTAL)
+    $initProducts = $top5Products['TOTAL'] ?? [];
+    $productsTotalVol = $initProducts['TOTAL'] ?? 0;
+    if(isset($initProducts['TOTAL'])) unset($initProducts['TOTAL']);
+
+    // Warna Chart
+    $chartColors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8', '#8B5CF6'];
+    $prodColors  = ['#EF4444', '#10B981', '#3B82F6', '#F59E0B', '#6366F1', '#EC4899'];
 @endphp
 
 <link rel="stylesheet" href="{{ asset('css/dashboard-custom.css') }}">
@@ -108,82 +116,115 @@
             {{-- 1. GRAFIK TREND --}}
             <div class="card-std">
                 <div class="card-header">
-                    <h3>Average Selling Price Trend (Monthly)</h3>
+                    <h3>Average Selling Price Trend (Daily)</h3>
                 </div>
                 <div id="chart-price-monthly"></div>
             </div>
 
-            {{-- 2. LAST TENDER PRICE (BARU) --}}
+            {{-- 2. LAST TENDER PRICE --}}
             <div class="card-std" style="padding: 24px;">
                 <div style="margin-bottom: 16px; font-size: 14px; color: #64748B;">Last Tender Price/Kg</div>
                 <div class="tender-grid">
+                    @php
+                        // Safety check access array keys
+                        $pSir20 = $lastTender['sir20']['price'] ?? 0;
+                        $dSir20 = $lastTender['sir20']['date'] ?? '-';
+                        $pRss   = $lastTender['rss']['price'] ?? 0;
+                        $dRss   = $lastTender['rss']['date'] ?? '-';
+                        $pSir3l = $lastTender['sir3l']['price'] ?? 0;
+                        $dSir3l = $lastTender['sir3l']['date'] ?? '-';
+                    @endphp
                     <div class="tender-item">
-                        <span class="tender-price">Rp {{ number_format($lastTender['sir20']['price'], 0, ',', '.') }}</span>
-                        <span class="tender-meta">SIR20 - {{ $lastTender['sir20']['date'] }}</span>
+                        <span class="tender-price">Rp {{ number_format($pSir20, 0, ',', '.') }}</span>
+                        <span class="tender-meta">SIR20 - {{ $dSir20 }}</span>
                     </div>
                     <div class="tender-item">
-                        <span class="tender-price">Rp {{ number_format($lastTender['rss']['price'], 0, ',', '.') }}</span>
-                        <span class="tender-meta">RSS - {{ $lastTender['rss']['date'] }}</span>
+                        <span class="tender-price">Rp {{ number_format($pRss, 0, ',', '.') }}</span>
+                        <span class="tender-meta">RSS - {{ $dRss }}</span>
                     </div>
                     <div class="tender-item">
-                        <span class="tender-price">Rp {{ number_format($lastTender['sir3l']['price'], 0, ',', '.') }}</span>
-                        <span class="tender-meta">SIR3L - {{ $lastTender['sir3l']['date'] }}</span>
+                        <span class="tender-price">Rp {{ number_format($pSir3l, 0, ',', '.') }}</span>
+                        <span class="tender-meta">SIR3L - {{ $dSir3l }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-stacked">
+            {{-- 1. TOP 5 BUYERS --}}
             <div class="card-std card-half">
-                <div class="card-header"><h3>Top 5 Buyers</h3></div>
+                <div class="card-header flex-between">
+                    <h3>Top 5 Buyers</h3>
+                    <select id="buyer-filter" class="form-select-sm" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; font-size: 12px; color: #475569; outline: none;">
+                        <option value="TOTAL" selected>TOTAL</option>
+                        <option value="SIR 20">SIR 20</option>
+                        <option value="RSS 1">RSS 1</option>
+                        <option value="SIR 3L">SIR 3L</option>
+                        <option value="SIR 3WF">SIR 3WF</option>
+                    </select>
+                </div>
                 <div class="donut-container">
                     <div id="chart-buyer" class="chart-donut"></div>
-                    <div class="custom-legend">
-                        @php $colors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8']; $i=0; @endphp
-                        @foreach($cleanTopBuyers as $buyer => $vol)
+                    
+                    <div class="custom-legend" id="buyer-legend-container">
+                        @php $i=0; @endphp
+                        @foreach($initBuyers as $buyer => $vol)
                         <div class="legend-item">
-                            <span class="dot" style="background: {{ $colors[$i % count($colors)] }}"></span>
+                            <span class="dot" style="background: {{ $chartColors[$i % count($chartColors)] }}"></span>
                             <span class="name" title="{{ $buyer }}">
                                 {{ Str::limit($buyer, 15) }} 
-                                <span class="text-xs text-gray-400">({{ $buyerInitials[$i] }})</span>
+                                <span class="text-xs text-gray-400">({{ $buyerInitials[$i] ?? substr($buyer,0,3) }})</span>
                             </span>
-                            <span class="val">{{ $totalVolume > 0 ? round(($vol/$totalVolume)*100, 0) : 0 }}%</span>
+                            <span class="val">{{ $buyersTotalVol > 0 ? round(($vol/$buyersTotalVol)*100, 0) : 0 }}%</span>
                         </div>
                         @php $i++; @endphp
                         @endforeach
                     </div>
+                    
                     <div class="donut-center-label">
                         <span class="lbl">Total Ton</span>
-                        <span class="num">{{ number_format($totalVolume, 0, ',', '.') }}</span>
+                        <span class="num" id="buyer-center-total">{{ number_format($buyersTotalVol, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
 
+            {{-- 2. TOP 5 PRODUCTS --}}
             <div class="card-std card-half">
-                <div class="card-header"><h3>Top 5 Products</h3></div>
+                <div class="card-header flex-between">
+                    <h3>Top 5 Products</h3>
+                    <select id="product-filter" class="form-select-sm" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; font-size: 12px; color: #475569; outline: none;">
+                        <option value="TOTAL" selected>TOTAL</option>
+                        <option value="SIR 20">SIR 20</option>
+                        <option value="RSS 1">RSS 1</option>
+                        <option value="SIR 3L">SIR 3L</option>
+                        <option value="SIR 3WF">SIR 3WF</option>
+                    </select>
+                </div>
                 <div class="donut-container">
                     <div id="chart-product" class="chart-donut"></div>
-                    <div class="custom-legend">
-                        @php $colors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8', '#EF4444', '#10B981', '#F59E0B', '#6366F1', '#EC4899']; $i=0; @endphp
-                        @foreach($topProducts as $prod => $vol)
+                    
+                    <div class="custom-legend" id="product-legend-container">
+                        @php $i=0; @endphp
+                        @foreach($initProducts as $prod => $vol)
                         <div class="legend-item">
-                            <span class="dot" style="background: {{ $colors[$i % count($colors)] }}"></span>
+                            <span class="dot" style="background: {{ $prodColors[$i % count($prodColors)] }}"></span>
                             <span class="name">{{ $prod }}</span>
-                            <span class="val">{{ $totalVolume > 0 ? round(($vol/$totalVolume)*100, 0) : 0 }}%</span>
+                            <span class="val">{{ $productsTotalVol > 0 ? round(($vol/$productsTotalVol)*100, 0) : 0 }}%</span>
                         </div>
                         @php $i++; @endphp
                         @endforeach
                     </div>
+
                     <div class="donut-center-label">
                         <span class="lbl">Total Ton</span>
-                        <span class="num">{{ number_format($totalVolume, 0, ',', '.') }}</span>
+                        <span class="num" id="product-center-total">{{ number_format($productsTotalVol, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- BARIS 3: TABEL STOK (Sama) --}}
+    {{-- BARIS 3: TABEL STOK (Defensive Coding Added) --}}
     <div class="row-grid-2">
         <div class="card-std card-table-compact">
             <div class="card-header flex-between">
@@ -204,10 +245,12 @@
                     </thead>
                     <tbody>
                         @php
-                            $StokSir20  = $stokData['produksi']['sir20'];
-                            $StokRss    = $stokData['produksi']['rss'];
-                            $StokSir3l  = $stokData['produksi']['sir3l'];
-                            $StokSir3wf = $stokData['produksi']['sir3wf'];
+                            // Ambil data dengan fallback ke 0 jika struktur array tidak sesuai
+                            $p = $stokData['produksi'] ?? [];
+                            $StokSir20  = $p['sir20'] ?? 0;
+                            $StokRss    = $p['rss'] ?? 0;
+                            $StokSir3l  = $p['sir3l'] ?? 0;
+                            $StokSir3wf = $p['sir3wf'] ?? 0;
                             $StokTotal  = $StokSir20 + $StokRss + $StokSir3l + $StokSir3wf;
                         @endphp
                         <tr>
@@ -220,10 +263,11 @@
                         </tr>
                         <tr class="separator-header"><td colspan="5">OUTSTANDING CONTRACT</td></tr>
                         @php
-                            $StokSbSir20  = $stokData['sudah_bayar']['sir20'];
-                            $StokSbRss    = $stokData['sudah_bayar']['rss'];
-                            $StokSbSir3l  = $stokData['sudah_bayar']['sir3l'];
-                            $StokSbSir3wf = $stokData['sudah_bayar']['sir3wf'];
+                            $sb = $stokData['sudah_bayar'] ?? [];
+                            $StokSbSir20  = $sb['sir20'] ?? 0;
+                            $StokSbRss    = $sb['rss'] ?? 0;
+                            $StokSbSir3l  = $sb['sir3l'] ?? 0;
+                            $StokSbSir3wf = $sb['sir3wf'] ?? 0;
                             $StokSbTotal  = $StokSbSir20 + $StokSbRss + $StokSbSir3l + $StokSbSir3wf;
                         @endphp
                         <tr>
@@ -235,10 +279,11 @@
                             <td class="font-bold">{{ number_format($StokSbTotal, 0, ',', '.') }}</td>
                         </tr>
                         @php
-                            $StokBbSir20  = $stokData['belum_bayar']['sir20'];
-                            $StokBbRss    = $stokData['belum_bayar']['rss'];
-                            $StokBbSir3l  = $stokData['belum_bayar']['sir3l'];
-                            $StokBbSir3wf = $stokData['belum_bayar']['sir3wf'];
+                            $bb = $stokData['belum_bayar'] ?? [];
+                            $StokBbSir20  = $bb['sir20'] ?? 0;
+                            $StokBbRss    = $bb['rss'] ?? 0;
+                            $StokBbSir3l  = $bb['sir3l'] ?? 0;
+                            $StokBbSir3wf = $bb['sir3wf'] ?? 0;
                             $StokBbTotal  = $StokBbSir20 + $StokBbRss + $StokBbSir3l + $StokBbSir3wf;
                         @endphp
                         <tr>
@@ -280,10 +325,11 @@
                             <td class="{{ $StokBebasTotal < 0 ? 'text-red-700 font-black' : 'font-black' }}">{{ number_format($StokBebasTotal, 0, ',', '.') }}</td>
                         </tr>
                         @php
-                            $StokBahanBakuSir20  = $stokData['bahan_baku']['sir20'];
-                            $StokBahanBakuRss    = $stokData['bahan_baku']['rss'];
-                            $StokBahanBakuSir3l  = $stokData['bahan_baku']['sir3l'];
-                            $StokBahanBakuSir3wf = $stokData['bahan_baku']['sir3wf'];
+                            $bk = $stokData['bahan_baku'] ?? [];
+                            $StokBahanBakuSir20  = $bk['sir20'] ?? 0;
+                            $StokBahanBakuRss    = $bk['rss'] ?? 0;
+                            $StokBahanBakuSir3l  = $bk['sir3l'] ?? 0;
+                            $StokBahanBakuSir3wf = $bk['sir3wf'] ?? 0;
                             $StokBahanBakuTotal  = $StokBahanBakuSir20 + $StokBahanBakuRss + $StokBahanBakuSir3l + $StokBahanBakuSir3wf;
                         @endphp
                         <tr>
@@ -316,7 +362,7 @@
         <div class="empty-placeholder"></div>
     </div>
 
-    {{-- BARIS 4: MONTHLY VOLUME (Sama) --}}
+    {{-- BARIS 4: MONTHLY VOLUME --}}
     <div class="card-std p-0 full-row-card">
         <div class="chart-header-padded">
             <h3>Monthly Volume (Real vs RKAP)</h3>
@@ -328,23 +374,25 @@
             <div class="col-middle bg-light">
                 <p class="sidebar-title">Rincian Mutu (Volume)</p>
                 <div class="mutu-list">
-                    @foreach($mutu['label'] as $index => $label)
-                        @if(strtoupper($label) === 'TOTAL') @continue @endif
-                        @php
-                            $vol = $mutu['volume'][$index] ?? 0;
-                            $pct = $totalVolume > 0 ? round(($vol / $totalVolume) * 100, 1) : 0;
-                        @endphp
-                        <div class="mutu-item">
-                            <div class="mutu-info">
-                                <span class="mutu-name">{{ $label }}</span>
-                                <span class="mutu-pct">{{ $pct }}%</span>
+                    @if(isset($mutu['label']) && is_array($mutu['label']))
+                        @foreach($mutu['label'] as $index => $label)
+                            @if(strtoupper($label) === 'TOTAL') @continue @endif
+                            @php
+                                $vol = isset($mutu['volume'][$index]) ? $mutu['volume'][$index] : 0;
+                                $pct = $totalVolume > 0 ? round(($vol / $totalVolume) * 100, 1) : 0;
+                            @endphp
+                            <div class="mutu-item">
+                                <div class="mutu-info">
+                                    <span class="mutu-name">{{ $label }}</span>
+                                    <span class="mutu-pct">{{ $pct }}%</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div>
+                                </div>
+                                <span class="mutu-val">{{ number_format($vol, 0, ',', '.') }} Ton</span>
                             </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div>
-                            </div>
-                            <span class="mutu-val">{{ number_format($vol, 0, ',', '.') }} Ton</span>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    @endif
                 </div>
             </div>
             <div class="col-right bg-light border-left">
@@ -367,7 +415,7 @@
         </div>
     </div>
 
-    {{-- BARIS 5: MONTHLY REVENUE (Sama) --}}
+    {{-- BARIS 5: MONTHLY REVENUE --}}
     <div class="card-std p-0 full-row-card">
         <div class="chart-header-padded">
             <h3>Monthly Revenue (Real vs RKAP)</h3>
@@ -379,24 +427,26 @@
             <div class="col-middle bg-light">
                 <p class="sidebar-title">Rincian Mutu (Revenue)</p>
                 <div class="mutu-list">
-                    @foreach($mutu['label'] as $index => $label)
-                        @if(strtoupper($label) === 'TOTAL') @continue @endif
-                        @php
-                            $revValue = $mutu['revenue'][$index] ?? 0;
-                            $totalRevRaw = $totalRevenue / 1000000000;
-                            $pctRev = $totalRevRaw > 0 ? round(($revValue / $totalRevRaw) * 100, 1) : 0;
-                        @endphp
-                        <div class="mutu-item">
-                            <div class="mutu-info">
-                                <span class="mutu-name">{{ $label }}</span>
-                                <span class="mutu-pct">{{ $pctRev }}%</span>
+                    @if(isset($mutu['label']) && is_array($mutu['label']))
+                        @foreach($mutu['label'] as $index => $label)
+                            @if(strtoupper($label) === 'TOTAL') @continue @endif
+                            @php
+                                $revValue = isset($mutu['revenue'][$index]) ? $mutu['revenue'][$index] : 0;
+                                $totalRevRaw = $totalRevenue / 1000000000;
+                                $pctRev = $totalRevRaw > 0 ? round(($revValue / $totalRevRaw) * 100, 1) : 0;
+                            @endphp
+                            <div class="mutu-item">
+                                <div class="mutu-info">
+                                    <span class="mutu-name">{{ $label }}</span>
+                                    <span class="mutu-pct">{{ $pctRev }}%</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill orange" style="width: {{ $pctRev }}%"></div>
+                                </div>
+                                <span class="mutu-val">Rp {{ number_format($revValue, 0, ',', '.') }} M</span>
                             </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill orange" style="width: {{ $pctRev }}%"></div>
-                            </div>
-                            <span class="mutu-val">Rp {{ number_format($revValue, 0, ',', '.') }} M</span>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    @endif
                 </div>
             </div>
             <div class="col-right bg-light border-left">
@@ -423,18 +473,128 @@
 </div>
 
 <script>
+    // Memasukkan seluruh data ke JS untuk interaktivitas
+    // Menggunakan variabel $top5Buyers dan $top5Products dari Controller
     window.dashboardData = {
         priceDaily: @json($trendPriceDaily),
-        topBuyers: @json(array_values($topBuyers)),
-        topBuyersLabels: @json($buyerInitials), 
-        topProducts: @json(array_values($topProducts)),
-        topProductsLabels: @json(array_keys($topProducts)),
+        
+        // Data Buyers (Sudah terfilter Top 5 dari controller)
+        // Struktur: {'TOTAL': {'BuyerA': 100, 'TOTAL': 200}, 'SIR 20': {...}}
+        rawTopBuyers: @json($top5Buyers), 
+        
+        // Untuk inisialisasi awal (tanpa key TOTAL)
+        topBuyers: @json(array_values($initBuyers)),
+        topBuyersLabels: @json(array_keys($initBuyers)), 
+        
+        // Data Products (Sudah terfilter Top 5 dari controller)
+        rawTopProducts: @json($top5Products),
+        topProducts: @json(array_values($initProducts)),
+        topProductsLabels: @json(array_keys($initProducts)),
+        
         volumeReal: @json($rekap4['volume_real']),
         rkapVol: @json($rekap4['volume_rkap']),
         revenueReal: @json($rekap4['revenue_real']),
         rkapRev: @json($rekap4['revenue_rkap']),
-        monthLabels: @json($rekap4['labels'])
+        monthLabels: @json($rekap4['labels']),
+        chartColors: @json($chartColors),
+        prodColors: @json($prodColors)
     };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 1. HANDLE BUYER FILTER ---
+        const buyerSelect = document.getElementById('buyer-filter');
+        if(buyerSelect) {
+            buyerSelect.addEventListener('change', function(e) {
+                updateChartData(e.target.value, 'buyer');
+            });
+        }
+
+        // --- 2. HANDLE PRODUCT FILTER ---
+        const productSelect = document.getElementById('product-filter');
+        if(productSelect) {
+            productSelect.addEventListener('change', function(e) {
+                updateChartData(e.target.value, 'product');
+            });
+        }
+    });
+
+    // Fungsi Generic untuk Update Chart (Buyer atau Product)
+    function updateChartData(category, type) {
+        let rawData, chartInstance, legendContainer, centerTotal, colors;
+
+        if (type === 'buyer') {
+            rawData = window.dashboardData.rawTopBuyers[category];
+            colors = window.dashboardData.chartColors;
+            legendContainer = document.getElementById('buyer-legend-container');
+            centerTotal = document.getElementById('buyer-center-total');
+            chartInstance = getChartInstance('#chart-buyer');
+        } else {
+            rawData = window.dashboardData.rawTopProducts[category];
+            colors = window.dashboardData.prodColors;
+            legendContainer = document.getElementById('product-legend-container');
+            centerTotal = document.getElementById('product-center-total');
+            chartInstance = getChartInstance('#chart-product');
+        }
+
+        if(!rawData) rawData = {};
+
+        // Proses Data: Hapus Key 'TOTAL' untuk chart, tapi simpan nilainya untuk center label
+        let totalSum = rawData['TOTAL'] || 0;
+        
+        // Clone object agar data asli tidak berubah
+        let processedData = Object.assign({}, rawData);
+        if(processedData['TOTAL'] !== undefined) delete processedData['TOTAL'];
+
+        // Convert ke format array untuk chart
+        // Karena data dari controller sudah tersortir, kita tinggal map
+        let keys = Object.keys(processedData);
+        let values = Object.values(processedData);
+
+        // Update Chart
+        if(chartInstance) {
+            chartInstance.updateOptions({ labels: keys });
+            chartInstance.updateSeries(values);
+        }
+
+        // Update Center Total
+        if(centerTotal) {
+            centerTotal.innerText = new Intl.NumberFormat('id-ID').format(totalSum);
+        }
+
+        // Update Legend
+        if(legendContainer) {
+            let html = '';
+            keys.forEach((name, index) => {
+                let val = values[index];
+                let pct = totalSum > 0 ? Math.round((val / totalSum) * 100) : 0;
+                let color = colors[index % colors.length];
+                
+                // Initials logic (sederhana)
+                let initial = name.substring(0, 3);
+                
+                html += `
+                <div class="legend-item">
+                    <span class="dot" style="background: ${color}"></span>
+                    <span class="name" title="${name}">
+                        ${name.length > 15 ? name.substring(0, 15) + '...' : name} 
+                        ${type === 'buyer' ? `<span class="text-xs text-gray-400">(${initial})</span>` : ''}
+                    </span>
+                    <span class="val">${pct}%</span>
+                </div>
+                `;
+            });
+            legendContainer.innerHTML = html;
+        }
+    }
+
+    // Helper untuk mencari instance ApexCharts
+    function getChartInstance(selector) {
+        const el = document.querySelector(selector);
+        if (el && el.querySelector(".apexcharts-canvas")) {
+            return ApexCharts.getChartByID(el.querySelector(".apexcharts-canvas").getAttribute("id"));
+        }
+        return null;
+    }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="{{ asset('js/dashboard-script.js') }}"></script>
