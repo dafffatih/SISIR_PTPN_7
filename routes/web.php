@@ -69,4 +69,13 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/upload-export', function () {
         return view('dashboard.upload_export');
     })->name('upload.export')->middleware('role:admin,staff');
+
+    // =========================
+    // SETTINGS (DESAIN SAJA)
+    // File: resources/views/dashboard/settings.blade.php
+    // =========================
+    Route::get('/settings', function () {
+        return view('dashboard.settings');
+    })->name('settings')->middleware('role:admin,staff,viewer');
+
 });
