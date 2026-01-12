@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SheetController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SettingController;
 
 // Halaman awal
 Route::get('/', function () {
@@ -16,6 +17,8 @@ Route::get('/', function () {
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// --- HAPUS ROUTE SETTINGS YANG DISINI (DIPINDAHKAN KE BAWAH AGAR AMAN) ---
 
 // Semua fitur wajib login + wajib user ACTIVE
 Route::middleware(['auth', 'active'])->group(function () {
@@ -34,7 +37,6 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->name('kontrak.store')
         ->middleware('role:admin,staff');
 
-    // NOTE: kalau update kamu pakai row/id, sebaiknya /kontrak/update/{row}
     Route::put('/kontrak/update', [SheetController::class, 'update'])
         ->name('kontrak.update')
         ->middleware('role:admin,staff');
@@ -51,18 +53,10 @@ Route::middleware(['auth', 'active'])->group(function () {
     // USER MANAGEMENT (admin only)
     // =========================
     Route::middleware('role:admin')->group(function () {
-
-        Route::get('/users', [UserController::class, 'index'])
-            ->name('users.index');
-
-        Route::post('/users', [UserController::class, 'store'])
-            ->name('users.store');
-
-        Route::put('/users/{user}', [UserController::class, 'update'])
-            ->name('users.update');
-
-        Route::delete('/users/{user}', [UserController::class, 'destroy'])
-            ->name('users.destroy');
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
     // Upload & Export (admin + staff)
@@ -71,11 +65,18 @@ Route::middleware(['auth', 'active'])->group(function () {
     })->name('upload.export')->middleware('role:admin,staff');
 
     // =========================
-    // SETTINGS (DESAIN SAJA)
-    // File: resources/views/dashboard/settings.blade.php
+    // SETTINGS (PERBAIKAN DISINI)
+    // Gunakan Controller, JANGAN pakai function() view() biasa
     // =========================
-    Route::get('/settings', function () {
-        return view('dashboard.settings');
-    })->name('settings')->middleware('role:admin,staff,viewer');
+    Route::get('/settings', [SettingController::class, 'index'])
+        ->name('settings') // <--- Kembali ke nama asli agar sidebar tidak error
+        ->middleware('role:admin,staff,viewer'); 
 
+    Route::post('/settings', [SettingController::class, 'update'])
+        ->name('settings.update')
+        ->middleware('role:admin,staff'); // Hanya admin/staff yg boleh update
+        
+    Route::delete('/settings/{id}', [SettingController::class, 'destroy'])
+        ->name('settings.destroy')
+        ->middleware('role:admin,staff');
 });

@@ -35,7 +35,7 @@ class GoogleSheetService
             $this->sheetsService = new Google_Service_Sheets($client);
             $this->driveService = new Google_Service_Drive($client);
             
-            // 2. Load Spreadsheet ID (Prioritas: Database -> Config -> Env)
+            // 2. Load Spreadsheet ID Default (Prioritas: Database -> Config -> Env)
             $setting = Setting::where('key', 'google_sheet_id')->first();
             $dbSheetId = $setting ? $setting->value : null;
 
@@ -54,7 +54,28 @@ class GoogleSheetService
         }
     }
 
-    // Helper: Cari Sheet ID berdasarkan Nama
+    /**
+     * Fitur Ganti ID Spreadsheet Berdasarkan Tahun
+     * Dipanggil di Controller: $sheetService->setSheetByYear('2024');
+     */
+    public function setSheetByYear($year)
+    {
+        // Cek Database untuk key spesifik, misal: 'google_sheet_id_2024'
+        $key = 'google_sheet_id_' . $year;
+        $setting = Setting::where('key', $key)->first();
+
+        if ($setting && !empty($setting->value)) {
+            // Jika ketemu, TIMPA spreadsheetId yang sedang aktif
+            $this->spreadsheetId = $setting->value;
+            \Log::info("GoogleSheetService switched to Year: {$year} (ID: {$this->spreadsheetId})");
+        } else {
+            \Log::warning("Spreadsheet ID untuk tahun {$year} tidak ditemukan. Menggunakan ID Default/Env.");
+        }
+        
+        return $this; // Return $this agar bisa chaining method
+    }
+
+    // Helper: Cari Sheet ID (Angka) berdasarkan Nama Sheet (String)
     private function getSheetIdFromTitle($sheetName)
     {
         $spreadsheet = $this->sheetsService->spreadsheets->get($this->spreadsheetId);
@@ -81,7 +102,7 @@ class GoogleSheetService
         }
     }
 
-    // 2. GET BATCH DATA (FIXED HERE)
+    // 2. GET BATCH DATA (Fixed & Optimized)
     public function getBatchData($ranges)
     {
         try {
@@ -89,17 +110,14 @@ class GoogleSheetService
 
             $params = ['ranges' => $ranges];
             
-            // --- PERBAIKAN DI SINI ---
             // Menggunakan method bawaan Google: batchGet
             $result = $this->sheetsService->spreadsheets_values->batchGet($this->spreadsheetId, $params);
             
             // Mapping hasil agar Key Array sesuai dengan Range yang diminta
-            // Google mengembalikan hasil sesuai urutan request
             $mappedData = [];
             $valueRanges = $result->getValueRanges();
 
             foreach ($ranges as $index => $range) {
-                // Pastikan ada datanya, jika tidak return array kosong
                 if (isset($valueRanges[$index])) {
                     $mappedData[$range] = $valueRanges[$index]->getValues() ?? [];
                 } else {
@@ -127,7 +145,7 @@ class GoogleSheetService
         $this->sheetsService->spreadsheets_values->update($this->spreadsheetId, $range, $body, $params);
     }
 
-    // 4. STORE DATA
+    // 4. STORE DATA (APPEND)
     public function storeData($data, $sheetName = 'SC Sudah Bayar')
     {
         if (empty($this->spreadsheetId)) throw new \Exception('Spreadsheet ID missing');
@@ -139,7 +157,7 @@ class GoogleSheetService
         $this->sheetsService->spreadsheets_values->append($this->spreadsheetId, $range, $body, $params);
     }
 
-    // 5. DELETE DATA
+    // 5. DELETE DATA (Dinamis cari ID Sheet)
     public function deleteData($row, $sheetName = 'SC Sudah Bayar')
     {
         if (empty($this->spreadsheetId)) throw new \Exception('Spreadsheet ID missing');
@@ -166,7 +184,7 @@ class GoogleSheetService
         $this->sheetsService->spreadsheets->batchUpdate($this->spreadsheetId, $batchUpdateRequest);
     }
 
-    // 6. BATCH UPDATE (WRITE)
+    // 6. BATCH UPDATE (WRITE - Multiple Cells)
     public function batchUpdate($updates, $sheetName = 'SC Sudah Bayar')
     {
         try {
@@ -195,7 +213,7 @@ class GoogleSheetService
         }
     }
 
-    // 7. LIST FILES
+    // 7. LIST FILES IN DRIVE FOLDER
     public function listSpreadsheetsInFolder($folderId)
     {
         $query = "mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false and '{$folderId}' in parents";
