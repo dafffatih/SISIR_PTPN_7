@@ -60,7 +60,7 @@
                 <div class="metric-left">
                     <span class="metric-label">Total Volume</span>
                     <div class="metric-value-group">
-                        <span class="metric-number">{{ number_format($totalVolume, 0, ',', '.') }}</span>
+                        <span class="metric-number">{{ number_format($top5Buyers["TOTAL"]["TOTAL"]/1000, 0, ',', '.') }}</span>
                         <span class="metric-unit">Ton</span>
                     </div>
                     <div class="metric-progress">
@@ -183,7 +183,7 @@
                     
                     <div class="donut-center-label">
                         <span class="lbl">Total Ton</span>
-                        <span class="num" id="buyer-center-total">{{ number_format($buyersTotalVol, 0, ',', '.') }}</span>
+                        <span class="num" id="buyer-center-total">{{ number_format($buyersTotalVol/1000, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
@@ -217,7 +217,7 @@
 
                     <div class="donut-center-label">
                         <span class="lbl">Total Ton</span>
-                        <span class="num" id="product-center-total">{{ number_format($productsTotalVol, 0, ',', '.') }}</span>
+                        <span class="num" id="product-center-total">{{ number_format($productsTotalVol/1000, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
