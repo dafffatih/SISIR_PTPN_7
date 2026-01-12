@@ -40,6 +40,12 @@ class DashboardController extends Controller
             "Rekap3!I20:I20", "Rekap3!I48:I48", "Rekap3!D72:E72",
             "Rekap3!I21:I21", "Rekap3!I49:I49", "Rekap3!D73:E73",
             "Rekap3!I27:I27",
+
+            // --- DATA TOP BUYER DAN TOP PRODUCT ---
+            "SC Sudah Bayar!AD4:AD5359", // data pembeli
+            "SC Sudah Bayar!Q4:Q5359", // data unit
+            "SC Sudah Bayar!AA4:AA5359", // data volume
+            "SC Sudah Bayar!R4:R5359" // data mutu
         ];
 
         // ... (Kode fetch data sama seperti sebelumnya) ...
@@ -108,27 +114,294 @@ class DashboardController extends Controller
         $revRkapSum = 0; foreach(($rawBatch["Rekap4!H48:H51"] ?? []) as $r) $revRkapSum += $cleanNum($r);
         $rkapRevenue = $revRkapSum * 1000000000;
 
+        // HITUNG TOP BUYER
+        // =======================
+        // MASTER DATA (PATEN)
+        // =======================
+
+        $buyersList = [
+            "AIC","ASR","AKR","BGS","BIN","IKD","IDB","JAN","KJA","KIJ",
+            "KTK","KTI","KSM","MJI","MOP","OGA","SMN","STT","SNI","TCS",
+            "TKS","UKL","VME","WGT","WLK","WTP"
+        ];
+
+        $mutuList = ["SIR 20", "RSS 1", "SIR 3L", "SIR 3WF"];
+
+        // Normalisasi
+        $buyersList = array_map('strtoupper', $buyersList);
+        $mutuList   = array_map('strtoupper', $mutuList);
+
+        // =======================
+        // 1. INISIALISASI
+        // =======================
+
         $topBuyers = [];
-        if (!empty($rawBatch["Katalog!B4:B23"])) {
-            foreach($rawBatch["Katalog!B4:B23"] as $idx => $row) {
-                if(isset($row[0]) && isset($rawBatch["Katalog!C4:C23"][$idx][0])) {
-                    $topBuyers[$row[0]] = (float)str_replace(['.',','],['','.'], $rawBatch["Katalog!C4:C23"][$idx][0]);
-                }
+
+        foreach ($mutuList as $mutu) {
+            foreach ($buyersList as $buyer) {
+                $topBuyers[$mutu][$buyer] = 0;
             }
         }
-        arsort($topBuyers); $topBuyers = array_slice($topBuyers, 0, 5);
+
+        // =======================
+        // 2. LOOP TRANSAKSI
+        // =======================
+
+        if (!empty($rawBatch["SC Sudah Bayar!AD4:AD5359"])) {
+            foreach ($rawBatch["SC Sudah Bayar!AD4:AD5359"] as $idx => $row) {
+
+                $buyer = isset($row[0]) ? strtoupper(trim($row[0])) : null;
+
+                $volumeStr = isset($rawBatch["SC Sudah Bayar!AA4:AA5359"][$idx][0])
+                    ? trim($rawBatch["SC Sudah Bayar!AA4:AA5359"][$idx][0])
+                    : null;
+
+                $mutu = isset($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0])
+                    ? strtoupper(trim($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0]))
+                    : null;
+
+                if (!$buyer || !$volumeStr || !$mutu) continue;
+                if (!in_array($buyer, $buyersList) || !in_array($mutu, $mutuList)) continue;
+
+                $volume = (float) str_replace(['.', ','], ['', '.'], $volumeStr);
+
+                $topBuyers[$mutu][$buyer] += $volume;
+            }
+        }
+
+        // =======================
+        // 3. HITUNG TOTAL PER BUYER
+        // =======================
+
+        $topBuyers["TOTAL"] = array_fill_keys($buyersList, 0);
+
+        foreach ($mutuList as $mutu) {
+            foreach ($buyersList as $buyer) {
+                $topBuyers["TOTAL"][$buyer] += $topBuyers[$mutu][$buyer];
+            }
+        }
+
+        // =======================
+        // 4. FILTER 0, SORTING, TAMBAH TOTAL
+        // =======================
+
+        foreach ($topBuyers as $key => $buyersData) {
+
+            // Hitung total sebelum difilter
+            $grandTotal = array_sum($buyersData);
+
+            // Hapus buyer dengan volume 0
+            $buyersData = array_filter($buyersData, function ($volume) {
+                return $volume > 0;
+            });
+
+            // Sorting DESC
+            arsort($buyersData);
+
+            // Tambahkan TOTAL seperti buyer lain
+            $buyersData["TOTAL"] = $grandTotal;
+
+            $topBuyers[$key] = $buyersData;
+        }
+
+        // =======================
+        // 5. TOP 5 BUYERS + LAINNYA
+        // =======================
+
+        $top5Buyers = [];
+        $topN = 5;
+
+        foreach ($topBuyers as $mutu => $buyers) {
+
+            // Buang key TOTAL dulu
+            $buyersOnly = $buyers;
+            unset($buyersOnly["TOTAL"]);
+
+            // Hapus buyer dengan volume 0
+            $buyersOnly = array_filter($buyersOnly, fn($v) => $v > 0);
+
+            // Jika tidak ada data, skip
+            if (empty($buyersOnly)) continue;
+
+            // Sort descending
+            arsort($buyersOnly);
+
+            // Hitung TOTAL mutu
+            $totalMutu = array_sum($buyersOnly);
+
+            // Jika jumlah buyer > 5 → Top 5 + LAINNYA
+            if (count($buyersOnly) > $topN) {
+
+                $topOnly = array_slice($buyersOnly, 0, $topN, true);
+                $others  = array_slice($buyersOnly, $topN, null, true);
+
+                $top5Buyers[$mutu] = $topOnly;
+                $top5Buyers[$mutu]["LAINNYA"] = array_sum($others);
+
+            } 
+            // Jika ≤ 5 → ambil semua, TANPA LAINNYA
+            else {
+                $top5Buyers[$mutu] = $buyersOnly;
+            }
+
+            // Tambahkan TOTAL
+            $top5Buyers[$mutu]["TOTAL"] = $totalMutu;
+        }
+
+
+        // =======================
+        // HASIL AKHIR
+        // =======================
+        // $topBuyers   -> data lengkap semua buyer + TOTAL
+        // $top5Buyers  -> Top 5 + LAINNYA + TOTAL
+
+
+        $productList = [
+            "SBQ","SEL","SDZ","SEG","SEP","KETA","KEDA",
+            "WABE","TUBU","MULA","SDU"
+        ];
+
+        $mutuList = ["SIR 20", "RSS 1", "SIR 3L", "SIR 3WF"];
+
+        // Normalisasi
+        $productList = array_map('strtoupper', $productList);
+        $mutuList    = array_map('strtoupper', $mutuList);
+
+        // =======================
+        // 1. INISIALISASI TOP PRODUCTS
+        // =======================
 
         $topProducts = [];
-        if (!empty($rawBatch["Katalog!L4:L15"])) {
-            foreach($rawBatch["Katalog!L4:L15"] as $idx => $row) {
-                if(isset($row[0]) && isset($rawBatch["Katalog!M4:M15"][$idx][0])) {
-                    $topProducts[$row[0]] = (float)str_replace(['.',','],['','.'], $rawBatch["Katalog!M4:M15"][$idx][0]);
-                }
+
+        foreach ($mutuList as $mutu) {
+            foreach ($productList as $product) {
+                $topProducts[$mutu][$product] = 0;
             }
         }
-        if (empty($topProducts)) {
-            try { $topProducts = Kontrak::selectRaw('mutu, SUM(CAST(volume AS DECIMAL(10,2))) as total_vol')->groupBy('mutu')->orderBy('total_vol', 'desc')->limit(5)->pluck('total_vol', 'mutu')->toArray(); } catch (\Exception $e) { $topProducts = []; }
+
+        // =======================
+        // 2. LOOP DATA TRANSAKSI
+        // =======================
+
+        if (!empty($rawBatch["SC Sudah Bayar!Q4:Q5359"])) {
+            foreach ($rawBatch["SC Sudah Bayar!Q4:Q5359"] as $idx => $row) {
+
+                $product = isset($row[0]) ? strtoupper(trim($row[0])) : null;
+
+                $volumeStr = isset($rawBatch["SC Sudah Bayar!AA4:AA5359"][$idx][0])
+                    ? trim($rawBatch["SC Sudah Bayar!AA4:AA5359"][$idx][0])
+                    : null;
+
+                $mutu = isset($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0])
+                    ? strtoupper(trim($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0]))
+                    : null;
+
+                // Skip data tidak valid
+                if (!$product || !$volumeStr || !$mutu) continue;
+                if (!in_array($product, $productList) || !in_array($mutu, $mutuList)) continue;
+
+                // Konversi volume
+                $volume = (float) str_replace(['.', ','], ['', '.'], $volumeStr);
+
+                // Akumulasi
+                $topProducts[$mutu][$product] += $volume;
+            }
         }
+
+        // =======================
+        // 3. TOTAL SEMUA MUTU (TOP PRODUCTS TOTAL)
+        // =======================
+
+        $topProducts["TOTAL"] = array_fill_keys($productList, 0);
+
+        foreach ($mutuList as $mutu) {
+            foreach ($productList as $product) {
+                $topProducts["TOTAL"][$product] += $topProducts[$mutu][$product];
+            }
+        }
+
+        // =======================
+        // 4. FILTER 0, SORTING, TAMBAH TOTAL
+        // =======================
+
+        foreach ($topProducts as $key => $productsData) {
+
+            // Hitung total sebelum difilter
+            $grandTotal = array_sum($productsData);
+
+            // Hapus volume 0
+            $productsData = array_filter($productsData, fn($v) => $v > 0);
+
+            // Sorting DESC
+            arsort($productsData);
+
+            // Tambahkan TOTAL
+            $productsData["TOTAL"] = $grandTotal;
+
+            $topProducts[$key] = $productsData;
+        }
+
+        // =======================
+        // 4. TOP 5 PRODUCTS (PER MUTU + TOTAL)
+        // =======================
+
+        $top5Products = [];
+
+        foreach ($topProducts as $mutu => $products) {
+
+            if ($mutu === "TOTAL") continue;
+
+            // Ambil total mutu
+            $totalMutu = $products["TOTAL"] ?? 0;
+
+            // Buang TOTAL
+            $items = $products;
+            unset($items["TOTAL"]);
+
+            // Urutkan DESC
+            arsort($items);
+
+            // Ambil top 5
+            $top5 = array_slice($items, 0, 5, true);
+
+            // Hitung lainnya
+            $sumTop5 = array_sum($top5);
+            $lainnya = $totalMutu - $sumTop5;
+
+            if ($lainnya > 0) {
+                $top5["LAINNYA"] = $lainnya;
+            }
+
+            // Tambahkan TOTAL
+            $top5["TOTAL"] = $totalMutu;
+
+            $top5Products[$mutu] = $top5;
+        }
+
+        // =======================
+        // TOTAL (AKUMULASI SEMUA MUTU)
+        // =======================
+
+        $totalProducts = $topProducts["TOTAL"];
+        $totalAll = $totalProducts["TOTAL"];
+
+        unset($totalProducts["TOTAL"]);
+
+        arsort($totalProducts);
+
+        $top5Total = array_slice($totalProducts, 0, 5, true);
+
+        $sumTop5Total = array_sum($top5Total);
+        $lainnyaTotal = $totalAll - $sumTop5Total;
+
+        if ($lainnyaTotal > 0) {
+            $top5Total["LAINNYA"] = $lainnyaTotal;
+        }
+
+        $top5Total["TOTAL"] = $totalAll;
+
+        $top5Products["TOTAL"] = $top5Total;
+        // dd($topBuyers, $topProducts, $top5Buyers, $top5Products);
 
         $processDaily = function($rows) {
             $points = [];
@@ -160,7 +433,7 @@ class DashboardController extends Controller
         // Tambahkan lastTender ke view
         return view('dashboard.index', compact(
             'totalVolume', 'totalRevenue', 'rkapVolume', 'rkapRevenue', 'mutu', 'lastTender',
-            'topBuyers', 'topProducts', 'rekap4', 'stokData', 'trendPriceDaily', 'useDbFallback'
+            'topBuyers', 'top5Buyers', 'topProducts', 'top5Products', 'rekap4', 'stokData', 'trendPriceDaily', 'useDbFallback'
         ));
     }
 }
