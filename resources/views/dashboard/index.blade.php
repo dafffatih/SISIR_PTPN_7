@@ -138,11 +138,11 @@
                         <span class="tender-meta">SIR20 - {{ $dSir20 }}</span>
                         <span class="tender-price">Rp {{ number_format($pSir20, 0, ',', '.') }}</span>
                     </div>
-                    <div class="tender-item">
+                    <div class="tender-item tender-rss">
                         <span class="tender-meta">RSS - {{ $dRss }}</span>
                         <span class="tender-price">Rp {{ number_format($pRss, 0, ',', '.') }}</span>
                     </div>
-                    <div class="tender-item">
+                    <div class="tender-item tender-sir3l">
                         <span class="tender-meta">SIR3L - {{ $dSir3l }}</span>
                         <span class="tender-price">Rp {{ number_format($pSir3l, 0, ',', '.') }}</span>                        
                     </div>
@@ -261,7 +261,10 @@
                             <td>{{ number_format($StokSir3wf, 0, ',', '.') }}</td>
                             <td class="font-bold">{{ number_format($StokTotal, 0, ',', '.') }}</td>
                         </tr>
-                        <tr class="separator-header"><td colspan="5">OUTSTANDING CONTRACT</td></tr>
+                        <tr class="separator-header">
+                            <td colspan="6" style="font-style: italic;">Outstanding Contract</td>
+                        </tr>
+
                         @php
                             $sb = $stokData['sudah_bayar'] ?? [];
                             $StokSbSir20  = $sb['sir20'] ?? 0;
@@ -271,7 +274,7 @@
                             $StokSbTotal  = $StokSbSir20 + $StokSbRss + $StokSbSir3l + $StokSbSir3wf;
                         @endphp
                         <tr>
-                            <td>Sudah Bayar</td>
+                            <td style="padding-left:16px;">Sudah Bayar</td>
                             <td>{{ number_format($StokSbSir20, 0, ',', '.') }}</td>
                             <td>{{ number_format($StokSbRss, 0, ',', '.') }}</td>
                             <td>{{ number_format($StokSbSir3l, 0, ',', '.') }}</td>
@@ -287,7 +290,7 @@
                             $StokBbTotal  = $StokBbSir20 + $StokBbRss + $StokBbSir3l + $StokBbSir3wf;
                         @endphp
                         <tr>
-                            <td>Belum Bayar</td>
+                            <td style="padding-left:16px;">Belum Bayar</td>
                             <td>{{ number_format($StokBbSir20, 0, ',', '.') }}</td>
                             <td>{{ number_format($StokBbRss, 0, ',', '.') }}</td>
                             <td>{{ number_format($StokBbSir3l, 0, ',', '.') }}</td>
@@ -316,14 +319,31 @@
                             $StokBebasSir3wf = $StokSir3wf - $jmlSir3wf;
                             $StokBebasTotal  = $StokTotal - $jmlTotal;
                         @endphp
+                        @php
+                        // === STOK BEBAS FIX (Produksi + Bahan Baku) ===
+                        $bk = $stokData['bahan_baku'] ?? [];
+
+                        $StokBahanBakuSir20  = $bk['sir20'] ?? 0;
+                        $StokBahanBakuRss    = $bk['rss'] ?? 0;
+                        $StokBahanBakuSir3l  = $bk['sir3l'] ?? 0;
+                        $StokBahanBakuSir3wf = $bk['sir3wf'] ?? 0;
+
+                        $StokBebasFixSir20  = $StokBebasSir20 + $StokBahanBakuSir20;
+                        $StokBebasFixRss    = $StokBebasRss + $StokBahanBakuRss;
+                        $StokBebasFixSir3l  = $StokBebasSir3l + $StokBahanBakuSir3l;
+                        $StokBebasFixSir3wf = $StokBebasSir3wf + $StokBahanBakuSir3wf;
+                        $StokBebasFixTotal  = $StokBebasFixSir20 + $StokBebasFixRss + $StokBebasFixSir3l + $StokBebasFixSir3wf;
+                        @endphp
+
                         <tr class="row-highlight">
-                            <td>Stok Bebas (Prod)</td>
-                            <td class="{{ $StokBebasSir20 < 0 ? 'text-red-600 font-bold' : '' }}">{{ number_format($StokBebasSir20, 0, ',', '.') }}</td>
-                            <td class="{{ $StokBebasRss < 0 ? 'text-red-600 font-bold' : '' }}">{{ number_format($StokBebasRss, 0, ',', '.') }}</td>
-                            <td class="{{ $StokBebasSir3l < 0 ? 'text-red-600 font-bold' : '' }}">{{ number_format($StokBebasSir3l, 0, ',', '.') }}</td>
-                            <td class="{{ $StokBebasSir3wf < 0 ? 'text-red-600 font-bold' : '' }}">{{ number_format($StokBebasSir3wf, 0, ',', '.') }}</td>
-                            <td class="{{ $StokBebasTotal < 0 ? 'text-red-700 font-black' : 'font-black' }}">{{ number_format($StokBebasTotal, 0, ',', '.') }}</td>
+                            <td class="stok-label">Stok Bebas</td>
+                            <td>{{ number_format($StokBebasFixSir20, 0, ',', '.') }}</td>
+                            <td>{{ number_format($StokBebasFixRss, 0, ',', '.') }}</td>
+                            <td>{{ number_format($StokBebasFixSir3l, 0, ',', '.') }}</td>
+                            <td>{{ number_format($StokBebasFixSir3wf, 0, ',', '.') }}</td>
+                            <td>{{ number_format($StokBebasFixTotal, 0, ',', '.') }}</td>
                         </tr>
+
                         @php
                             $bk = $stokData['bahan_baku'] ?? [];
                             $StokBahanBakuSir20  = $bk['sir20'] ?? 0;

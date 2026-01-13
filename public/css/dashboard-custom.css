@@ -67,7 +67,7 @@
 .dashboard-container .metric-value-group.right-align { justify-content: flex-end; }
 .dashboard-container .metric-number { font-size: 28px; font-weight: 800; color: var(--text-dark); line-height: 1; }
 .dashboard-container .metric-unit { font-size: 14px; font-weight: 600; color: var(--text-gray); }
-.dashboard-container .metric-progress { font-size: 13px; color: var(--text-gray); font-weight: 500; }
+.dashboard-container .metric-progress { font-size: 16px; color: var(--text-gray); font-weight: 500; }
 .dashboard-container .progress-val { color: #16A34A; font-weight: 700; }
 .dashboard-container .metric-number-small { font-size: 18px; font-weight: 700; color: #64748B; }
 .dashboard-container .metric-unit-small { font-size: 11px; color: #94A3B8; }
@@ -189,6 +189,49 @@
         color: #64748B; /* Text Gray */
         font-weight: 500;
     }
+    /* WARNA HARGA SESUAI GRAFIK */
+    .tender-sir20 .tender-price {
+        color: var(--text-dark);      /* SIR20 (hitam/navy) */
+    }
+
+    .tender-rss .tender-price {
+        color: var(--orange-primary); /* RSS (oranye) */
+    }
+
+    .tender-sir3l .tender-price {
+        color: #14b8a6;               /* SIR3L (toska) */
+    }
+
+    /* ===========================
+   STOK BEBAS - MATCH SCREENSHOT
+   =========================== */
+:root{
+  --stok-teal: #2F7A86;
+}
+
+.dashboard-container .table-stok tr.row-highlight td{
+  background: var(--stok-teal) !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  padding: 6px 10px;
+  border: none !important;
+}
+
+.dashboard-container .table-stok tr.row-highlight td.stok-label{
+  text-align: center !important;
+}
+
+.dashboard-container .table-stok tr.row-highlight td:first-child{
+  border-top-left-radius: 2px;
+  border-bottom-left-radius: 2px;
+}
+
+.dashboard-container .table-stok tr.row-highlight td:last-child{
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
+}
+
+
 /* Responsive adjustments */
 @media (max-width: 1200px) {
     .dashboard-container .row-grid-2 { grid-template-columns: 1fr; }
