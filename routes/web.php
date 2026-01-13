@@ -3,10 +3,11 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\SheetController;
+use App\Http\Controllers\SheetController; // Controller Lama (Folder kontrak)
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\ListKontrakController; // Controller Baru (Folder list_kontrak)
 
 // Halaman awal
 Route::get('/', function () {
@@ -18,19 +19,20 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// --- HAPUS ROUTE SETTINGS YANG DISINI (DIPINDAHKAN KE BAWAH AGAR AMAN) ---
-
-// Semua fitur wajib login + wajib user ACTIVE
+// Middleware Group
 Route::middleware(['auth', 'active'])->group(function () {
 
-    // Dashboard (semua role)
+    // 1. Dashboard
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])
         ->name('dashboard')
         ->middleware('role:admin,staff,viewer');
 
-    // Manajemen Kontrak (admin + staff)
+    // ====================================================
+    // TAB 1: MANAJEMEN KONTRAK (SheetController)
+    // ====================================================
+    // PERBAIKAN: Name dikembalikan ke 'kontrak' agar view lama tidak error
     Route::get('/kontrak', [SheetController::class, 'index'])
-        ->name('kontrak')
+        ->name('kontrak') 
         ->middleware('role:admin,staff');
 
     Route::post('/kontrak/store', [SheetController::class, 'store'])
@@ -49,9 +51,19 @@ Route::middleware(['auth', 'active'])->group(function () {
         ->name('kontrak.sync')
         ->middleware('role:admin,staff');
 
-    // =========================
+
+    // ====================================================
+    // TAB 2: LIST KONTRAK (ListKontrakController)
+    // ====================================================
+    // Route baru untuk folder list_kontrak
+    Route::get('/list-kontrak', [ListKontrakController::class, 'index'])
+        ->name('list-kontrak.index')
+        ->middleware('role:admin,staff,viewer'); 
+
+
+    // ====================================================
     // USER MANAGEMENT (admin only)
-    // =========================
+    // ====================================================
     Route::middleware('role:admin')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
@@ -59,22 +71,21 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
-    // Upload & Export (admin + staff)
+    // Upload & Export
     Route::get('/upload-export', function () {
         return view('dashboard.upload_export');
     })->name('upload.export')->middleware('role:admin,staff');
 
-    // =========================
-    // SETTINGS (PERBAIKAN DISINI)
-    // Gunakan Controller, JANGAN pakai function() view() biasa
-    // =========================
+    // ====================================================
+    // SETTINGS
+    // ====================================================
     Route::get('/settings', [SettingController::class, 'index'])
-        ->name('settings') // <--- Kembali ke nama asli agar sidebar tidak error
+        ->name('settings')
         ->middleware('role:admin,staff,viewer'); 
 
     Route::post('/settings', [SettingController::class, 'update'])
         ->name('settings.update')
-        ->middleware('role:admin,staff'); // Hanya admin/staff yg boleh update
+        ->middleware('role:admin,staff');
         
     Route::delete('/settings/{id}', [SettingController::class, 'destroy'])
         ->name('settings.destroy')

@@ -10,6 +10,11 @@
     .k-header { margin-bottom: 24px; }
     .k-title { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; }
     .k-subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
+    /* --- TAB NAVIGASI --- */
+    .nav-tabs { display: flex; gap: 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px; }
+    .nav-item { padding: 12px 4px; font-weight: 600; font-size: 14px; color: #64748b; text-decoration: none; border-bottom: 2px solid transparent; cursor: pointer; }
+    .nav-item:hover { color: #7c3aed; }
+    .nav-item.active { color: #7c3aed; border-bottom-color: #7c3aed; }
 
     /* Card Style */
     .k-card {
@@ -174,6 +179,17 @@
     <div class="k-header">
         <h2 class="k-title">Data Manajemen Kontrak Penjualan</h2>
         <p class="k-subtitle">Kelola dan pantau semua kontrak penjualan Anda secara realtime dari Google Sheets</p>
+    </div>
+    <div class="nav-tabs">
+        <a href="{{ route('kontrak') }}" 
+        class="nav-item {{ request()->routeIs('kontrak') ? 'active' : '' }}">
+        Manajemen Kontrak
+        </a>
+
+        <a href="{{ route('list-kontrak.index') }}" 
+        class="nav-item {{ request()->routeIs('list-kontrak.index') ? 'active' : '' }}">
+        List Kontrak
+        </a>
     </div>
 
     <div class="k-card">
