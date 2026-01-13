@@ -3,7 +3,7 @@ $role = auth()->user()->role ?? null;
 
 $menus = [
     ['label' => 'Dashboard',         'route' => 'dashboard',      'icon' => 'fas fa-th-large',         'roles' => ['admin','staff','viewer']],
-    ['label' => 'Manajemen Kontrak', 'route' => 'kontrak',        'icon' => 'fas fa-file-contract',    'roles' => ['admin','staff']],
+    ['label' => 'Database', 'route' => 'kontrak',        'icon' => 'fas fa-file-contract',    'roles' => ['admin','staff']],
     ['label' => 'User Management',   'route' => 'users.index',    'icon' => 'fas fa-users',            'roles' => ['admin']],
     ['label' => 'Upload & Export',   'route' => 'upload.export',  'icon' => 'fas fa-cloud-upload-alt', 'roles' => ['admin','staff']],
 

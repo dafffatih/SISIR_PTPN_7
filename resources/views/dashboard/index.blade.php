@@ -116,7 +116,7 @@
             {{-- 1. GRAFIK TREND --}}
             <div class="card-std">
                 <div class="card-header">
-                    <h3>Average Selling Price Trend (Daily)</h3>
+                    <h3>Daily Selling Price</h3>
                 </div>
                 <div id="chart-price-monthly"></div>
             </div>
@@ -135,16 +135,16 @@
                         $dSir3l = $lastTender['sir3l']['date'] ?? '-';
                     @endphp
                     <div class="tender-item">
-                        <span class="tender-price">Rp {{ number_format($pSir20, 0, ',', '.') }}</span>
                         <span class="tender-meta">SIR20 - {{ $dSir20 }}</span>
+                        <span class="tender-price">Rp {{ number_format($pSir20, 0, ',', '.') }}</span>
                     </div>
                     <div class="tender-item">
-                        <span class="tender-price">Rp {{ number_format($pRss, 0, ',', '.') }}</span>
                         <span class="tender-meta">RSS - {{ $dRss }}</span>
+                        <span class="tender-price">Rp {{ number_format($pRss, 0, ',', '.') }}</span>
                     </div>
                     <div class="tender-item">
-                        <span class="tender-price">Rp {{ number_format($pSir3l, 0, ',', '.') }}</span>
                         <span class="tender-meta">SIR3L - {{ $dSir3l }}</span>
+                        <span class="tender-price">Rp {{ number_format($pSir3l, 0, ',', '.') }}</span>                        
                     </div>
                 </div>
             </div>

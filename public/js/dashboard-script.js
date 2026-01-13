@@ -129,4 +129,6 @@ document.addEventListener("DOMContentLoaded", function () {
         series: [{ name: 'Real', data: data.revenueReal }, { name: 'RKAP', data: data.rkapRev }],
         colors: ['#334155', '#E2E8F0']
     }).render();
+
+    
 });
