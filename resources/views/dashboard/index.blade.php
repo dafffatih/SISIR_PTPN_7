@@ -3,36 +3,24 @@
 @section('title', 'Dashboard Overview')
 
 @section('content')
-{{-- BLOK PHP: INITIALIZATION --}}
+{{-- BLOK PHP: INITIALIZATION DATA --}}
 @php
-    use Illuminate\Support\Str;
-
-    // KITA GUNAKAN DATA YANG SUDAH DIOLAH CONTROLLER ($top5Buyers & $top5Products)
-    // Default tampilkan kategori 'TOTAL'
-    
-    // 1. Prepare Top Buyers (Ambil kategori TOTAL)
-    // Struktur: ['BuyerA' => 100, 'BuyerB' => 50, 'TOTAL' => 150]
+    // 1. Prepare Top Buyers (Ambil kategori TOTAL untuk tampilan awal)
     $initBuyers = $top5Buyers['TOTAL'] ?? [];
-    // Pisahkan 'TOTAL' (grand total) dari list buyer
+    
+    // Pisahkan 'TOTAL' (grand total)
     $buyersTotalVol = $initBuyers['TOTAL'] ?? 0;
     if(isset($initBuyers['TOTAL'])) unset($initBuyers['TOTAL']); 
     
-    // Generate Initials
-    $buyerInitials = [];
-    foreach(array_keys($initBuyers) as $name) {
-        $name = (string)$name; // Paksa string untuk keamanan
-        $words = explode(' ', $name);
-        $initial = '';
-        foreach($words as $w) {
-            $initial .= strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $w), 0, 1));
-        }
-        $buyerInitials[] = $initial ?: substr($name, 0, 3);
-    }
+    // Gunakan Key langsung (Nama Asli: WTP, MOP, dll)
+    $buyerLabels = array_keys($initBuyers);
 
-    // 2. Prepare Top Products (Ambil kategori TOTAL)
+    // 2. Prepare Top Products
     $initProducts = $top5Products['TOTAL'] ?? [];
     $productsTotalVol = $initProducts['TOTAL'] ?? 0;
     if(isset($initProducts['TOTAL'])) unset($initProducts['TOTAL']);
+    
+    $productLabels = array_keys($initProducts);
 
     // Warna Chart
     $chartColors = ['#2563EB', '#0D9488', '#F59E0B', '#64748B', '#94A3B8', '#8B5CF6'];
@@ -126,7 +114,6 @@
                 <div style="margin-bottom: 16px; font-size: 14px; color: #64748B;">Last Tender Price/Kg</div>
                 <div class="tender-grid">
                     @php
-                        // Safety check access array keys
                         $pSir20 = $lastTender['sir20']['price'] ?? 0;
                         $dSir20 = $lastTender['sir20']['date'] ?? '-';
                         $pRss   = $lastTender['rss']['price'] ?? 0;
@@ -155,7 +142,7 @@
             <div class="card-std card-half">
                 <div class="card-header flex-between">
                     <h3>Top 5 Buyers</h3>
-                    <select id="buyer-filter" class="form-select-sm" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; font-size: 12px; color: #475569; outline: none;">
+                    <select id="buyer-filter" class="form-select-sm" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; font-size: 12px; color: #475569; outline: none; cursor: pointer;">
                         <option value="TOTAL" selected>TOTAL</option>
                         <option value="SIR 20">SIR 20</option>
                         <option value="RSS 1">RSS 1</option>
@@ -166,14 +153,14 @@
                 <div class="donut-container">
                     <div id="chart-buyer" class="chart-donut"></div>
                     
+                    {{-- Legend Container --}}
                     <div class="custom-legend" id="buyer-legend-container">
                         @php $i=0; @endphp
                         @foreach($initBuyers as $buyer => $vol)
                         <div class="legend-item">
                             <span class="dot" style="background: {{ $chartColors[$i % count($chartColors)] }}"></span>
                             <span class="name" title="{{ $buyer }}">
-                                {{ Str::limit($buyer, 15) }} 
-                                <span class="text-xs text-gray-400">({{ $buyerInitials[$i] ?? substr($buyer,0,3) }})</span>
+                                {{ $buyer }}
                             </span>
                             <span class="val">{{ $buyersTotalVol > 0 ? round(($vol/$buyersTotalVol)*100, 0) : 0 }}%</span>
                         </div>
@@ -192,7 +179,7 @@
             <div class="card-std card-half">
                 <div class="card-header flex-between">
                     <h3>Top 5 Products</h3>
-                    <select id="product-filter" class="form-select-sm" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; font-size: 12px; color: #475569; outline: none;">
+                    <select id="product-filter" class="form-select-sm" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; font-size: 12px; color: #475569; outline: none; cursor: pointer;">
                         <option value="TOTAL" selected>TOTAL</option>
                         <option value="SIR 20">SIR 20</option>
                         <option value="RSS 1">RSS 1</option>
@@ -224,8 +211,10 @@
         </div>
     </div>
 
-    {{-- BARIS 3: TABEL STOK (Defensive Coding Added) --}}
+    {{-- BARIS 3: TABEL STOK --}}
     <div class="row-grid-2">
+        {{-- ... Kode Tabel Stok (Biarkan sama, tidak ada perubahan) ... --}}
+        {{-- SAYA PERSINGKAT TAMPILAN KODE DI SINI AGAR TIDAK KEPANJANGAN, SILAKAN PASTE BAGIAN TABEL STOK DARI KODE SEBELUMNYA DI SINI --}}
         <div class="card-std card-table-compact">
             <div class="card-header flex-between">
                 <h3>Stok Bebas</h3>
@@ -233,6 +222,7 @@
             </div>
             <div class="table-responsive">
                 <table class="table-stok">
+                    {{-- ... Konten Tabel Stok Anda ... --}}
                     <thead>
                         <tr>
                             <th>Uraian</th>
@@ -244,8 +234,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                            // Ambil data dengan fallback ke 0 jika struktur array tidak sesuai
+                         @php
                             $p = $stokData['produksi'] ?? [];
                             $StokSir20  = $p['sir20'] ?? 0;
                             $StokRss    = $p['rss'] ?? 0;
@@ -264,8 +253,7 @@
                         <tr class="separator-header">
                             <td colspan="6" style="font-style: italic;">Outstanding Contract</td>
                         </tr>
-
-                        @php
+                         @php
                             $sb = $stokData['sudah_bayar'] ?? [];
                             $StokSbSir20  = $sb['sir20'] ?? 0;
                             $StokSbRss    = $sb['rss'] ?? 0;
@@ -281,7 +269,7 @@
                             <td>{{ number_format($StokSbSir3wf, 0, ',', '.') }}</td>
                             <td class="font-bold">{{ number_format($StokSbTotal, 0, ',', '.') }}</td>
                         </tr>
-                        @php
+                         @php
                             $bb = $stokData['belum_bayar'] ?? [];
                             $StokBbSir20  = $bb['sir20'] ?? 0;
                             $StokBbRss    = $bb['rss'] ?? 0;
@@ -304,7 +292,7 @@
                             $jmlSir3wf = $StokSbSir3l + $StokBbSir3l;
                             $jmlTotal  = $jmlSir20 + $jmlRss + $jmlSir3l + $jmlSir3wf;
                         @endphp
-                        <tr class="row-sum">
+                         <tr class="row-sum">
                             <td>Jumlah</td>
                             <td>{{ number_format($jmlSir20, 0, ',', '.') }}</td>
                             <td>{{ number_format($jmlRss, 0, ',', '.') }}</td>
@@ -320,7 +308,7 @@
                             $StokBebasTotal  = $StokTotal - $jmlTotal;
                         @endphp
                         @php
-                        // === STOK BEBAS FIX (Produksi + Bahan Baku) ===
+                        // === STOK BEBAS FIX ===
                         $bk = $stokData['bahan_baku'] ?? [];
 
                         $StokBahanBakuSir20  = $bk['sir20'] ?? 0;
@@ -492,25 +480,27 @@
 
 </div>
 
+{{-- SCRIPT PENGHUBUNG --}}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
 <script>
-    // Memasukkan seluruh data ke JS untuk interaktivitas
-    // Menggunakan variabel $top5Buyers dan $top5Products dari Controller
+    // Memasukkan seluruh data dari PHP ke object Window agar bisa dibaca file JS eksternal
     window.dashboardData = {
         priceDaily: @json($trendPriceDaily),
         
-        // Data Buyers (Sudah terfilter Top 5 dari controller)
-        // Struktur: {'TOTAL': {'BuyerA': 100, 'TOTAL': 200}, 'SIR 20': {...}}
+        // Data Mentah dari Controller (Kuncinya sudah "WTP", "MOP", dll)
         rawTopBuyers: @json($top5Buyers), 
-        
-        // Untuk inisialisasi awal (tanpa key TOTAL)
-        topBuyers: @json(array_values($initBuyers)),
-        topBuyersLabels: @json(array_keys($initBuyers)), 
-        
-        // Data Products (Sudah terfilter Top 5 dari controller)
         rawTopProducts: @json($top5Products),
-        topProducts: @json(array_values($initProducts)),
-        topProductsLabels: @json(array_keys($initProducts)),
         
+        // Data Init Awal (Hanya untuk render pertama)
+        topBuyers: @json(array_values($initBuyers)),
+        // PERBAIKAN: Kirim Key langsung sebagai label (WTP, MOP) tanpa diproses lagi
+        topBuyersLabels: @json($buyerLabels), 
+        
+        topProducts: @json(array_values($initProducts)),
+        topProductsLabels: @json($productLabels),
+        
+        // Data Lain
         volumeReal: @json($rekap4['volume_real']),
         rkapVol: @json($rekap4['volume_rkap']),
         revenueReal: @json($rekap4['revenue_real']),
@@ -519,103 +509,8 @@
         chartColors: @json($chartColors),
         prodColors: @json($prodColors)
     };
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- 1. HANDLE BUYER FILTER ---
-        const buyerSelect = document.getElementById('buyer-filter');
-        if(buyerSelect) {
-            buyerSelect.addEventListener('change', function(e) {
-                updateChartData(e.target.value, 'buyer');
-            });
-        }
-
-        // --- 2. HANDLE PRODUCT FILTER ---
-        const productSelect = document.getElementById('product-filter');
-        if(productSelect) {
-            productSelect.addEventListener('change', function(e) {
-                updateChartData(e.target.value, 'product');
-            });
-        }
-    });
-
-    // Fungsi Generic untuk Update Chart (Buyer atau Product)
-    function updateChartData(category, type) {
-        let rawData, chartInstance, legendContainer, centerTotal, colors;
-
-        if (type === 'buyer') {
-            rawData = window.dashboardData.rawTopBuyers[category];
-            colors = window.dashboardData.chartColors;
-            legendContainer = document.getElementById('buyer-legend-container');
-            centerTotal = document.getElementById('buyer-center-total');
-            chartInstance = getChartInstance('#chart-buyer');
-        } else {
-            rawData = window.dashboardData.rawTopProducts[category];
-            colors = window.dashboardData.prodColors;
-            legendContainer = document.getElementById('product-legend-container');
-            centerTotal = document.getElementById('product-center-total');
-            chartInstance = getChartInstance('#chart-product');
-        }
-
-        if(!rawData) rawData = {};
-
-        // Proses Data: Hapus Key 'TOTAL' untuk chart, tapi simpan nilainya untuk center label
-        let totalSum = rawData['TOTAL'] || 0;
-        
-        // Clone object agar data asli tidak berubah
-        let processedData = Object.assign({}, rawData);
-        if(processedData['TOTAL'] !== undefined) delete processedData['TOTAL'];
-
-        // Convert ke format array untuk chart
-        // Karena data dari controller sudah tersortir, kita tinggal map
-        let keys = Object.keys(processedData);
-        let values = Object.values(processedData);
-
-        // Update Chart
-        if(chartInstance) {
-            chartInstance.updateOptions({ labels: keys });
-            chartInstance.updateSeries(values);
-        }
-
-        // Update Center Total
-        if(centerTotal) {
-            centerTotal.innerText = new Intl.NumberFormat('id-ID').format(totalSum);
-        }
-
-        // Update Legend
-        if(legendContainer) {
-            let html = '';
-            keys.forEach((name, index) => {
-                let val = values[index];
-                let pct = totalSum > 0 ? Math.round((val / totalSum) * 100) : 0;
-                let color = colors[index % colors.length];
-                
-                // Initials logic (sederhana)
-                let initial = name.substring(0, 3);
-                
-                html += `
-                <div class="legend-item">
-                    <span class="dot" style="background: ${color}"></span>
-                    <span class="name" title="${name}">
-                        ${name.length > 15 ? name.substring(0, 15) + '...' : name} 
-                        ${type === 'buyer' ? `<span class="text-xs text-gray-400">(${initial})</span>` : ''}
-                    </span>
-                    <span class="val">${pct}%</span>
-                </div>
-                `;
-            });
-            legendContainer.innerHTML = html;
-        }
-    }
-
-    // Helper untuk mencari instance ApexCharts
-    function getChartInstance(selector) {
-        const el = document.querySelector(selector);
-        if (el && el.querySelector(".apexcharts-canvas")) {
-            return ApexCharts.getChartByID(el.querySelector(".apexcharts-canvas").getAttribute("id"));
-        }
-        return null;
-    }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+{{-- PANGGIL SCRIPT UTAMA DI BAWAH DATA DEFINITION --}}
 <script src="{{ asset('js/dashboard-script.js') }}"></script>
 @endsection
