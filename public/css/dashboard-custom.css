@@ -111,7 +111,7 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Konten vertikal di tengah */
+    justify-content: flex-start; /* Konten vertikal di tengah */
 }
 
 /* Background & Styles untuk Kolom */

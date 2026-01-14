@@ -372,19 +372,21 @@
 
     {{-- BARIS 4: MONTHLY VOLUME --}}
     <div class="card-std p-0 full-row-card">
-        <div class="chart-header-padded">
-            <h3>Monthly Volume (Real vs RKAP)</h3>
-        </div>
         <div class="layout-3-cols">
             <div class="col-chart">
-                <div id="chart-monthly-vol"></div>
+                <div class="chart-header-padded">
+                    <h3>Monthly Volume (Real vs RKAP)</h3>
+                </div>
+                <div class="col-chart">
+                    <div id="chart-monthly-vol"></div>
+                </div>
             </div>
             <div class="col-middle bg-light">
                 <p class="sidebar-title">Rincian Mutu (Volume)</p>
                 <div class="mutu-list">
                     @if(isset($mutu['label']) && is_array($mutu['label']))
                         @foreach($mutu['label'] as $index => $label)
-                            @if(strtoupper($label) === 'TOTAL') @continue @endif
+                            @if(strtoupper(trim($label)) === 'TOTAL') @continue @endif
                             @php
                                 $vol = isset($mutu['volume'][$index]) ? $mutu['volume'][$index] : 0;
                                 $pct = $totalVolume > 0 ? round(($vol / $totalVolume) * 100, 1) : 0;
@@ -425,19 +427,21 @@
 
     {{-- BARIS 5: MONTHLY REVENUE --}}
     <div class="card-std p-0 full-row-card">
-        <div class="chart-header-padded">
-            <h3>Monthly Revenue (Real vs RKAP)</h3>
-        </div>
         <div class="layout-3-cols">
             <div class="col-chart">
-                <div id="chart-monthly-rev"></div>
+                <div class="chart-header-padded">
+                    <h3>Monthly Revenue (Real vs RKAP)</h3>
+                </div>
+                <div class="col-chart">
+                    <div id="chart-monthly-rev"></div>
+                </div>
             </div>
             <div class="col-middle bg-light">
                 <p class="sidebar-title">Rincian Mutu (Revenue)</p>
                 <div class="mutu-list">
                     @if(isset($mutu['label']) && is_array($mutu['label']))
                         @foreach($mutu['label'] as $index => $label)
-                            @if(strtoupper($label) === 'TOTAL') @continue @endif
+                            @if(strtoupper(trim($label)) === 'TOTAL') @continue @endif
                             @php
                                 $revValue = isset($mutu['revenue'][$index]) ? $mutu['revenue'][$index] : 0;
                                 $totalRevRaw = $totalRevenue / 1000000000;

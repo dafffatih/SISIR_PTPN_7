@@ -100,10 +100,22 @@ class DashboardController extends Controller
             $rekap4['volume_real'] = array_fill(0, 12, 0);
             $rekap4['volume_rkap'] = array_fill(0, 12, 0);
         }
+        $rawLabels = array_column($rawBatch["Rekap4!B23:B27"] ?? [], 0);
+        // Cek apakah label dari sheet benar-benar ada isinya (bukan array kosong atau null semua)
+        $hasLabels = !empty($rawLabels) && count(array_filter($rawLabels)) > 0;
+
         $mutu = [
-            'label'   => array_column($rawBatch["Rekap4!B23:B27"] ?? [], 0) ?: ['SIR 20', 'RSS 1', 'SIR 3L', 'SIR 3WF', 'TOTAL'],
-            'volume'  => array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!E23:E27"] ?? []) ?: [0, 0, 0, 0, 0],
-            'revenue' => array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!E48:E52"] ?? []) ?: [0, 0, 0, 0, 0],
+            'label'   => $hasLabels 
+                        ? array_values($rawLabels) 
+                        : ['SIR 20', 'RSS 1', 'SIR 3L', 'SIR 3WF', 'TOTAL'],
+            
+            'volume'  => (!empty($rawBatch["Rekap4!E23:E27"])) 
+                        ? array_values(array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!E23:E27"])) 
+                        : [0, 0, 0, 0, 0],
+            
+            'revenue' => (!empty($rawBatch["Rekap4!E48:E52"])) 
+                        ? array_values(array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!E48:E52"])) 
+                        : [0, 0, 0, 0, 0],
         ];
         $totalVolume = $cleanNum($rawBatch["Rekap4!E27:E27"][0] ?? [0]); 
         $rkapVolume  = $cleanNum($rawBatch["Rekap4!H27:H27"][0] ?? [0]);
@@ -137,9 +149,9 @@ class DashboardController extends Controller
 
         $topBuyers = [];
 
-        foreach ($mutuList as $mutu) {
+        foreach ($mutuList as $kategoriMutu) { 
             foreach ($buyersList as $buyer) {
-                $topBuyers[$mutu][$buyer] = 0;
+                $topBuyers[$kategoriMutu][$buyer] = 0;
             }
         }
 
@@ -156,16 +168,16 @@ class DashboardController extends Controller
                     ? trim($rawBatch["SC Sudah Bayar!AA4:AA5359"][$idx][0])
                     : null;
 
-                $mutu = isset($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0])
+                $jenisMutu = isset($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0])
                     ? strtoupper(trim($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0]))
                     : null;
 
-                if (!$buyer || !$volumeStr || !$mutu) continue;
-                if (!in_array($buyer, $buyersList) || !in_array($mutu, $mutuList)) continue;
+                if (!$buyer || !$volumeStr || !$jenisMutu) continue;
+                if (!in_array($buyer, $buyersList) || !in_array($jenisMutu, $mutuList)) continue;
 
                 $volume = (float) str_replace(['.', ','], ['', '.'], $volumeStr);
 
-                $topBuyers[$mutu][$buyer] += $volume;
+                $topBuyers[$jenisMutu][$buyer] += $volume;
             }
         }
 
@@ -175,9 +187,9 @@ class DashboardController extends Controller
 
         $topBuyers["TOTAL"] = array_fill_keys($buyersList, 0);
 
-        foreach ($mutuList as $mutu) {
+        foreach ($mutuList as $kategoriMutu) {
             foreach ($buyersList as $buyer) {
-                $topBuyers["TOTAL"][$buyer] += $topBuyers[$mutu][$buyer];
+                $topBuyers["TOTAL"][$buyer] += $topBuyers[$kategoriMutu][$buyer];
             }
         }
 
@@ -211,7 +223,7 @@ class DashboardController extends Controller
         $top5Buyers = [];
         $topN = 5;
 
-        foreach ($topBuyers as $mutu => $buyers) {
+        foreach ($topBuyers as $kategoriMutu => $buyers) {
 
             // Buang key TOTAL dulu
             $buyersOnly = $buyers;
@@ -235,17 +247,17 @@ class DashboardController extends Controller
                 $topOnly = array_slice($buyersOnly, 0, $topN, true);
                 $others  = array_slice($buyersOnly, $topN, null, true);
 
-                $top5Buyers[$mutu] = $topOnly;
-                $top5Buyers[$mutu]["LAINNYA"] = array_sum($others);
+                $top5Buyers[$kategoriMutu] = $topOnly;
+                $top5Buyers[$kategoriMutu]["LAINNYA"] = array_sum($others);
 
             } 
             // Jika ≤ 5 → ambil semua, TANPA LAINNYA
             else {
-                $top5Buyers[$mutu] = $buyersOnly;
+                $top5Buyers[$kategoriMutu] = $buyersOnly;
             }
 
             // Tambahkan TOTAL
-            $top5Buyers[$mutu]["TOTAL"] = $totalMutu;
+            $top5Buyers[$kategoriMutu]["TOTAL"] = $totalMutu;
         }
 
 
@@ -273,9 +285,9 @@ class DashboardController extends Controller
 
         $topProducts = [];
 
-        foreach ($mutuList as $mutu) {
+        foreach ($mutuList as $kategoriMutu) { // Ubah jadi $kategoriMutu
             foreach ($productList as $product) {
-                $topProducts[$mutu][$product] = 0;
+                $topProducts[$kategoriMutu][$product] = 0;
             }
         }
 
@@ -292,19 +304,19 @@ class DashboardController extends Controller
                     ? trim($rawBatch["SC Sudah Bayar!AA4:AA5359"][$idx][0])
                     : null;
 
-                $mutu = isset($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0])
+                $jenisMutu = isset($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0])
                     ? strtoupper(trim($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0]))
                     : null;
 
                 // Skip data tidak valid
-                if (!$product || !$volumeStr || !$mutu) continue;
-                if (!in_array($product, $productList) || !in_array($mutu, $mutuList)) continue;
+                if (!$product || !$volumeStr || !$jenisMutu) continue;
+                if (!in_array($product, $productList) || !in_array($jenisMutu, $mutuList)) continue;
 
                 // Konversi volume
                 $volume = (float) str_replace(['.', ','], ['', '.'], $volumeStr);
 
                 // Akumulasi
-                $topProducts[$mutu][$product] += $volume;
+                $topProducts[$jenisMutu][$product] += $volume;
             }
         }
 
@@ -314,9 +326,9 @@ class DashboardController extends Controller
 
         $topProducts["TOTAL"] = array_fill_keys($productList, 0);
 
-        foreach ($mutuList as $mutu) {
+        foreach ($mutuList as $kategoriMutu) {
             foreach ($productList as $product) {
-                $topProducts["TOTAL"][$product] += $topProducts[$mutu][$product];
+                $topProducts["TOTAL"][$product] += $topProducts[$kategoriMutu][$product];
             }
         }
 
@@ -347,9 +359,9 @@ class DashboardController extends Controller
 
         $top5Products = [];
 
-        foreach ($topProducts as $mutu => $products) {
+        foreach ($topProducts as $kategoriMutu => $products) {
 
-            if ($mutu === "TOTAL") continue;
+            if ($kategoriMutu === "TOTAL") continue;
 
             // Ambil total mutu
             $totalMutu = $products["TOTAL"] ?? 0;
@@ -375,7 +387,7 @@ class DashboardController extends Controller
             // Tambahkan TOTAL
             $top5["TOTAL"] = $totalMutu;
 
-            $top5Products[$mutu] = $top5;
+            $top5Products[$kategoriMutu] = $top5;
         }
 
         // =======================
@@ -429,6 +441,16 @@ class DashboardController extends Controller
             'belum_bayar' => [ 'sir20' => $cleanNum([$rawBatch["Rekap3!I21:I21"][0][0] ?? 0] ?? []) ?: 3100, 'rss' => $cleanNum([$rawBatch["Rekap3!I49:I49"][0][0] ?? 0] ?? []) ?: 2800, 'sir3l' => $cleanNum([$rawBatch["Rekap3!D73:E73"][0][0] ?? 0] ?? []) ?: 2000, 'sir3wf' => $cleanNum([$rawBatch["Rekap3!D73:E73"][0][1] ?? 0] ?? []) ?: 1500 ],
             'bahan_baku'  => [ 'sir20' => $cleanNum([$rawBatch["Rekap3!I27:I27"][0][0] ?? 0] ?? []) ?: 2200, 'rss' => 1300, 'sir3l' => 1300, 'sir3wf' => 700 ]
         ];
+
+        // dd([
+        //     '1. CEK DATA MENTAH DARI GOOGLE SHEET' => [
+        //         'Label (B23:B27)'   => $rawBatch["Rekap4!B23:B27"] ?? 'TIDAK DITEMUKAN / NULL',
+        //         'Volume (E23:E27)'  => $rawBatch["Rekap4!E23:E27"] ?? 'TIDAK DITEMUKAN / NULL',
+        //         'Revenue (E48:E52)' => $rawBatch["Rekap4!E48:E52"] ?? 'TIDAK DITEMUKAN / NULL',
+        //     ],
+        //     '2. CEK VARIABEL $mutu SETELAH DIOLAH' => $mutu,
+        //     '3. CEK TOTAL VOLUME' => $totalVolume,
+        // ]);
 
         // Tambahkan lastTender ke view
         return view('dashboard.index', compact(
