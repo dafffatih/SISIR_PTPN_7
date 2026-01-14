@@ -324,7 +324,7 @@
                             $jmlSir20  = $StokSbSir20 + $StokBbSir20;
                             $jmlRss    = $StokSbRss + $StokBbRss;
                             $jmlSir3l  = $StokSbSir3l + $StokBbSir3l;
-                            $jmlSir3wf = $StokSbSir3l + $StokBbSir3l;
+                            $jmlSir3wf = $StokSbSir3wf + $StokBbSir3wf;
                             $jmlTotal  = $jmlSir20 + $jmlRss + $jmlSir3l + $jmlSir3wf;
                         @endphp
                          <tr class="row-sum">
@@ -389,6 +389,7 @@
                             $StokBebasFixSir3l  = $StokBebasSir3l + $StokBahanBakuSir3l;
                             $StokBebasFixSir3wf = $StokBebasSir3wf + $StokBahanBakuSir3wf;
                             $StokBebasFixTotal  = $StokBebasFixSir20 + $StokBebasFixRss + $StokBebasFixSir3l + $StokBebasFixSir3wf;
+                            // dd($StokBebasFixTotal);
                         @endphp
                         <tr class="row-highlight-final">
                             <td>STOK BEBAS AKHIR</td>
