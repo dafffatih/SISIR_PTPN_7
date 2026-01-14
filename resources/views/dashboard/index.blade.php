@@ -118,12 +118,25 @@
     <div class="row-grid-2">
         <div class="col-stacked">
             {{-- 1. GRAFIK TREND --}}
-            <div class="card-std">
+            <div class="card-std price-chart-wrapper">
                 <div class="card-header">
                     <h3>Daily Selling Price</h3>
                 </div>
+
+                <!-- DROPDOWN DI POJOK KANAN ATAS -->
+                <div class="price-filter">
+                    <select id="price-range" class="form-select-sm">
+                        <option value="3">3 Bulan Terakhir</option>
+                        <option value="6">6 Bulan Terakhir</option>
+                        <option value="9">9 Bulan Terakhir</option>
+                        <option value="12">12 Bulan Terakhir</option>
+                        <option value="all" selected>Semua Bulan</option>
+                    </select>
+                </div>
+
                 <div id="chart-price-monthly"></div>
             </div>
+
 
             {{-- 2. LAST TENDER PRICE --}}
             <div class="card-std" style="padding: 24px;">

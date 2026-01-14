@@ -270,3 +270,27 @@
     .dashboard-container .stats-container { flex-direction: row; flex-wrap: wrap; width: 100%; }
     .dashboard-container .summary-item { flex: 1; min-width: 100px; }
 }
+
+/* =========================================
+   Daily Selling Price - Dropdown Position
+   ========================================= */
+
+/* Wrapper chart supaya dropdown bisa absolute */
+.price-chart-wrapper {
+    position: relative;
+}
+
+/* Dropdown di pojok kanan atas chart */
+.price-filter {
+    position: absolute;
+    top: 12px;       /* sesuaikan kalau mau lebih turun */
+    right: 16px;    /* sejajar kanan */
+    z-index: 10;
+}
+
+/* Styling dropdown */
+.price-filter select {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+}

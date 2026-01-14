@@ -3,104 +3,203 @@ document.addEventListener("DOMContentLoaded", function () {
     const commonFont = 'Inter, sans-serif';
 
     // ==========================================================
-    // 1. CHART HARGA (TETAP)
+    // SIMPAN DATA ASLI (UNTUK RESET & ANIMASI)
+    // ==========================================================
+    const originalPriceSeries = JSON.parse(JSON.stringify(data.priceDaily));
+
+    // ==========================================================
+    // 1. CHART HARGA
     // ==========================================================
     var priceOptions = {
-        series: data.priceDaily, 
-        chart: { 
-            type: 'line', 
-            height: 320, 
+        series: data.priceDaily,
+        chart: {
+            type: 'line',
+            height: 320,
             toolbar: { show: false },
-            fontFamily: commonFont 
+            fontFamily: commonFont,
+
+            // 🔥 ANIMASI HALUS
+            animations: {
+                enabled: true,
+                easing: 'easeinout',
+                speed: 600,
+                animateGradually: {
+                    enabled: true,
+                    delay: 150
+                },
+                dynamicAnimation: {
+                    enabled: true,
+                    speed: 500
+                }
+            }
         },
+
         colors: ['#1E293B', '#F97316', '#0D9488'],
         stroke: { curve: 'smooth', width: 2 },
-        xaxis: { 
+
+        xaxis: {
             type: 'datetime',
-            labels: { 
+            labels: {
                 format: 'MMM',
-                style: { colors: '#94a3b8', fontSize: '11px' } 
+                style: {
+                    colors: '#0F172A',
+                    fontSize: '12px',
+                    fontWeight: 600
+                }
             },
             axisBorder: { show: false },
             axisTicks: { show: false }
         },
-        yaxis: { 
+
+        yaxis: {
             min: 20000,
             max: 50000,
             tickAmount: 6,
-            labels: { 
-                formatter: (val) => 'Rp ' + (val/1000).toFixed(0) + 'k', 
-                style: { colors: '#94a3b8', fontSize: '11px' } 
-            } 
+            labels: {
+                formatter: (val) => 'Rp ' + (val / 1000).toFixed(0) + 'k',
+                style: {
+                    colors: '#0F172A',
+                    fontSize: '12px',
+                    fontWeight: 600
+                }
+            }
         },
+
         tooltip: {
             shared: true,
             x: { format: 'dd MMM yyyy' }
         },
-        grid: { borderColor: '#F1F5F9', strokeDashArray: 4 },
+
+        grid: {
+            borderColor: '#262323',
+            strokeDashArray: 4,
+            yaxis: { lines: { show: true } }
+        },
+
         legend: { position: 'top', horizontalAlign: 'right' }
     };
-    new ApexCharts(document.querySelector("#chart-price-monthly"), priceOptions).render();
-
 
     // ==========================================================
-    // 2. DONUT CHARTS (Dengan Fungsi Update)
+    // INIT CHART INSTANCE
     // ==========================================================
-    
-    // Helper: Opsi Umum Donut
+    const priceChart = new ApexCharts(
+        document.querySelector("#chart-price-monthly"),
+        priceOptions
+    );
+    priceChart.render();
+
+    // ==========================================================
+    // FILTER BULAN + ANIMASI
+    // ==========================================================
+    function filterPriceByMonth(value) {
+
+        // ===== MODE: SEMUA BULAN =====
+        if (value === 'all') {
+
+            // Reset window X-axis
+            priceChart.updateOptions({
+                xaxis: {}
+            }, false, true);
+
+            // 🔥 Update series TERPISAH agar animasi jalan
+            priceChart.updateSeries(originalPriceSeries, true);
+            return;
+        }
+
+        // ===== MODE: FILTER BULAN =====
+        const monthCount = parseInt(value);
+        const now = new Date();
+        const fromDate = new Date();
+        fromDate.setMonth(now.getMonth() - monthCount);
+
+        const filteredSeries = originalPriceSeries.map(series => ({
+            name: series.name,
+            data: series.data.filter(point => new Date(point[0]) >= fromDate)
+        }));
+
+        priceChart.updateOptions({
+            xaxis: {
+                min: fromDate.getTime(),
+                max: now.getTime()
+            }
+        }, false, true);
+
+        // 🔥 Animasi data
+        priceChart.updateSeries(filteredSeries, true);
+    }
+
+    // ==========================================================
+    // EVENT DROPDOWN FILTER BULAN
+    // ==========================================================
+    const priceRangeSelect = document.getElementById('price-range');
+    if (priceRangeSelect) {
+        priceRangeSelect.addEventListener('change', function () {
+            filterPriceByMonth(this.value); // ⚠️ jangan parseInt
+        });
+    }
+
+    // ==========================================================
+    // DEFAULT LOAD (12 BULAN)
+    // ==========================================================
+    filterPriceByMonth(12);
+
+    // ==========================================================
+    // 2. DONUT CHARTS (TIDAK DIUBAH)
+    // ==========================================================
     function getDonutOptions(colors) {
         return {
-            // UBAH TYPE KE 'pie'
-            chart: { type: 'pie', height: 200, fontFamily: commonFont }, 
+            chart: { type: 'pie', height: 200, fontFamily: commonFont },
             colors: colors,
-            // LABEL DI DALAM PIE
-            dataLabels: { 
+            dataLabels: {
                 enabled: true,
                 formatter: function (val, opts) {
-                    // Tampilkan Nama Series langsung
                     return opts.w.config.labels[opts.seriesIndex];
                 },
-                style: { fontSize: '10px', fontFamily: commonFont, fontWeight: 'bold', colors: ['#fff'] },
+                style: {
+                    fontSize: '10px',
+                    fontFamily: commonFont,
+                    fontWeight: 'bold',
+                    colors: ['#fff']
+                },
                 dropShadow: { enabled: false }
             },
             plotOptions: {
-                // HAPUS KONFIGURASI DONUT (SIZE/HOLE)
-                pie: { 
-                    offsetY: 0,
-                    customScale: 1
-                } 
+                pie: { offsetY: 0, customScale: 1 }
             },
             legend: { show: false },
-            stroke: { show: false }, // Hilangkan border putih antar slice
+            stroke: { show: false },
             tooltip: {
-                y: { formatter: function(val) { return val + " Ton"; } }
+                y: { formatter: function (val) { return val + " Ton"; } }
             }
         };
     }
 
-    // --- Render Awal Chart Buyer ---
     var buyerOptions = getDonutOptions(data.chartColors);
     buyerOptions.series = data.topBuyers;
-    buyerOptions.labels = data.topBuyersLabels; // Label Awal (TOTAL)
+    buyerOptions.labels = data.topBuyersLabels;
     var chartBuyer = new ApexCharts(document.querySelector("#chart-buyer"), buyerOptions);
     chartBuyer.render();
 
-    // --- Render Awal Chart Product ---
     var productOptions = getDonutOptions(data.prodColors);
     productOptions.series = data.topProducts;
-    productOptions.labels = data.topProductsLabels; // Label Awal (TOTAL)
+    productOptions.labels = data.topProductsLabels;
     var chartProduct = new ApexCharts(document.querySelector("#chart-product"), productOptions);
     chartProduct.render();
 
     // ==========================================================
-    // 3. BAR CHARTS (Volume & Revenue)
+    // 3. BAR CHARTS (TIDAK DIUBAH)
     // ==========================================================
     const barConfig = {
         chart: { type: 'bar', height: 280, toolbar: { show: false }, fontFamily: commonFont },
         plotOptions: { bar: { horizontal: false, columnWidth: '50%', borderRadius: 3 } },
         dataLabels: { enabled: false },
         stroke: { show: true, width: 2, colors: ['transparent'] },
-        xaxis: { categories: data.monthLabels, labels: { style: { colors: '#94a3b8', fontSize: '10px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+        xaxis: {
+            categories: data.monthLabels,
+            labels: { style: { colors: '#94a3b8', fontSize: '10px' } },
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+        },
         yaxis: { show: false },
         grid: { show: false },
         legend: { position: 'bottom', markers: { radius: 12 }, offsetY: 5 },
@@ -109,40 +208,39 @@ document.addEventListener("DOMContentLoaded", function () {
 
     new ApexCharts(document.querySelector("#chart-monthly-vol"), {
         ...barConfig,
-        series: [{ name: 'Real', data: data.volumeReal }, { name: 'RKAP', data: data.rkapVol }],
+        series: [
+            { name: 'Real', data: data.volumeReal },
+            { name: 'RKAP', data: data.rkapVol }
+        ],
         colors: ['#F97316', '#E2E8F0']
     }).render();
 
     new ApexCharts(document.querySelector("#chart-monthly-rev"), {
         ...barConfig,
-        series: [{ name: 'Real', data: data.revenueReal }, { name: 'RKAP', data: data.rkapRev }],
+        series: [
+            { name: 'Real', data: data.revenueReal },
+            { name: 'RKAP', data: data.rkapRev }
+        ],
         colors: ['#334155', '#E2E8F0']
     }).render();
 
-
     // ==========================================================
-    // 4. EVENT LISTENERS (LOGIC UPDATE DROPDOWN)
+    // 4. DONUT FILTER LISTENER (TIDAK DIUBAH)
     // ==========================================================
-
-    // Listener Buyer
     const buyerSelect = document.getElementById('buyer-filter');
-    if(buyerSelect) {
-        buyerSelect.addEventListener('change', function(e) {
+    if (buyerSelect) {
+        buyerSelect.addEventListener('change', function (e) {
             updateDonutData(e.target.value, 'buyer', chartBuyer);
         });
     }
 
-    // Listener Product
     const productSelect = document.getElementById('product-filter');
-    if(productSelect) {
-        productSelect.addEventListener('change', function(e) {
+    if (productSelect) {
+        productSelect.addEventListener('change', function (e) {
             updateDonutData(e.target.value, 'product', chartProduct);
         });
     }
 
-    /**
-     * FUNGSI INTI UPDATE CHART & LEGEND
-     */
     function updateDonutData(category, type, chartInstance) {
         let rawSource, legendContainer, centerTotalEl, colors;
 
@@ -158,52 +256,42 @@ document.addEventListener("DOMContentLoaded", function () {
             centerTotalEl = document.getElementById('product-center-total');
         }
 
-        // Ambil data (Fallback ke object kosong jika key tidak ada)
         let categoryData = rawSource && rawSource[category] ? rawSource[category] : {};
         let totalSum = categoryData['TOTAL'] || 0;
 
-        // Siapkan Array Baru
         let newSeries = [];
         let newLabels = [];
-        
-        // Loop data untuk mengisi Series & Labels
+
         Object.keys(categoryData).forEach(key => {
-            // PENTING: Skip key 'TOTAL' agar tidak masuk ke grafik
             if (key !== 'TOTAL') {
                 newSeries.push(Number(categoryData[key]));
-                newLabels.push(key); // PENTING: GUNAKAN NAMA ASLI (WTP, MOP)
+                newLabels.push(key);
             }
         });
 
-        // Update Chart Apex
-        if(chartInstance) {
-            chartInstance.updateOptions({ 
-                labels: newLabels, 
-                colors: colors // Reset warna agar urutan konsisten
-            });
+        if (chartInstance) {
+            chartInstance.updateOptions({ labels: newLabels, colors: colors });
             chartInstance.updateSeries(newSeries);
         }
 
-        // Update Center Total
-        if(centerTotalEl) {
-            let formattedTotal = new Intl.NumberFormat('id-ID').format(Math.round(totalSum / 1000));
-            centerTotalEl.innerText = formattedTotal;
+        if (centerTotalEl) {
+            centerTotalEl.innerText = new Intl.NumberFormat('id-ID')
+                .format(Math.round(totalSum / 1000));
         }
 
-        // Update HTML Legend di samping
-        if(legendContainer) {
+        if (legendContainer) {
             let html = '';
             newLabels.forEach((name, index) => {
                 let val = newSeries[index];
                 let pct = totalSum > 0 ? Math.round((val / totalSum) * 100) : 0;
                 let color = colors[index % colors.length];
-                
+
                 html += `
-                <div class="legend-item">
-                    <span class="dot" style="background: ${color}"></span>
-                    <span class="name" title="${name}">${name}</span>
-                    <span class="val">${pct}%</span>
-                </div>`;
+                    <div class="legend-item">
+                        <span class="dot" style="background:${color}"></span>
+                        <span class="name">${name}</span>
+                        <span class="val">${pct}%</span>
+                    </div>`;
             });
             legendContainer.innerHTML = html;
         }
