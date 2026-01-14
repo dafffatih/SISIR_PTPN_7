@@ -167,6 +167,7 @@
 .dashboard-container .row-sum td { border-top: 1px solid #CBD5E1; font-weight: 800; padding-top: 12px; }
 .dashboard-container .row-highlight { background-color: #475569; }
 .dashboard-container .row-highlight td { color: white !important; padding: 10px; }
+
 .dashboard-container .badge-date { background: #F1F5F9; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: #64748B; font-weight: 600; }
 .tender-grid {
         display: grid;
@@ -229,6 +230,28 @@
 .dashboard-container .table-stok tr.row-highlight td:last-child{
   border-top-right-radius: 2px;
   border-bottom-right-radius: 2px;
+}
+/* ===========================
+   STOK BEBAS AKHIR - BACKGROUND SAMA DENGAN STOK BEBAS
+   =========================== */
+
+.dashboard-container .table-stok tr.row-highlight-final td {
+    background: var(--stok-teal) !important;
+    color: #ffffff !important;
+    font-weight: 800;
+    padding: 6px 10px;
+    border: none !important;
+}
+
+/* Biar ujung kiri & kanan rapi */
+.dashboard-container .table-stok tr.row-highlight-final td:first-child {
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+}
+
+.dashboard-container .table-stok tr.row-highlight-final td:last-child {
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
 }
 
 

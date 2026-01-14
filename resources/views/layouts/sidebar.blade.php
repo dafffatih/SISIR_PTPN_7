@@ -126,6 +126,29 @@ $menus = [
   }
   .sisir-link i{ width: 20px; text-align: center; }
 
+  /* LOGO PTPN 7 (ABOVE LOGOUT) */
+.sisir-ptpn-container{
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.sisir-ptpn-logo{
+  max-width: 40px;   /* ukuran aman & elegan */
+  width: 100%;
+  height: auto;
+  opacity: 0.9;
+}
+
+@media (max-width: 480px){
+  .sisir-ptpn-logo{
+    max-width: 120px;
+  }
+}
+
+
+
   /* LOGOUT */
   .sisir-logout-container{ padding: 16px; border-top: 1px solid rgba(255,255,255,.1); }
   .sisir-logout-btn{
@@ -181,6 +204,11 @@ $menus = [
     </nav>
 
   </div>
+
+    {{-- LOGO PTPN 7 --}}
+    <div class="sisir-ptpn-container">
+      <img src="{{ asset('images/ptpn7.png') }}" alt="PTPN 7" class="sisir-ptpn-logo">
+    </div>
 
   {{-- LOGOUT --}}
   <div class="sisir-logout-container">
