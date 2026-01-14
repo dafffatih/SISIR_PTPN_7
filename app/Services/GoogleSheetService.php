@@ -17,10 +17,14 @@ class GoogleSheetService
     protected $driveService;
     protected $spreadsheetId;
 
+    // app/Services/GoogleSheetService.php
+
+// ... imports remain the same
+
     public function __construct()
     {
         try {
-            // 1. Load Credentials
+            // 1. Load Credentials (UNCHANGED)
             $credentialsPath = storage_path('app/google/service-account.json');
             
             if (!file_exists($credentialsPath)) {
@@ -32,20 +36,50 @@ class GoogleSheetService
             $client->addScope(Google_Service_Sheets::SPREADSHEETS);
             $client->addScope(Google_Service_Drive::DRIVE_READONLY);
 
+            // Add Guzzle Client for stability (IPv4 force)
+            $guzzleClient = new \GuzzleHttp\Client([
+                'force_ip_resolve' => 'v4',
+                'verify' => false, 
+                'timeout' => 30,
+                'connect_timeout' => 10
+            ]);
+            $client->setHttpClient($guzzleClient);
+
             $this->sheetsService = new Google_Service_Sheets($client);
             $this->driveService = new Google_Service_Drive($client);
             
-            // 2. Load Spreadsheet ID Default (Prioritas: Database -> Config -> Env)
-            $setting = Setting::where('key', 'google_sheet_id')->first();
-            $dbSheetId = $setting ? $setting->value : null;
+            // ---------------------------------------------------------
+            // 2. DYNAMIC SPREADSHEET ID LOGIC (UPDATED)
+            // ---------------------------------------------------------
+            
+            $targetId = null;
 
-            $this->spreadsheetId = $dbSheetId 
-                                   ?? config('services.google.sheet_id') 
-                                   ?? env('GOOGLE_SHEET_ID')
-                                   ?? null;
+            // A. Check if User selected a Year in Session
+            if (session()->has('selected_year')) {
+                $year = session('selected_year');
+                $key  = 'google_sheet_id_' . $year;
+                
+                // Find ID for that year in DB
+                $settingYear = Setting::where('key', $key)->first();
+                if ($settingYear) {
+                    $targetId = $settingYear->value;
+                }
+            }
+
+            // B. If not in Session (or ID not found), fallback to Default
+            if (!$targetId) {
+                $settingDefault = Setting::where('key', 'google_sheet_id')->first();
+                $targetId = $settingDefault ? $settingDefault->value : null;
+            }
+
+            // C. Fallback to Config / Env
+            $this->spreadsheetId = $targetId 
+                                ?? config('services.google.sheet_id') 
+                                ?? env('GOOGLE_SHEET_ID')
+                                ?? null;
             
             if (!$this->spreadsheetId) {
-                \Log::warning('GOOGLE_SHEET_ID belum dikonfigurasi di Database maupun .env');
+                \Log::warning('GOOGLE_SHEET_ID not configured.');
             }
 
         } catch (\Exception $e) {
@@ -53,6 +87,8 @@ class GoogleSheetService
             throw $e;
         }
     }
+
+// ... rest of the file remains the same
 
     /**
      * Fitur Ganti ID Spreadsheet Berdasarkan Tahun
@@ -230,4 +266,6 @@ class GoogleSheetService
             throw new \Exception('Error fetching drive files: ' . $e->getMessage());
         }
     }
+
+    
 }

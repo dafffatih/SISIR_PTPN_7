@@ -9,6 +9,23 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
+    public function setYear($year)
+{
+    // Validate year format (4 digits)
+    if (preg_match('/^\d{4}$/', $year)) {
+        session(['selected_year' => $year]);
+        return back()->with('success', "Data switched to Year $year");
+    }
+    
+    // Reset to Default
+    if ($year === 'default') {
+        session()->forget('selected_year');
+        return back()->with('success', "Data switched to Default");
+    }
+
+    return back()->with('error', 'Invalid Year');
+}
+
     public function dashboard(GoogleSheetService $sheetService)
     {
         // 1. Ambil Data Batch

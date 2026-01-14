@@ -90,4 +90,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::delete('/settings/{id}', [SettingController::class, 'destroy'])
         ->name('settings.destroy')
         ->middleware('role:admin,staff');
+
+    Route::get('/set-year/{year}', [DashboardController::class, 'setYear'])
+    ->name('set.year');
 });
