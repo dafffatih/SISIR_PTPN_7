@@ -186,6 +186,12 @@
   }
   .m-kv tr:last-child td{ border-bottom:none; }
 
+  /* Geser kolom VALUE (kanan) sedikit ke kanan */
+.m-kv td:nth-child(2){
+  padding-left: 20px; /* bisa 12–24px */
+}
+
+
   @media (max-width: 980px){
     .m-grid{ grid-template-columns: 1fr 1fr; }
     .m-two-col{ grid-template-columns: 1fr; }

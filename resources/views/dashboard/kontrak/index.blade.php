@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Manajemen Kontrak')
-@section('page_title', 'Manajemen Kontrak')
+@section('page_title', 'Database')
 
 @section('content')
 <style>
@@ -177,13 +177,13 @@
 
 <div class="k-container">
     <div class="k-header">
-        <h2 class="k-title">Data Manajemen Kontrak Penjualan</h2>
+        <h2 class="k-title">Data Kontrak Penjualan</h2>
         <p class="k-subtitle">Kelola dan pantau semua kontrak penjualan Anda secara realtime dari Google Sheets</p>
     </div>
     <div class="nav-tabs">
         <a href="{{ route('kontrak') }}" 
         class="nav-item {{ request()->routeIs('kontrak') ? 'active' : '' }}">
-        Manajemen Kontrak
+        List DO
         </a>
 
         <a href="{{ route('list-kontrak.index') }}" 

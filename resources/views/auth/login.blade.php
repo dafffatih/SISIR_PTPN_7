@@ -102,7 +102,7 @@
             </p>
 
             <p class="text-center text-xs text-slate-400 mt-4">
-              © {{ date('Y') }} PTPN 1 Regional 7. All rights reserved.
+              © {{ date('Y') }} PTPN 1 Regional 7 Bagian MAP. All rights reserved.
             </p>
           </div>
         </div>

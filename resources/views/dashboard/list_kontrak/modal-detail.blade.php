@@ -11,7 +11,7 @@
     <div class="m-body">
       <div class="m-two-col">
         <div class="m-info-card">
-          <div class="m-info-title">Informasi Kontrak</div>
+          <div class="m-info-title">Informasi Umum</div>
           <table class="m-kv">
             <tr><td>Nomor Kontrak</td><td id="list_no_kontrak" style="font-weight:bold; color:#7c3aed">-</td></tr>
             <tr><td>Nomor SAP</td><td id="list_no_sap">-</td></tr>
@@ -41,8 +41,8 @@
             <tr><td colspan="2" style="border-bottom:none; padding-top:10px; font-weight:800; color:#0f172a;">Valuasi IDR</td></tr>
             <tr><td style="padding-left:10px;">Harga Rp</td><td id="list_harga_rp">-</td></tr>
             <tr><td style="padding-left:10px;">Nilai Rp</td><td id="list_nilai_rp">-</td></tr>
-            
-            <tr><td style="padding-top:15px;">Jatuh Tempo</td><td id="list_jatuh_tempo" style="padding-top:15px; color:#ef4444; font-weight:bold;">-</td></tr>
+
+            <tr><td style="padding-top:15px;">Jatuh Tempo Pembayaran</td><td id="list_jatuh_tempo" style="padding-top:15px; color:#ef4444; font-weight:bold;">-</td></tr>
           </table>
         </div>
       </div>

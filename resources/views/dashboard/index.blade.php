@@ -137,7 +137,7 @@
 
             {{-- 2. LAST TENDER PRICE --}}
             <div class="card-std last-tender-card">
-                <div style="margin-bottom: 16px; font-size: 14px; color: #64748B;">Last Tender Price/Kg</div>
+                <div style="margin-bottom: 16px; font-size: 14px; color: #64748B;">Last Selling Price/Kg</div>
                 <div class="tender-grid">
                     @php
                         $pSir20 = $lastTender['sir20']['price'] ?? 0;
@@ -411,14 +411,14 @@
         <div class="layout-3-cols">
             <div class="col-chart">
                 <div class="chart-header-padded">
-                    <h3>Monthly Volume (Real vs RKAP)</h3>
+                    <h3>Monthly Volume</h3>
                 </div>
                 <div class="col-chart">
                     <div id="chart-monthly-vol"></div>
                 </div>
             </div>
             <div class="col-middle bg-light">
-                <p class="sidebar-title">Rincian Mutu (Volume)</p>
+                <p class="sidebar-title">Rincian</p>
                 <div class="mutu-list">
                     @if(isset($mutu['label']) && is_array($mutu['label']))
                         @foreach($mutu['label'] as $index => $label)
@@ -442,14 +442,14 @@
                 </div>
             </div>
             <div class="col-right bg-light border-left">
-                <p class="sidebar-title">Ringkasan Total</p>
+                <p class="sidebar-title">Ringkasan</p>
                 <div class="stats-container">
                     <div class="summary-item">
-                        <span class="sum-label">Total Real</span>
+                        <span class="sum-label">Real</span>
                         <span class="sum-val orange">{{ number_format($totalVolume, 0, ',', '.') }} <small>Ton</small></span>
                     </div>
                     <div class="summary-item">
-                        <span class="sum-label">Total RKAP</span>
+                        <span class="sum-label">RKAP</span>
                         <span class="sum-val dark">{{ number_format($rkapVolume, 0, ',', '.') }} <small>Ton</small></span>
                     </div>
                     <div class="summary-item">
@@ -466,14 +466,14 @@
         <div class="layout-3-cols">
             <div class="col-chart">
                 <div class="chart-header-padded">
-                    <h3>Monthly Revenue (Real vs RKAP)</h3>
+                    <h3>Monthly Revenue</h3>
                 </div>
                 <div class="col-chart">
                     <div id="chart-monthly-rev"></div>
                 </div>
             </div>
             <div class="col-middle bg-light">
-                <p class="sidebar-title">Rincian Mutu (Revenue)</p>
+                <p class="sidebar-title">Rincian </p>
                 <div class="mutu-list">
                     @if(isset($mutu['label']) && is_array($mutu['label']))
                         @foreach($mutu['label'] as $index => $label)
@@ -498,15 +498,15 @@
                 </div>
             </div>
             <div class="col-right bg-light border-left">
-                <p class="sidebar-title">Ringkasan Total</p>
+                <p class="sidebar-title">Total</p>
                 <div class="stats-container">
                     <div class="summary-item">
-                        <span class="sum-label">Total Real</span>
-                        <span class="sum-val orange">Rp {{ number_format($totalRevenue / 1000000000, 0, ',', '.') }}<small>M</small></span>
+                        <span class="sum-label">Real</span>
+                        <span class="sum-val orange">Rp {{ number_format($totalRevenue / 1000000000, 0, ',', '.') }}<small>Milyar</small></span>
                     </div>
                     <div class="summary-item">
-                        <span class="sum-label">Total RKAP</span>
-                        <span class="sum-val dark">Rp {{ number_format($rkapRevenue / 1000000000, 0, ',', '.') }}<small>M</small></span>
+                        <span class="sum-label">RKAP</span>
+                        <span class="sum-val dark">Rp {{ number_format($rkapRevenue / 1000000000, 0, ',', '.') }}<small>Milyar</small></span>
                     </div>
                     <div class="summary-item">
                         <span class="sum-label">Percentage</span>

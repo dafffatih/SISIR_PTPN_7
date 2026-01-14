@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'List Kontrak')
-@section('page_title', 'List Kontrak')
+@section('page_title', 'Database')
 
 @section('content')
 <style>
@@ -55,12 +55,12 @@
 
 <div class="k-container">
     <div class="k-header">
-        <h2 class="k-title">Data Kontrak</h2>
+        <h2 class="k-title">Data Kontrak Penjualan</h2>
         <p class="k-subtitle">Pilih menu di bawah untuk melihat jenis data kontrak</p>
     </div>
 
     <div class="nav-tabs">
-        <a href="{{ route('kontrak') }}" class="nav-item {{ request()->routeIs('kontrak') ? 'active' : '' }}">Manajemen Kontrak</a>
+        <a href="{{ route('kontrak') }}" class="nav-item {{ request()->routeIs('kontrak') ? 'active' : '' }}">List DO</a>
         <a href="{{ route('list-kontrak.index') }}" class="nav-item {{ request()->routeIs('list-kontrak.index') ? 'active' : '' }}">List Kontrak</a>
     </div>
 
