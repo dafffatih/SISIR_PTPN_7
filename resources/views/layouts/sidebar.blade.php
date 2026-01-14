@@ -126,26 +126,49 @@ $menus = [
   }
   .sisir-link i{ width: 20px; text-align: center; }
 
-  /* LOGO PTPN 7 (ABOVE LOGOUT) */
+ /* =========================
+   PTPN BRAND (ABOVE LOGOUT)
+========================= */
 .sisir-ptpn-container{
-  padding: 16px;
+  padding: 18px 16px 20px;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: auto;
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
 
 .sisir-ptpn-logo{
-  max-width: 40px;   /* ukuran aman & elegan */
-  width: 100%;
+  width: 42px;
   height: auto;
-  opacity: 0.9;
+  opacity: 0.95;
+  flex-shrink: 0;
 }
 
-@media (max-width: 480px){
-  .sisir-ptpn-logo{
-    max-width: 120px;
-  }
+/* TEXT */
+.sisir-ptpn-text{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.25;
 }
+
+.ptpn-title{
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: 0.6px;
+}
+
+.ptpn-subtitle{
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
 
 
 
@@ -207,8 +230,15 @@ $menus = [
 
     {{-- LOGO PTPN 7 --}}
     <div class="sisir-ptpn-container">
-      <img src="{{ asset('images/ptpn7.png') }}" alt="PTPN 7" class="sisir-ptpn-logo">
-    </div>
+  <img src="{{ asset('images/ptpn7.png') }}" alt="PTPN 7" class="sisir-ptpn-logo">
+
+  <div class="sisir-ptpn-text">
+    <div class="ptpn-title">PTPN I</div>
+    <div class="ptpn-subtitle">REGIONAL 7</div>
+  </div>
+</div>
+
+
 
   {{-- LOGOUT --}}
   <div class="sisir-logout-container">

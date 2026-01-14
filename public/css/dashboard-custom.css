@@ -145,16 +145,17 @@
 .dashboard-container .card-header { margin-bottom: 16px; }
 .dashboard-container .card-header h3 { font-size: 14px; font-weight: 700; color: var(--text-dark); margin: 0; }
 .dashboard-container .card-half { min-height: 200px; display: flex; flex-direction: column; justify-content: center; }
-.dashboard-container .donut-container { display: flex; align-items: center; position: relative; width: 100%; }
-.dashboard-container .chart-donut { width: 50%; }
+.dashboard-container .donut-container { display: flex; align-items: center; width: 100%; }
+.dashboard-container .chart-side-wrapper { width: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.dashboard-container .chart-donut { width: 100%; display: flex; justify-content: center;}
 .dashboard-container .custom-legend { width: 50%; padding-left: 10px; }
 .dashboard-container .legend-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11px; }
 .dashboard-container .legend-item .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 .dashboard-container .legend-item .name { flex: 1; margin: 0 8px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dashboard-container .legend-item .val { font-weight: 700; color: var(--text-dark); }
-.dashboard-container .donut-center-label { position: absolute; left: 25%; top: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
-.dashboard-container .donut-center-label .lbl { font-size: 9px; color: var(--text-gray); display: block; }
-.dashboard-container .donut-center-label .num { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+.dashboard-container .donut-center-label { position: static; transform: none; text-align: center; margin-top: -10px; margin-bottom: 10px; }
+.dashboard-container .donut-center-label .lbl {  font-size: 11px;  color: var(--text-gray);  display: block;  font-weight: 600; }
+.dashboard-container .donut-center-label .num {  font-size: 16px;  font-weight: 800;  color: var(--text-dark);  }
 
 /* --- TABLE STOK --- */
 .dashboard-container .card-table-compact { padding: 20px; }

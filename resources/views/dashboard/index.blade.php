@@ -158,7 +158,7 @@
             <div class="card-std card-half">
                 <div class="card-header flex-between">
                     <h3>Top 5 Buyers</h3>
-                    <select id="buyer-filter" class="form-select-sm" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; font-size: 12px; color: #475569; outline: none; cursor: pointer;">
+                    <select id="buyer-filter" class="form-select-sm" style="...">
                         <option value="TOTAL" selected>TOTAL</option>
                         <option value="SIR 20">SIR 20</option>
                         <option value="RSS 1">RSS 1</option>
@@ -167,9 +167,18 @@
                     </select>
                 </div>
                 <div class="donut-container">
-                    <div id="chart-buyer" class="chart-donut"></div>
+                    {{-- Wrapper Sisi Kiri (Chart + Total Text) --}}
+                    <div class="chart-side-wrapper">
+                        <div id="chart-buyer" class="chart-donut"></div>
+                        
+                        {{-- Pindahkan Text Total ke sini (Bawah Chart) --}}
+                        <div class="donut-center-label">
+                            <span class="lbl">Total Ton</span>
+                            <span class="num" id="buyer-center-total">{{ number_format($buyersTotalVol/1000, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
                     
-                    {{-- Legend Container --}}
+                    {{-- Wrapper Sisi Kanan (Legend) --}}
                     <div class="custom-legend" id="buyer-legend-container">
                         @php $i=0; @endphp
                         @foreach($initBuyers as $buyer => $vol)
@@ -183,11 +192,6 @@
                         @php $i++; @endphp
                         @endforeach
                     </div>
-                    
-                    <div class="donut-center-label">
-                        <span class="lbl">Total Ton</span>
-                        <span class="num" id="buyer-center-total">{{ number_format($buyersTotalVol/1000, 0, ',', '.') }}</span>
-                    </div>
                 </div>
             </div>
 
@@ -195,7 +199,7 @@
             <div class="card-std card-half">
                 <div class="card-header flex-between">
                     <h3>Top 5 Products</h3>
-                    <select id="product-filter" class="form-select-sm" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px 8px; font-size: 12px; color: #475569; outline: none; cursor: pointer;">
+                    <select id="product-filter" class="form-select-sm" style="...">
                         <option value="TOTAL" selected>TOTAL</option>
                         <option value="SIR 20">SIR 20</option>
                         <option value="RSS 1">RSS 1</option>
@@ -204,8 +208,18 @@
                     </select>
                 </div>
                 <div class="donut-container">
-                    <div id="chart-product" class="chart-donut"></div>
+                    {{-- Wrapper Sisi Kiri (Chart + Total Text) --}}
+                    <div class="chart-side-wrapper">
+                        <div id="chart-product" class="chart-donut"></div>
+                        
+                        {{-- Pindahkan Text Total ke sini --}}
+                        <div class="donut-center-label">
+                            <span class="lbl">Total Ton</span>
+                            <span class="num" id="product-center-total">{{ number_format($productsTotalVol/1000, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
                     
+                    {{-- Wrapper Sisi Kanan (Legend) --}}
                     <div class="custom-legend" id="product-legend-container">
                         @php $i=0; @endphp
                         @foreach($initProducts as $prod => $vol)
@@ -216,11 +230,6 @@
                         </div>
                         @php $i++; @endphp
                         @endforeach
-                    </div>
-
-                    <div class="donut-center-label">
-                        <span class="lbl">Total Ton</span>
-                        <span class="num" id="product-center-total">{{ number_format($productsTotalVol/1000, 0, ',', '.') }}</span>
                     </div>
                 </div>
             </div>

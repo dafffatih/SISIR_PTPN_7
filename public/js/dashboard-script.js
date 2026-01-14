@@ -50,23 +50,28 @@ document.addEventListener("DOMContentLoaded", function () {
     // Helper: Opsi Umum Donut
     function getDonutOptions(colors) {
         return {
-            chart: { type: 'donut', height: 180, fontFamily: commonFont },
+            // UBAH TYPE KE 'pie'
+            chart: { type: 'pie', height: 200, fontFamily: commonFont }, 
             colors: colors,
-            // LABEL DI DALAM DONUT
+            // LABEL DI DALAM PIE
             dataLabels: { 
                 enabled: true,
                 formatter: function (val, opts) {
-                    // Tampilkan Nama Series (WTP, MOP) langsung
+                    // Tampilkan Nama Series langsung
                     return opts.w.config.labels[opts.seriesIndex];
                 },
                 style: { fontSize: '10px', fontFamily: commonFont, fontWeight: 'bold', colors: ['#fff'] },
                 dropShadow: { enabled: false }
             },
             plotOptions: {
-                pie: { donut: { size: '65%', labels: { show: false } } }
+                // HAPUS KONFIGURASI DONUT (SIZE/HOLE)
+                pie: { 
+                    offsetY: 0,
+                    customScale: 1
+                } 
             },
             legend: { show: false },
-            stroke: { show: false },
+            stroke: { show: false }, // Hilangkan border putih antar slice
             tooltip: {
                 y: { formatter: function(val) { return val + " Ton"; } }
             }
