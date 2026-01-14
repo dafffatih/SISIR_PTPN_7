@@ -38,12 +38,12 @@
               draggable="false"
             >
 
-            <p class="mt-3 text-black text-lg font-semibold leading-snug">
-              Sales and Inventories Statistic of Rubber
-            </p>
-            <p class="mt-0.5 text-black text-sm tracking-wide">
-              PTPN 1 Regional 7
-            </p>
+          <p class="mt-3 text-[#0F766E] text-lg font-semibold leading-snug">
+            Sales and Inventories Statistic of Rubber
+          </p>
+          <p class="mt-0.5 text-[#0F766E] text-base tracking-wide">
+            PTPN 1 Regional 7
+          </p>
 
           </div>
         </div>
