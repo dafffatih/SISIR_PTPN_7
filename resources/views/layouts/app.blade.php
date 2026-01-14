@@ -15,8 +15,6 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: #f1f5f9;
       color: #1e293b;
-
-      /* ✅ WAJIB: cegah halaman ikut geser */
       overflow-x: hidden;
     }
 
@@ -29,7 +27,7 @@
     .app-container {
       display: flex;
       min-height: 100vh;
-      overflow-x: hidden; /* ✅ */
+      overflow-x: hidden;
     }
 
     /* ======================
@@ -43,8 +41,7 @@
       display: flex;
       flex-direction: column;
       position: relative;
-
-      overflow-x: hidden; /* ✅ */
+      overflow-x: hidden;
     }
 
     /* sidebar collapsed (desktop) */
@@ -98,6 +95,17 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    /* --- YEAR SELECTOR DI HEADER --- */
+    .header-year-selector {
+        margin-left: 8px;
+        display: flex;
+        align-items: center;
+    }
+    /* Sembunyikan dropdown tahun di layar sangat kecil agar tidak merusak layout */
+    @media (max-width: 400px) {
+        .header-year-selector { display: none; }
     }
 
     .topbar-filters{
@@ -155,8 +163,6 @@
     .main-content{
       padding: 24px;
       min-height: calc(100vh - var(--topbar-h));
-
-      /* ✅ PALING PENTING */
       overflow-x: hidden;
     }
 
@@ -225,6 +231,31 @@
 
           <div class="topbar-title">@yield('page_title', 'Dashboard')</div>
 
+          {{-- ===== DROPDOWN TAHUN (GLOBAL) ===== --}}
+          <div class="header-year-selector">
+              <div style="position: relative; display: inline-block;">
+                <span style="position: absolute; left: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; z-index: 1; font-size:12px;">📅</span>
+                
+                <select onchange="window.location.href='{{ url('set-year') }}/' + this.value" 
+                        style="padding-left: 28px; padding-right: 8px; padding-top: 4px; padding-bottom: 4px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 600; cursor: pointer; height: 32px; font-size: 13px; color: #334155; outline:none;">
+                    
+                    {{-- Default Option --}}
+                    {{-- Menggunakan null coalescing (??) agar aman jika variabel belum ter-set --}}
+                    <option value="default" {{ ($sharedCurrentYear ?? 'Default') === 'Default' ? 'selected' : '' }}>
+                        2025 (Default)
+                    </option>
+        
+                    {{-- Dynamic Years --}}
+                    @foreach($sharedAvailableYears ?? [] as $year)
+                        <option value="{{ $year }}" {{ ($sharedCurrentYear ?? '') == $year ? 'selected' : '' }}>
+                            {{ $year }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+          </div>
+          {{-- ===== END DROPDOWN ===== --}}
+
           @hasSection('topbar_filters')
             <div class="topbar-filters">
               @yield('topbar_filters')
@@ -249,11 +280,11 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      const sidebar     = document.getElementById('sidebar');
-      const overlay     = document.getElementById('overlay');
-      const mainArea    = document.getElementById('mainArea');
-      const mainContent = document.getElementById('mainContent');
-      const hamburger   = document.getElementById('hamburgerBtn');
+      const sidebar       = document.getElementById('sidebar');
+      const overlay       = document.getElementById('overlay');
+      const mainArea      = document.getElementById('mainArea');
+      const mainContent   = document.getElementById('mainContent');
+      const hamburger     = document.getElementById('hamburgerBtn');
 
       function isMobile() {
         return window.innerWidth <= 768;

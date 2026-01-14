@@ -36,27 +36,6 @@
             <h1>Dashboard Overview</h1>
             <p>PTPN 1 Regional 7 - Rubber Trading Analytics</p>
         </div>
-        <div class="filter-box">
-            <div style="position: relative; display: inline-block;">
-                <span class="icon-calendar" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; z-index: 1;">📅</span>
-                
-                <select onchange="window.location.href='{{ url('set-year') }}/' + this.value" 
-                        style="padding-left: 35px; padding-right: 10px; padding-top: 6px; padding-bottom: 6px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; font-weight: bold; cursor: pointer; height: 38px; color: #0f172a;">
-                    
-                    {{-- Default Option --}}
-                    <option value="default" {{ $sharedCurrentYear === 'Default' ? 'selected' : '' }}>
-                        Default (2025)
-                    </option>
-
-                    {{-- Dynamic Years from Database --}}
-                    @foreach($sharedAvailableYears as $year)
-                        <option value="{{ $year }}" {{ $sharedCurrentYear == $year ? 'selected' : '' }}>
-                            {{ $year }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-        </div>
     </div>
 
     {{-- BARIS 1: KEY METRICS --}}
