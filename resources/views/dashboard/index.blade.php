@@ -51,8 +51,16 @@
                         <span class="metric-number">{{ number_format($top5Buyers["TOTAL"]["TOTAL"]/1000, 0, ',', '.') }}</span>
                         <span class="metric-unit">Ton</span>
                     </div>
+                    @php
+                        $progress = $rkapRevenue > 0
+                            ? round(($totalVolume / $rkapVolume) * 100, 1)
+                            : 0;
+                    @endphp
                     <div class="metric-progress">
-                        Progress: <span class="progress-val">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 1) : 0 }}%</span>
+                        Progress:
+                        <span class="progress-val {{ $progress >= 100 ? 'progress-green' : 'progress-red' }}">
+                            {{ $progress }}%
+                        </span>
                     </div>
                 </div>
                 <div class="metric-right">
@@ -76,10 +84,18 @@
                     <span class="metric-label">Total Revenue</span>
                     <div class="metric-value-group">
                         <span class="metric-number">Rp {{ number_format($totalRevenue / 1000000000, 0, ',', '.') }}</span>
-                        <span class="metric-unit">M</span>
+                        <span class="metric-unit">Milyar</span>
                     </div>
+                    @php
+                        $progress = $rkapRevenue > 0
+                            ? round(($totalRevenue / $rkapRevenue) * 100, 1)
+                            : 0;
+                    @endphp
                     <div class="metric-progress">
-                        Progress: <span class="progress-val">{{ $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 1) : 0 }}%</span>
+                        Progress:
+                        <span class="progress-val {{ $progress >= 100 ? 'progress-green' : 'progress-red' }}">
+                            {{ $progress }}%
+                        </span>
                     </div>
                 </div>
                 <div class="metric-right">
@@ -87,7 +103,7 @@
                         <span class="metric-label">Total Revenue RKAP</span>
                         <div class="metric-value-group right-align">
                             <span class="metric-number-small">Rp {{ number_format($rkapRevenue/1000000000, 0, ',', '.') }}</span>
-                            <span class="metric-unit-small">M</span>
+                            <span class="metric-unit-small">Milyar</span>
                         </div>
                     </div>
                     <div class="icon-box bg-orange">
