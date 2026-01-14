@@ -137,7 +137,7 @@
 
             {{-- 2. LAST TENDER PRICE --}}
             <div class="card-std last-tender-card">
-                <div style="margin-bottom: 16px; font-size: 14px; color: #64748B;">Last Tender Price/Kg</div>
+                <div style="margin-bottom: 16px; font-size: 14px; color: #64748B;">Last Selling Price/Kg</div>
                 <div class="tender-grid">
                     @php
                         $pSir20 = $lastTender['sir20']['price'] ?? 0;
@@ -501,11 +501,11 @@
                 <div class="stats-container">
                     <div class="summary-item">
                         <span class="sum-label">Real</span>
-                        <span class="sum-val orange">Rp {{ number_format($totalRevenue / 1000000000, 0, ',', '.') }}<small>M</small></span>
+                        <span class="sum-val orange">Rp {{ number_format($totalRevenue / 1000000000, 0, ',', '.') }}<small>Milyar</small></span>
                     </div>
                     <div class="summary-item">
                         <span class="sum-label">RKAP</span>
-                        <span class="sum-val dark">Rp {{ number_format($rkapRevenue / 1000000000, 0, ',', '.') }}<small>M</small></span>
+                        <span class="sum-val dark">Rp {{ number_format($rkapRevenue / 1000000000, 0, ',', '.') }}<small>Milyar</small></span>
                     </div>
                     <div class="summary-item">
                         <span class="sum-label">Percentage</span>
