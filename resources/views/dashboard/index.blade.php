@@ -360,11 +360,11 @@
 
                         <tr class="row-highlight">
                             <td class="stok-label">Stok Bebas</td>
-                            <td>{{ number_format($StokBebasFixSir20, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBebasFixRss, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBebasFixSir3l, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBebasFixSir3wf, 0, ',', '.') }}</td>
-                            <td>{{ number_format($StokBebasFixTotal, 0, ',', '.') }}</td>
+                            <td>{{ number_format($StokBebasSir20, 0, ',', '.') }}</td>
+                            <td>{{ number_format($StokBebasRss, 0, ',', '.') }}</td>
+                            <td>{{ number_format($StokBebasSir3l, 0, ',', '.') }}</td>
+                            <td>{{ number_format($StokBebasSir3wf, 0, ',', '.') }}</td>
+                            <td>{{ number_format($StokBebasTotal, 0, ',', '.') }}</td>
                         </tr>
 
                         @php
