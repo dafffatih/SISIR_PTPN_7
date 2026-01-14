@@ -81,7 +81,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     // ====================================================
     Route::get('/settings', [SettingController::class, 'index'])
         ->name('settings')
-        ->middleware('role:admin,staff,viewer'); 
+        ->middleware('role:admin,staff'); 
 
     Route::post('/settings', [SettingController::class, 'update'])
         ->name('settings.update')
