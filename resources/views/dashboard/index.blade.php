@@ -125,7 +125,7 @@
 
                 <!-- DROPDOWN DI POJOK KANAN ATAS -->
                 <div class="price-filter">
-                    <select id="price-range" class="form-select-sm">
+                    <select id="price-range" class="dashboard-select">
                         <option value="3">3 Bulan Terakhir</option>
                         <option value="6">6 Bulan Terakhir</option>
                         <option value="9">9 Bulan Terakhir</option>
@@ -139,7 +139,7 @@
 
 
             {{-- 2. LAST TENDER PRICE --}}
-            <div class="card-std" style="padding: 24px;">
+            <div class="card-std last-tender-card">
                 <div style="margin-bottom: 16px; font-size: 14px; color: #64748B;">Last Tender Price/Kg</div>
                 <div class="tender-grid">
                     @php
@@ -171,7 +171,7 @@
             <div class="card-std card-half">
                 <div class="card-header flex-between">
                     <h3>Top 5 Buyers</h3>
-                    <select id="buyer-filter" class="form-select-sm" style="...">
+                    <select id="buyer-filter" class="dashboard-select">
                         <option value="TOTAL" selected>TOTAL</option>
                         <option value="SIR 20">SIR 20</option>
                         <option value="RSS 1">RSS 1</option>
@@ -212,7 +212,7 @@
             <div class="card-std card-half">
                 <div class="card-header flex-between">
                     <h3>Top 5 Products</h3>
-                    <select id="product-filter" class="form-select-sm" style="...">
+                    <select id="product-filter" class="dashboard-select">
                         <option value="TOTAL" selected>TOTAL</option>
                         <option value="SIR 20">SIR 20</option>
                         <option value="RSS 1">RSS 1</option>
