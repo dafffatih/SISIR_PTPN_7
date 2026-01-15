@@ -245,31 +245,152 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================================
     // 5. BAR CHARTS (Volume & Revenue)
     // ==========================================================
-    const barConfig = {
-        chart: { type: 'bar', height: 280, toolbar: { show: false }, fontFamily: commonFont },
-        plotOptions: { bar: { horizontal: false, columnWidth: '50%', borderRadius: 3 } },
-        dataLabels: { enabled: false },
-        stroke: { show: true, width: 2, colors: ['transparent'] },
+
+    // --- 1. Fungsi Smart Formatter (Revenue) ---
+    function smartRevenueFormat(val) {
+        if (val === 0 || val === null || isNaN(val)) return "0";
+        let num = parseFloat(val);
+        let absNum = Math.abs(num);
+        
+        if (absNum >= 1000000000) return (num / 1000000000).toFixed(1) + ' M';
+        else if (absNum >= 1000000) return (num / 1000000).toFixed(0) + ' Jt';
+        else return num.toFixed(0) + ' M';
+    }
+
+    // --- 2. Fungsi Membuat Anotasi Persentase di Bawah ---
+    // Ini trik untuk menaruh teks persentase di dasar grafik (y=0)
+    function createPercentAnnotations(realData, rkapData) {
+    return data.monthLabels.map((month, index) => {
+        const real = parseFloat(realData[index] || 0);
+        const rkap = parseFloat(rkapData[index] || 0);
+        let percentText = "";
+
+        if (rkap > 0) {
+            const pct = Math.round((real / rkap) * 100);
+            percentText = `(${pct}%)`;
+        }
+
+        return {
+            x: month, 
+            y: 0,
+            borderColor: 'transparent',
+            label: {
+                borderColor: 'transparent',
+                style: {
+                    color: '#ffffff',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    background: 'rgba(0, 0, 0, 0.5)', 
+                    padding: { left: 4, right: 4, top: 2, bottom: 2 } 
+                },
+                text: percentText,
+                position: 'center',
+                offsetY: -5,
+            }
+        };
+    });
+}
+
+    // --- 3. Konfigurasi Umum ---
+    const commonBarConfig = {
+        chart: { 
+            type: 'bar', 
+            height: 400, 
+            toolbar: { show: false }, 
+            fontFamily: commonFont 
+        },
+        plotOptions: { 
+            bar: { 
+                horizontal: false, 
+                columnWidth: '60%', // Lebar batang sedikit ditambah agar rapat
+                borderRadius: 4,
+                dataLabels: {
+                    position: 'top', // Label Angka tetap di Atas
+                    hideOverflowingLabels: false // PENTING: Agar label tetap muncul walau sempit
+                }
+            } 
+        },
+        stroke: { show: true, width: 6, colors: ['transparent'] }, 
         xaxis: {
             categories: data.monthLabels,
-            labels: { style: { colors: '#94a3b8', fontSize: '10px' } },
-            axisBorder: { show: false }, axisTicks: { show: false }
+            labels: { 
+                style: { colors: '#64748B', fontSize: '12px', fontWeight: 600 }
+            },
+            axisBorder: { show: false }, 
+            axisTicks: { show: false }
         },
-        yaxis: { show: false },
-        grid: { show: false },
-        legend: { position: 'bottom', markers: { radius: 12 }, offsetY: 5 },
+        yaxis: { show: false }, // Sembunyikan Y Axis
+        grid: { 
+            show: false,
+            padding: { top: 40, bottom: 20 } // Padding atas utk Angka, Bawah utk Persen
+        },
+        legend: { position: 'bottom', offsetY: 10 },
         tooltip: { shared: true, intersect: false }
     };
 
+    // --- A. CHART MONTHLY VOLUME ---
     new ApexCharts(document.querySelector("#chart-monthly-vol"), {
-        ...barConfig,
-        series: [{ name: 'Real', data: data.volumeReal }, { name: 'RKAP', data: data.rkapVol }],
-        colors: ['#F97316', '#E2E8F0']
+        ...commonBarConfig,
+        annotations: {
+            points: createPercentAnnotations(data.volumeReal, data.rkapVol)
+        },
+        series: [
+            { name: 'Real', data: data.volumeReal }, 
+            { name: 'RKAP', data: data.rkapVol }
+        ],
+        colors: ['#F97316', '#CBD5E1'], 
+        dataLabels: {
+            enabled: true,
+            offsetY: -25, // Floating di atas batang
+            style: { 
+                fontSize: '11px', 
+                colors: ['#0F172A'], 
+                fontWeight: 800,
+            },
+            background: { 
+                enabled: true, 
+                foreColor: '#fff', 
+                padding: 4, 
+                opacity: 0.5, // OPACITY DIKURANGI (Transparan)
+                borderRadius: 2,
+                borderWidth: 0,
+            },
+            formatter: function (val) {
+                // Hanya return Angka (Persentase sudah diurus Annotations)
+                return val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val.toFixed(0);
+            }
+        }
     }).render();
 
+    // --- B. CHART MONTHLY REVENUE ---
     new ApexCharts(document.querySelector("#chart-monthly-rev"), {
-        ...barConfig,
-        series: [{ name: 'Real', data: data.revenueReal }, { name: 'RKAP', data: data.rkapRev }],
-        colors: ['#334155', '#E2E8F0']
+        ...commonBarConfig,
+        annotations: {
+            points: createPercentAnnotations(data.revenueReal, data.rkapRev)
+        },
+        series: [
+            { name: 'Real', data: data.revenueReal }, 
+            { name: 'RKAP', data: data.rkapRev }
+        ],
+        colors: ['#334155', '#CBD5E1'], 
+        dataLabels: {
+            enabled: true,
+            offsetY: -25, 
+            style: { 
+                fontSize: '11px', 
+                colors: ['#0F172A'], 
+                fontWeight: 800,
+            },
+            background: { 
+                enabled: true, 
+                foreColor: '#fff', 
+                padding: 4, 
+                opacity: 0.5, // OPACITY DIKURANGI
+                borderRadius: 2,
+            },
+            formatter: function (val) {
+                return smartRevenueFormat(val); // Hanya return Angka
+            }
+        }
     }).render();
 });
