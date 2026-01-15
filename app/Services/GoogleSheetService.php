@@ -17,14 +17,10 @@ class GoogleSheetService
     protected $driveService;
     protected $spreadsheetId;
 
-    // app/Services/GoogleSheetService.php
-
-// ... imports remain the same
-
     public function __construct()
     {
         try {
-            // 1. Load Credentials (UNCHANGED)
+            // 1. Load Credentials
             $credentialsPath = storage_path('app/google/service-account.json');
             
             if (!file_exists($credentialsPath)) {
@@ -54,7 +50,7 @@ class GoogleSheetService
             
             $targetId = null;
 
-            // A. Check if User selected a Year in Session
+            // A. Cek apakah User memilih Tahun di Session (Prioritas 1)
             if (session()->has('selected_year')) {
                 $year = session('selected_year');
                 $key  = 'google_sheet_id_' . $year;
@@ -66,20 +62,44 @@ class GoogleSheetService
                 }
             }
 
-            // B. If not in Session (or ID not found), fallback to Default
+            // B. Jika Session Kosong => Cari Tahun TERBARU di Database (Prioritas 2)
             if (!$targetId) {
-                $settingDefault = Setting::where('key', 'google_sheet_id')->first();
-                $targetId = $settingDefault ? $settingDefault->value : null;
+                // Ambil semua setting yang formatnya google_sheet_id_XXXX
+                $allSettings = Setting::where('key', 'like', 'google_sheet_id_%')->get();
+                
+                $latestYear = 0;
+                $latestId = null;
+
+                foreach ($allSettings as $setting) {
+                    // Regex untuk ambil angka tahun dari key (misal: google_sheet_id_2026 -> 2026)
+                    if (preg_match('/^google_sheet_id_(\d{4})$/', $setting->key, $matches)) {
+                        $currentYear = (int)$matches[1];
+                        
+                        // Logika mencari tahun terbesar (terbaru)
+                        if ($currentYear > $latestYear) {
+                            $latestYear = $currentYear;
+                            $latestId = $setting->value;
+                        }
+                    }
+                }
+
+                if ($latestId) {
+                    $targetId = $latestId;
+                } else {
+                    // Fallback ke key 'google_sheet_id' polos (tanpa tahun) jika tidak ada data tahunan
+                    $settingDefault = Setting::where('key', 'google_sheet_id')->first();
+                    $targetId = $settingDefault ? $settingDefault->value : null;
+                }
             }
 
-            // C. Fallback to Config / Env
+            // C. Fallback Terakhir ke Config / Env (Prioritas 3)
             $this->spreadsheetId = $targetId 
                                 ?? config('services.google.sheet_id') 
                                 ?? env('GOOGLE_SHEET_ID')
                                 ?? null;
             
             if (!$this->spreadsheetId) {
-                \Log::warning('GOOGLE_SHEET_ID not configured.');
+                \Log::warning('GOOGLE_SHEET_ID belum dikonfigurasi.');
             }
 
         } catch (\Exception $e) {
@@ -87,8 +107,6 @@ class GoogleSheetService
             throw $e;
         }
     }
-
-// ... rest of the file remains the same
 
     /**
      * Fitur Ganti ID Spreadsheet Berdasarkan Tahun
@@ -266,6 +284,4 @@ class GoogleSheetService
             throw new \Exception('Error fetching drive files: ' . $e->getMessage());
         }
     }
-
-    
 }

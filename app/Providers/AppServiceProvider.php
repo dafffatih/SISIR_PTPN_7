@@ -3,25 +3,23 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\View; // Import View facade
-use App\Models\Setting; // Import Setting model
+use Illuminate\Support\Facades\View;
+use App\Models\Setting;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function boot()
     {
-        // ... existing boot code ...
-
-        // Share year data to all views
         View::composer('*', function ($view) {
-            // Fetch available years from settings (keys starting with google_sheet_id_)
-            $availableYears = [];
             
+            $availableYears = [];
+            $latestYear = '2025'; // Default fallback ke tahun sekarang jika DB kosong
+
             try {
+                // Ambil semua setting tahunan
                 $settings = Setting::where('key', 'like', 'google_sheet_id_%')->get();
                 
                 foreach($settings as $s) {
-                    // Extract year from key (google_sheet_id_2026 -> 2026)
                     $parts = explode('_', $s->key);
                     $year = end($parts);
                     
@@ -30,17 +28,29 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
                 
-                // Sort years descending (newest first)
+                // Urutkan (Terbaru Paling Atas)
                 rsort($availableYears);
+                
+                // Ambil tahun terbaru yang nyata dari database
+                if (!empty($availableYears)) {
+                    $latestYear = $availableYears[0];
+                }
 
             } catch (\Exception $e) {
-                // Fail silently if table not ready (e.g., during migration)
-                $availableYears = [];
+                // Fail silent
             }
 
-            // Share variables with view
+            // Cek Session
+            $sessionYear = session('selected_year');
+            
+            // Logic Display:
+            // Jika user belum pilih tahun (session kosong), kita anggap statusnya 'default'
+            // Tapi nanti di View, label 'default' itu akan kita ganti teksnya jadi tahun terbaru.
+            $currentDisplay = $sessionYear ? $sessionYear : 'default';
+
             $view->with('sharedAvailableYears', $availableYears);
-            $view->with('sharedCurrentYear', session('selected_year', 'Default'));
+            $view->with('sharedCurrentYear', $currentDisplay);
+            $view->with('sharedLatestYear', $latestYear); // <--- INI VARIABEL BARUNYA
         });
     }
 }

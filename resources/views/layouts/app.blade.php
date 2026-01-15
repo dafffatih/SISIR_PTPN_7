@@ -239,17 +239,20 @@
                 <select onchange="window.location.href='{{ url('set-year') }}/' + this.value" 
                         style="padding-left: 28px; padding-right: 8px; padding-top: 4px; padding-bottom: 4px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 600; cursor: pointer; height: 32px; font-size: 13px; color: #334155; outline:none;">
                     
-                    {{-- Default Option --}}
-                    {{-- Menggunakan null coalescing (??) agar aman jika variabel belum ter-set --}}
-                    <option value="default" {{ ($sharedCurrentYear ?? 'Default') === 'Default' ? 'selected' : '' }}>
-                        2025 (Default)
+                    {{-- Opsi Default --}}
+                    {{-- Teksnya sekarang dinamis: "2027 (Default)" --}}
+                    <option value="default" {{ ($sharedCurrentYear ?? 'default') === 'default' ? 'selected' : '' }}>
+                        {{ $sharedLatestYear ?? date('Y') }} (Default)
                     </option>
         
-                    {{-- Dynamic Years --}}
+                    {{-- Loop Tahun dari Database --}}
                     @foreach($sharedAvailableYears ?? [] as $year)
-                        <option value="{{ $year }}" {{ ($sharedCurrentYear ?? '') == $year ? 'selected' : '' }}>
-                            {{ $year }}
-                        </option>
+                        {{-- Jangan tampilkan tahun di list jika sama dengan tahun default (opsional, biar rapi) --}}
+                        @if($year != ($sharedLatestYear ?? ''))
+                            <option value="{{ $year }}" {{ ($sharedCurrentYear ?? '') == $year ? 'selected' : '' }}>
+                                {{ $year }}
+                            </option>
+                        @endif
                     @endforeach
                 </select>
             </div>
