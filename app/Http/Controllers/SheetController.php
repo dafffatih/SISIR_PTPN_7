@@ -9,6 +9,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Artisan;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ArrayExport;
 
 class SheetController extends Controller
 {
@@ -478,4 +480,112 @@ class SheetController extends Controller
             return back()->with('error', 'Sinkronisasi gagal: ' . $e->getMessage());
         }
     }
+
+    /**
+ * =====================================================
+ * EXPORT DETAIL KONTRAK PENJUALAN (EXCEL & CSV)
+ * Sumber data: Google Sheets (realtime)
+ * Dipanggil dari halaman Upload & Export
+ * =====================================================
+ */
+public function exportDetailKontrak(Request $request, GoogleSheetService $sheetService)
+{
+    $request->validate([
+        'format'     => 'required|in:excel,csv',
+        'start_date' => 'required',
+        'end_date'   => 'required',
+    ]);
+
+    // Flatpickr: MM/DD/YYYY
+    $start = Carbon::createFromFormat('m/d/Y', $request->start_date)->startOfDay();
+    $end   = Carbon::createFromFormat('m/d/Y', $request->end_date)->endOfDay();
+
+    /**
+     * ======================================================
+     * AMBIL DATA FULL DARI SHEET "SC Sudah Bayar"
+     * KUNCI RANGE → TIDAK AKAN TERPOTONG
+     * ======================================================
+     */
+    $rows = $sheetService->getData(
+        null,
+        'SC Sudah Bayar',
+        'A4:BA5359' // ⬅️ SESUAI DATA ASLI SHEET
+    );
+
+    $exportData = [];
+
+    foreach ($rows as $row) {
+
+        // Kolom K (index 10) = Tanggal Kontrak
+        if (empty($row[10])) {
+            continue;
+        }
+
+        try {
+            $tglKontrak = Carbon::parse($row[10]);
+        } catch (\Exception $e) {
+            continue;
+        }
+
+        // Filter tanggal
+        if (!$tglKontrak->between($start, $end)) {
+            continue;
+        }
+
+        // Mapping DETAIL KONTRAK PENJUALAN
+        $exportData[] = [
+            'LO / EX'         => $row[7]  ?? '',
+            'Nomor Kontrak'   => $row[8]  ?? '',
+            'Nama Pembeli'    => $row[9]  ?? '',
+            'Tanggal Kontrak' => $row[10] ?? '',
+            'Volume (Kg)'     => $row[11] ?? '',
+            'Harga'           => $row[12] ?? '',
+            'Nilai'           => $row[13] ?? '',
+            'Inc PPN'         => $row[14] ?? '',
+            'Tanggal Bayar'   => $row[15] ?? '',
+            'Unit'            => $row[16] ?? '',
+            'Mutu'            => $row[17] ?? '',
+            'Nomor DO/SI'     => $row[18] ?? '',
+            'Tanggal DO/SI'   => $row[19] ?? '',
+            'Port'            => $row[20] ?? '',
+            'Kontrak SAP'     => $row[21] ?? '',
+            'DP SAP'          => $row[22] ?? '',
+            'SO SAP'          => $row[23] ?? '',
+            'Kode DO'         => $row[24] ?? '',
+            'Sisa Awal'       => $row[25] ?? '',
+            'Total Dilayani'  => $row[26] ?? '',
+            'Sisa Akhir'      => $row[27] ?? '',
+            'Jatuh Tempo'     => $row[52] ?? '',
+        ];
+    }
+
+    if (empty($exportData)) {
+        return back()->with('error', 'Tidak ada data pada rentang tanggal tersebut');
+    }
+
+    /**
+     * ================= CSV =================
+     */
+    if ($request->format === 'csv') {
+        return response()->streamDownload(function () use ($exportData) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, array_keys($exportData[0]));
+            foreach ($exportData as $row) {
+                fputcsv($file, $row);
+            }
+            fclose($file);
+        }, 'Detail_Kontrak_' . now()->format('Ymd_His') . '.csv');
+    }
+
+    /**
+     * ================= EXCEL =================
+     */
+    return Excel::download(
+        new \App\Exports\ArrayExport($exportData),
+        'Detail_Kontrak_' . now()->format('Ymd_His') . '.xlsx'
+    );
+}
+
+
+    
 }

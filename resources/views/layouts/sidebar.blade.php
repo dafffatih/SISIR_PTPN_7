@@ -28,9 +28,9 @@ $menus = [
         'roles' => ['admin']
     ],
 
-    // 4. Upload & Export
+    // 4. Export
     [
-        'label' => 'Upload & Export',   
+        'label' => 'Export',   
         'route' => 'upload.export',  
         'icon'  => 'fas fa-cloud-upload-alt', 
         'roles' => ['admin','staff']

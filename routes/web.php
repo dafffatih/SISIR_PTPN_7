@@ -76,6 +76,14 @@ Route::middleware(['auth', 'active'])->group(function () {
         return view('dashboard.upload_export');
     })->name('upload.export')->middleware('role:admin,staff');
 
+    Route::post(
+        '/upload-export/kontrak-detail',
+        [SheetController::class, 'exportDetailKontrak']
+    )->name('upload.export.kontrak.detail')
+    ->middleware('role:admin,staff');
+
+
+
     // ====================================================
     // SETTINGS
     // ====================================================
