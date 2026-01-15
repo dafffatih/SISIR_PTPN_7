@@ -8,6 +8,7 @@
     --orange-primary: #F97316;
     --blue-dark: #1E293B;
     --border-color: #E2E8F0;
+    --stok-teal: #2F7A86;
 }
 
 .dashboard-container {
@@ -21,24 +22,51 @@
     flex-direction: column;
     gap: 24px;
     box-sizing: border-box;
+    overflow-x: hidden;
 }
 
-/* --- GRID SYSTEM --- */
-.dashboard-container .row-grid-2 {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr)); 
+/* ==========================================================
+   LAYOUT STRUCTURE
+   ========================================================== */
+
+/* 1. HEADER METRICS */
+.metrics-row {
+    display: flex;
+    flex-direction: row;
     gap: 24px;
     width: 100%;
 }
-.dashboard-container .col-stacked {
+.metrics-row .card-metric {
+    flex: 1; 
+    min-width: 0; 
+}
+
+/* 2. MAIN SPLIT (Kiri & Kanan) */
+.main-split-container {
+    display: flex;
+    flex-direction: row;
+    gap: 24px;
+    width: 100%;
+    align-items: flex-start; 
+}
+
+.split-col {
+    flex: 1;      
+    min-width: 0; 
     display: flex;
     flex-direction: column;
     gap: 24px;
-    min-width: 0;
 }
-.dashboard-container .empty-placeholder { min-height: 200px; }
 
-/* --- CARDS --- */
+/* 3. TOP 5 CONTAINER */
+.top5-row {
+    display: flex;
+    flex-direction: column; 
+    gap: 24px;
+    width: 100%;
+}
+
+/* --- CARDS GENERAL --- */
 .dashboard-container .card-std, 
 .dashboard-container .card-metric {
     background: var(--card-bg);
@@ -49,16 +77,18 @@
     width: 100%;
     box-sizing: border-box;
     overflow: hidden; 
+    display: flex;
+    flex-direction: column;
 }
-.dashboard-container .card-std.p-0 { padding: 0; display: flex; flex-direction: column; }
+.dashboard-container .card-std.p-0 { padding: 0; }
 .dashboard-container .full-row-card { width: 100%; }
 
-/* --- HEADER & METRIC (Sama) --- */
+/* --- HEADER TITLE --- */
 .dashboard-container .dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; flex-wrap: wrap; gap: 10px; }
 .dashboard-container .dashboard-header h1 { font-size: 24px; font-weight: 700; color: var(--text-dark); margin: 0; line-height: 1.2; }
 .dashboard-container .dashboard-header p { font-size: 14px; color: var(--text-gray); margin: 4px 0 0 0; }
-.dashboard-container .filter-box { background: white; border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 14px; color: #475569; }
 
+/* --- METRIC CONTENT --- */
 .dashboard-container .metric-content { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
 .dashboard-container .metric-left { flex: 1; min-width: 120px; }
 .dashboard-container .metric-right { display: flex; align-items: center; gap: 16px; text-align: right; }
@@ -77,51 +107,112 @@
 .dashboard-container .icon-box.bg-dark { background-color: var(--blue-dark); }
 .dashboard-container .icon-box.bg-orange { background-color: var(--orange-primary); }
 
+/* --- CARD HEADERS & FILTERS --- */
+.dashboard-container .card-header { margin-bottom: 16px; width: 100%; box-sizing: border-box; }
+.dashboard-container .card-header h3 { font-size: 14px; font-weight: 700; color: var(--text-dark); margin: 0; }
+.dashboard-container .card-header.flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
 
-/* --- NEW 3-COLUMN LAYOUT (Chart | Mutu | Stats) --- */
-.dashboard-container .chart-header-padded { padding: 20px 24px 0 24px; }
-.dashboard-container .chart-header-padded h3 { font-size: 14px; font-weight: 700; color: var(--text-dark); margin: 0; }
+/* ==========================================================
+   SCROLLABLE CONFIG (DEFAULT: OFF / RESPONSIVE)
+   ========================================================== */
 
-.dashboard-container .layout-3-cols {
-    display: flex;
+/* Container ini selalu ada, tapi scrollbar hanya muncul jika kontennya melebihi lebar */
+.chart-scroll-container {
     width: 100%;
-    min-height: 280px;
+    overflow-x: auto; 
+    -webkit-overflow-scrolling: touch; 
+    padding-bottom: 8px; /* Jaga-jaga jika scrollbar muncul */
 }
 
-/* Kolom 1: Grafik (Fleksibel, paling lebar) */
-.dashboard-container .col-chart {
-    flex: 1; 
-    min-width: 0;
-    padding: 0 10px 10px 10px;
+/* Secara default (Desktop/Tablet), chart & tabel selebar 100% container */
+#chart-price-monthly, 
+#chart-monthly-vol, 
+#chart-monthly-rev,
+.table-stok {
+    width: 100%;
+    min-width: 0; /* Biarkan mengecil di desktop jika perlu */
 }
 
-/* Kolom 2: Mutu (Lebar fix) */
-.dashboard-container .col-middle {
-    width: 220px; /* Lebar kolom mutu */
-    flex-shrink: 0;
-    border-left: 1px solid var(--border-color);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
+/* Wrapper tabel responsif */
+.dashboard-container .table-responsive { 
+    overflow-x: auto; 
+    width: 100%; 
+    -webkit-overflow-scrolling: touch; 
+}
+.dashboard-container .table-stok { 
+    width: 100%; 
+    border-collapse: collapse; 
+    font-size: 12px; 
 }
 
-/* Kolom 3: Stats (Lebar fix, paling kanan) */
-.dashboard-container .col-right {
-    width: 160px; /* Lebar kolom stats */
-    flex-shrink: 0;
-    border-left: 1px solid var(--border-color);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start; /* Konten vertikal di tengah */
-}
+/* ========================================================== */
 
-/* Background & Styles untuk Kolom */
+/* --- DONUT CHART (Top 5) --- */
+.dashboard-container .card-half { min-height: 200px; justify-content: center; }
+.dashboard-container .donut-container { display: flex; align-items: center; width: 100%; flex-wrap: nowrap; }
+.dashboard-container .chart-side-wrapper { width: 65%;  display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.dashboard-container .chart-donut { width: 100%; display: flex; justify-content: center; min-height: 180px; }
+.dashboard-container .custom-legend { width: 35%;  padding-left: 5px; box-sizing: border-box; }
+.dashboard-container .legend-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 11px; }
+.dashboard-container .legend-item .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.dashboard-container .legend-item .name { margin: 0 0 0 8px; font-weight: 600; color: #334155; }
+.dashboard-container .donut-center-label { position: static; transform: none; text-align: center; margin-top: -10px; margin-bottom: 10px; }
+.dashboard-container .donut-center-label .lbl {  font-size: 11px;  color: var(--text-gray);  display: block;  font-weight: 600; }
+.dashboard-container .donut-center-label .num {  font-size: 16px;  font-weight: 800;  color: var(--text-dark);  }
+
+/* --- PRICE CHART --- */
+.price-chart-wrapper { position: relative; }
+.price-filter { position: absolute; top: 12px; right: 16px; z-index: 10; }
+.price-filter select { font-size: 12px; padding: 4px 8px; border-radius: 6px; }
+
+/* GLOBAL SELECT */
+.dashboard-select { 
+    appearance: none; -webkit-appearance: none; -moz-appearance: none; 
+    font-size: 12px; font-weight: 600; color: #0F172A; 
+    padding: 6px 28px 6px 10px; border-radius: 6px; 
+    border: 1px solid #E2E8F0; background-color: #FFFFFF; 
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); 
+    background-repeat: no-repeat; background-position: right 8px center; background-size: 14px; 
+    cursor: pointer; 
+}
+.dashboard-select:hover { border-color: #CBD5E1; }
+.dashboard-select:focus { outline: none; border-color: #94A3B8; box-shadow: 0 0 0 2px rgba(148,163,184,0.2); }
+
+/* --- LAST TENDER CARD --- */
+.last-tender-card { padding: 16px; margin-bottom: -8px; }
+.tender-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 10px 0; }
+.tender-item { display: flex; flex-direction: column; gap: 4px; }
+.tender-price { font-size: 24px; font-weight: 800; color: #0F172A; }
+.tender-meta { font-size: 14px; color: #64748B; font-weight: 500; }
+.tender-sir20 .tender-price { color: var(--text-dark); }
+.tender-rss .tender-price { color: var(--orange-primary); }
+.tender-sir3l .tender-price { color: #14b8a6; }
+
+/* --- TABLE STOK STYLE --- */
+.dashboard-container .card-table-compact { padding: 20px; }
+.dashboard-container .table-stok th { text-align: right; padding: 10px; border-bottom: 1px solid var(--border-color); color: var(--text-gray); font-weight: 700; text-transform: uppercase; font-size: 10px; white-space: nowrap; }
+.dashboard-container .table-stok td { text-align: right; padding: 8px 10px; color: var(--text-dark); font-weight: 600; white-space: nowrap; }
+.dashboard-container .table-stok th:first-child, .dashboard-container .table-stok td:first-child { text-align: left; padding-left: 0; }
+.dashboard-container .separator-row { text-align: left !important; font-size: 10px; font-weight: 700; color: var(--text-gray); padding-top: 12px; padding-bottom: 4px; border-bottom: none; }
+.dashboard-container .row-sum td { border-top: 1px solid #CBD5E1; font-weight: 800; padding-top: 12px; }
+.dashboard-container .badge-date { background: #F1F5F9; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: #64748B; font-weight: 600; white-space: nowrap; }
+
+.dashboard-container .row-highlight td, .dashboard-container .row-highlight-final td { background: var(--stok-teal) !important; color: #ffffff !important; font-weight: 800; padding: 6px 10px; border: none !important; }
+.dashboard-container .row-highlight td:first-child, .dashboard-container .row-highlight-final td:first-child { border-top-left-radius: 2px; border-bottom-left-radius: 2px; }
+.dashboard-container .row-highlight td:last-child, .dashboard-container .row-highlight-final td:last-child { border-top-right-radius: 2px; border-bottom-right-radius: 2px; }
+.dashboard-container .table-stok tr.row-highlight td.stok-label { text-align: center !important; }
+
+/* --- MONTHLY CHARTS (3-Cols) --- */
+.dashboard-container .layout-3-cols { display: flex; width: 100%; min-height: 280px; }
+.dashboard-container .col-chart { flex: 1; min-width: 0; padding: 0 10px 10px 10px; }
+.dashboard-container .col-middle { width: 220px; flex-shrink: 0; border-left: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; }
+.dashboard-container .col-right { width: 160px; flex-shrink: 0; border-left: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; justify-content: flex-start; }
+.dashboard-container .chart-header-padded { padding: 20px 24px 0 24px; }
 .dashboard-container .bg-light { background-color: #F8FAFC; }
 .dashboard-container .border-left { border-left: 1px solid var(--border-color); }
 .dashboard-container .sidebar-title { font-size: 11px; font-weight: 700; color: var(--text-gray); text-transform: uppercase; margin-bottom: 15px; }
 
-/* Mutu List Styles */
+/* Mutu & Stats */
 .dashboard-container .mutu-list { display: flex; flex-direction: column; gap: 10px; }
 .dashboard-container .mutu-item { display: flex; flex-direction: column; gap: 4px; }
 .dashboard-container .mutu-info { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--text-dark); }
@@ -130,8 +221,6 @@
 .dashboard-container .progress-bar-fill { height: 100%; background: var(--blue-dark); border-radius: 2px; }
 .dashboard-container .progress-bar-fill.orange { background: var(--orange-primary); }
 .dashboard-container .mutu-val { font-size: 10px; color: var(--text-gray); font-weight: 500; text-align: right; }
-
-/* Stats Container */
 .dashboard-container .stats-container { display: flex; flex-direction: column; gap: 20px; }
 .dashboard-container .summary-item { display: flex; flex-direction: column; }
 .dashboard-container .sum-label { font-size: 10px; font-weight: 700; color: var(--text-gray); text-transform: uppercase; margin-bottom: 2px; }
@@ -141,204 +230,71 @@
 .dashboard-container .sum-val.huge { font-size: 26px; font-weight: 800; color: var(--text-dark); }
 .dashboard-container .sum-val small { font-size: 11px; font-weight: 500; color: var(--text-gray); margin-left: 2px; }
 
-/* --- DONUT & PRICE CHART (Sama) --- */
-.dashboard-container .card-header { margin-bottom: 16px; }
-.dashboard-container .card-header h3 { font-size: 14px; font-weight: 700; color: var(--text-dark); margin: 0; }
-.dashboard-container .card-half { min-height: 200px; display: flex; flex-direction: column; justify-content: center; }
-.dashboard-container .donut-container { display: flex; align-items: center; width: 100%; }
-.dashboard-container .chart-side-wrapper { width: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.dashboard-container .chart-donut { width: 100%; display: flex; justify-content: center;}
-.dashboard-container .custom-legend { width: 50%; padding-left: 10px; }
-.dashboard-container .legend-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11px; }
-.dashboard-container .legend-item .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-.dashboard-container .legend-item .name { flex: 1; margin: 0 8px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dashboard-container .legend-item .val { font-weight: 700; color: var(--text-dark); }
-.dashboard-container .donut-center-label { position: static; transform: none; text-align: center; margin-top: -10px; margin-bottom: 10px; }
-.dashboard-container .donut-center-label .lbl {  font-size: 11px;  color: var(--text-gray);  display: block;  font-weight: 600; }
-.dashboard-container .donut-center-label .num {  font-size: 16px;  font-weight: 800;  color: var(--text-dark);  }
 
-/* --- TABLE STOK --- */
-.dashboard-container .card-table-compact { padding: 20px; }
-.dashboard-container .card-header.flex-between { display: flex; justify-content: space-between; align-items: center; }
-.dashboard-container .table-responsive { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
-.dashboard-container .table-stok { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 300px; }
-.dashboard-container .table-stok th { text-align: right; padding: 10px; border-bottom: 1px solid var(--border-color); color: var(--text-gray); font-weight: 700; text-transform: uppercase; font-size: 10px; }
-.dashboard-container .table-stok td { text-align: right; padding: 8px 10px; color: var(--text-dark); font-weight: 600; }
-.dashboard-container .table-stok th:first-child, 
-.dashboard-container .table-stok td:first-child { text-align: left; padding-left: 0; }
-.dashboard-container .separator-row { text-align: left !important; font-size: 10px; font-weight: 700; color: var(--text-gray); padding-top: 12px; padding-bottom: 4px; border-bottom: none; }
-.dashboard-container .row-sum td { border-top: 1px solid #CBD5E1; font-weight: 800; padding-top: 12px; }
-.dashboard-container .row-highlight { background-color: #475569; }
-.dashboard-container .row-highlight td { color: white !important; padding: 10px; }
+/* ========================================================
+   RESPONSIVE MEDIA QUERIES
+   ======================================================== */
 
-.dashboard-container .badge-date { background: #F1F5F9; border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 11px; color: #64748B; font-weight: 600; }
-.tender-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 24px;
-        padding: 10px 0;
+/* 1. LAYAR LEBAR (>1400px): Top 5 Sejajar (Side-by-Side) */
+@media (min-width: 1400px) {
+    .top5-row {
+        flex-direction: row; 
     }
-    .tender-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
+    .top5-row > .card-std {
+        flex: 1; 
+        min-width: 0;
     }
-    .tender-price {
-        font-size: 24px;
-        font-weight: 800;
-        color: #0F172A; /* Text Dark */
-    }
-    .tender-meta {
-        font-size: 14px;
-        color: #64748B; /* Text Gray */
-        font-weight: 500;
-    }
-    /* WARNA HARGA SESUAI GRAFIK */
-    .tender-sir20 .tender-price {
-        color: var(--text-dark);      /* SIR20 (hitam/navy) */
-    }
-
-    .tender-rss .tender-price {
-        color: var(--orange-primary); /* RSS (oranye) */
-    }
-
-    .tender-sir3l .tender-price {
-        color: #14b8a6;               /* SIR3L (toska) */
-    }
-
-    /* ===========================
-   STOK BEBAS - MATCH SCREENSHOT
-   =========================== */
-:root{
-  --stok-teal: #2F7A86;
 }
 
-.dashboard-container .table-stok tr.row-highlight td{
-  background: var(--stok-teal) !important;
-  color: #ffffff !important;
-  font-weight: 800;
-  padding: 6px 10px;
-  border: none !important;
-}
-
-.dashboard-container .table-stok tr.row-highlight td.stok-label{
-  text-align: center !important;
-}
-
-.dashboard-container .table-stok tr.row-highlight td:first-child{
-  border-top-left-radius: 2px;
-  border-bottom-left-radius: 2px;
-}
-
-.dashboard-container .table-stok tr.row-highlight td:last-child{
-  border-top-right-radius: 2px;
-  border-bottom-right-radius: 2px;
-}
-/* ===========================
-   STOK BEBAS AKHIR - BACKGROUND SAMA DENGAN STOK BEBAS
-   =========================== */
-
-.dashboard-container .table-stok tr.row-highlight-final td {
-    background: var(--stok-teal) !important;
-    color: #ffffff !important;
-    font-weight: 800;
-    padding: 6px 10px;
-    border: none !important;
-}
-
-/* Biar ujung kiri & kanan rapi */
-.dashboard-container .table-stok tr.row-highlight-final td:first-child {
-    border-top-left-radius: 2px;
-    border-bottom-left-radius: 2px;
-}
-
-.dashboard-container .table-stok tr.row-highlight-final td:last-child {
-    border-top-right-radius: 2px;
-    border-bottom-right-radius: 2px;
-}
-
-
-/* Responsive adjustments */
+/* 2. LAYAR MENENGAH (Tablet/Laptop Kecil) - Stack Kolom Utama */
 @media (max-width: 1200px) {
-    .dashboard-container .row-grid-2 { grid-template-columns: 1fr; }
-    /* Mobile: Stack columns vertikal */
+    .main-split-container { flex-direction: column; } 
+    
     .dashboard-container .layout-3-cols { flex-direction: column; }
     .dashboard-container .col-middle, 
     .dashboard-container .col-right { width: 100%; border-left: none; border-top: 1px solid var(--border-color); flex-direction: row; flex-wrap: wrap; gap: 20px; }
-    .dashboard-container .mutu-list { flex-direction: row; flex-wrap: wrap; width: 100%; }
-    .dashboard-container .mutu-item { flex: 1; min-width: 120px; }
-    .dashboard-container .stats-container { flex-direction: row; flex-wrap: wrap; width: 100%; }
-    .dashboard-container .summary-item { flex: 1; min-width: 100px; }
+    .dashboard-container .mutu-list, .dashboard-container .stats-container { flex-direction: row; flex-wrap: wrap; width: 100%; }
+    .dashboard-container .mutu-item, .dashboard-container .summary-item { flex: 1; min-width: 120px; }
 }
 
-/* =========================================
-   Daily Selling Price - Dropdown Position
-   ========================================= */
+/* 3. LAYAR MOBILE (HP) - Penyesuaian Detail & SCROLL ENABLED */
+@media (max-width: 768px) {
+    .dashboard-container { padding: 16px; } 
+    
+    /* Metrics Header jadi vertikal */
+    .metrics-row { flex-direction: column; }
 
-/* Wrapper chart supaya dropdown bisa absolute */
-.price-chart-wrapper {
-    position: relative;
+    /* Top 5: Legend turun ke bawah chart */
+    .dashboard-container .donut-container { flex-direction: column; gap: 16px; }
+    .dashboard-container .chart-side-wrapper { width: 100%; }
+    .dashboard-container .custom-legend { width: 100%; padding-left: 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .dashboard-container .legend-item { margin-bottom: 0; margin-right: 10px; }
+
+    /* Header & Filter Stack */
+    .dashboard-container .card-header.flex-between { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .dashboard-container .card-table-compact .card-header.flex-between { flex-direction: row; align-items: center; }
+
+    /* Last Tender: Vertikal */
+    .tender-grid { grid-template-columns: 1fr; gap: 16px; }
+    .tender-item { border-bottom: 1px solid #F1F5F9; padding-bottom: 12px; }
+    .tender-item:last-child { border-bottom: none; }
+    
+    .price-filter { position: static; margin-bottom: 10px; } 
+    .price-chart-wrapper .card-header { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+
+    /* ========================================================
+       MOBILE ONLY SCROLL TRIGGER
+       Paksa lebar minimum agar muncul scrollbar horizontal 
+       hanya di layar kecil (<768px).
+       ======================================================== */
+    
+    /* 1. Daily Price Chart */
+    #chart-price-monthly { min-width: 800px; }
+
+    /* 2. Monthly Charts */
+    #chart-monthly-vol, 
+    #chart-monthly-rev { min-width: 600px; }
+
+    /* 3. Tabel Stok */
+    .dashboard-container .table-stok { min-width: 700px; }
 }
-
-/* Dropdown di pojok kanan atas chart */
-.price-filter {
-    position: absolute;
-    top: 12px;       /* sesuaikan kalau mau lebih turun */
-    right: 16px;    /* sejajar kanan */
-    z-index: 10;
-}
-
-/* Styling dropdown */
-.price-filter select {
-    font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 6px;
-}
-
-/* =====================================
-   GLOBAL DASHBOARD DROPDOWN STYLE
-   ===================================== */
-
-.dashboard-select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-
-    font-size: 12px;
-    font-weight: 600;
-    color: #0F172A;
-
-    padding: 6px 28px 6px 10px;
-    border-radius: 6px;
-    border: 1px solid #E2E8F0;
-    background-color: #FFFFFF;
-
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748B' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 14px;
-
-    cursor: pointer;
-}
-
-/* Hover & focus */
-.dashboard-select:hover {
-    border-color: #CBD5E1;
-}
-
-.dashboard-select:focus {
-    outline: none;
-    border-color: #94A3B8;
-    box-shadow: 0 0 0 2px rgba(148,163,184,0.2);
-}
-
-/* =========================
-   Last Tender Spacing Fix
-   ========================= */
-
-.last-tender-card {
-    padding: 16px;        /* lebih ramping dari 24px */
-    margin-bottom: -8px;  /* tarik ke atas biar dekat ke Stok Bebas */
-}
-
-
