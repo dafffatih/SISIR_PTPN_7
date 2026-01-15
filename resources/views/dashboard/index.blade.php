@@ -21,7 +21,19 @@
 @endphp
 
 <link rel="stylesheet" href="{{ asset('css/dashboard-custom.css') }}">
-
+<style>
+    .apexcharts-datalabels text, 
+    .apexcharts-datalabel-value, 
+    .apexcharts-point-annotation-label { 
+        fill: #000000 !important; 
+        stroke: #ffffff !important; 
+        stroke-width: 4px !important; 
+        paint-order: stroke fill; 
+        stroke-linejoin: round;
+        font-weight: 800 !important;
+        filter: drop-shadow(0px 0px 1px rgba(0,0,0,0.2));
+    }
+</style>
 <div class="dashboard-container">
     
     <div class="dashboard-header">
@@ -347,7 +359,7 @@
                 </div>
             </div>
             <div class="col-right bg-light border-left">
-                <p class="sidebar-title">Ringkasan</p>
+                <p class="sidebar-title">Total</p>
                 <div class="stats-container">
                     <div class="summary-item"><span class="sum-label">Real</span><span class="sum-val orange">{{ number_format($totalVolume, 0, ',', '.') }} <small>Ton</small></span></div>
                     <div class="summary-item"><span class="sum-label">RKAP</span><span class="sum-val dark">{{ number_format($rkapVolume, 0, ',', '.') }} <small>Ton</small></span></div>

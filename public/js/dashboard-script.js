@@ -260,36 +260,37 @@ document.addEventListener("DOMContentLoaded", function () {
     // --- 2. Fungsi Membuat Anotasi Persentase di Bawah ---
     // Ini trik untuk menaruh teks persentase di dasar grafik (y=0)
     function createPercentAnnotations(realData, rkapData) {
-    return data.monthLabels.map((month, index) => {
-        const real = parseFloat(realData[index] || 0);
-        const rkap = parseFloat(rkapData[index] || 0);
-        let percentText = "";
+        return data.monthLabels.map((month, index) => {
+            const real = parseFloat(realData[index] || 0);
+            const rkap = parseFloat(rkapData[index] || 0);
+            let percentText = "";
 
-        if (rkap > 0) {
-            const pct = Math.round((real / rkap) * 100);
-            percentText = `(${pct}%)`;
-        }
-
-        return {
-            x: month, 
-            y: 0,
-            borderColor: 'transparent',
-            label: {
-                borderColor: 'transparent',
-                style: {
-                    color: '#ffffff',
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    background: 'rgba(0, 0, 0, 0.5)', 
-                    padding: { left: 4, right: 4, top: 2, bottom: 2 } 
-                },
-                text: percentText,
-                position: 'center',
-                offsetY: -5,
+            if (rkap > 0) {
+                const pct = Math.round((real / rkap) * 100);
+                percentText = `${pct}%`;
             }
-        };
-    });
-}
+
+            return {
+                x: month, 
+                y: 0,
+                borderColor: 'transparent',
+                label: {
+                    borderColor: 'transparent',
+                    style: {
+                        // Warna akan di-override oleh CSS (!important), tapi set transparant untuk safety
+                        background: 'transparent', // <--- PENTING: Hapus background kotak
+                        fontSize: '11px',          // Sesuaikan ukuran font
+                        fontFamily: 'Inter, sans-serif',
+                        padding: { left: 0, right: 0, top: 0, bottom: 0 },
+                        cssClass: 'apexcharts-point-annotation-label' // Pastikan class ini terbaca
+                    },
+                    text: percentText,
+                    position: 'center',
+                    offsetY: 0, // Sesuaikan posisi vertikal jika perlu
+                }
+            };
+        });
+    }
 
     // --- 3. Konfigurasi Umum ---
     const commonBarConfig = {
@@ -338,27 +339,19 @@ document.addEventListener("DOMContentLoaded", function () {
             { name: 'Real', data: data.volumeReal }, 
             { name: 'RKAP', data: data.rkapVol }
         ],
-        colors: ['#F97316', '#CBD5E1'], 
+        colors: ['#F97316', '#a2c4c9'], 
         dataLabels: {
             enabled: true,
-            offsetY: -25, // Floating di atas batang
-            style: { 
-                fontSize: '11px', 
-                colors: ['#0F172A'], 
-                fontWeight: 800,
+            offsetY: -25,
+            style: {
+                fontSize: '11px',
+                // Hapus colors, cssClass, dll dari sini. Kita atur di CSS saja.
             },
-            background: { 
-                enabled: true, 
-                foreColor: '#fff', 
-                padding: 4, 
-                opacity: 0.5, // OPACITY DIKURANGI (Transparan)
-                borderRadius: 2,
-                borderWidth: 0,
-            },
-            formatter: function (val) {
-                // Hanya return Angka (Persentase sudah diurus Annotations)
-                return val >= 1000 ? (val / 1000).toFixed(1) + 'k' : val.toFixed(0);
-            }
+            background: { enabled: false }, // Matikan background
+            dropShadow: { enabled: false },
+            // formatter: function (val) {
+            //     return smartRevenueFormat(val);
+            // }
         }
     }).render();
 
@@ -372,25 +365,19 @@ document.addEventListener("DOMContentLoaded", function () {
             { name: 'Real', data: data.revenueReal }, 
             { name: 'RKAP', data: data.rkapRev }
         ],
-        colors: ['#334155', '#CBD5E1'], 
+        colors: ['#F97316', '#a2c4c9'], 
         dataLabels: {
             enabled: true,
-            offsetY: -25, 
-            style: { 
-                fontSize: '11px', 
-                colors: ['#0F172A'], 
-                fontWeight: 800,
+            offsetY: -25,
+            style: {
+                fontSize: '11px',
+                // Hapus colors, cssClass, dll dari sini. Kita atur di CSS saja.
             },
-            background: { 
-                enabled: true, 
-                foreColor: '#fff', 
-                padding: 4, 
-                opacity: 0.5, // OPACITY DIKURANGI
-                borderRadius: 2,
-            },
-            formatter: function (val) {
-                return smartRevenueFormat(val); // Hanya return Angka
-            }
+            background: { enabled: false }, // Matikan background
+            dropShadow: { enabled: false },
+            // formatter: function (val) {
+            //     return smartRevenueFormat(val);
+            // }
         }
     }).render();
 });
