@@ -177,7 +177,10 @@
                                 <td>{{ number_format($StokSir3wf, 0, ',', '.') }}</td>
                                 <td class="font-bold">{{ number_format($StokTotal, 0, ',', '.') }}</td>
                             </tr>
-                            <tr class="separator-header"><td colspan="6" style="font-style: italic;">Outstanding Contract</td></tr>
+                            <tr class="separator-header">
+                                <td style="font-style: italic;">Outstanding Contract</td>
+                                <td></td><td></td><td></td><td></td><td></td>
+                            </tr>
                              @php
                                 $sb = $stokData['sudah_bayar'] ?? [];
                                 $StokSbSir20 = $sb['sir20'] ?? 0; $StokSbRss = $sb['rss'] ?? 0; $StokSbSir3l = $sb['sir3l'] ?? 0; $StokSbSir3wf = $sb['sir3wf'] ?? 0;

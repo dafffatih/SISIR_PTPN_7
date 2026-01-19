@@ -163,7 +163,7 @@
     .main-content{
       padding: 24px;
       min-height: calc(100vh - var(--topbar-h));
-      overflow-x: hidden;
+      overflow-x: auto;
     }
 
     /* overlay untuk mobile sidebar */

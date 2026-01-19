@@ -1,0 +1,64 @@
+{
+    "tech_stack": [
+        "PHP",
+        "Laravel",
+        "Blade",
+        "JavaScript",
+        "CSS",
+        "ApexCharts",
+        "Tailwind CSS",
+        "Vite"
+    ],
+    "features": [
+        {
+            "name": "Dashboard Overview",
+            "description": "Main dashboard page showing metrics, charts, and tables for rubber trading analytics",
+            "files": [
+                "resources/views/dashboard/index.blade.php",
+                "app/Http/Controllers/DashboardController.php",
+                "public/js/dashboard-script.js",
+                "public/css/dashboard-custom.css"
+            ]
+        },
+        {
+            "name": "Daily Selling Price Chart",
+            "description": "Line chart showing daily selling prices for SIR20, RSS, and SIR3L products",
+            "files": [
+                "resources/views/dashboard/index.blade.php",
+                "public/js/dashboard-script.js"
+            ]
+        },
+        {
+            "name": "Stok Bebas Table",
+            "description": "Table displaying stock information including production stock, outstanding contracts, and free stock",
+            "files": [
+                "resources/views/dashboard/index.blade.php",
+                "public/css/dashboard-custom.css"
+            ]
+        },
+        {
+            "name": "Top 5 Buyers/Products Charts",
+            "description": "Pie charts showing top 5 buyers and products with filtering by product type",
+            "files": [
+                "resources/views/dashboard/index.blade.php",
+                "public/js/dashboard-script.js"
+            ]
+        },
+        {
+            "name": "Monthly Volume/Revenue Charts",
+            "description": "Bar charts showing monthly volume and revenue with RKAP comparison",
+            "files": [
+                "resources/views/dashboard/index.blade.php",
+                "public/js/dashboard-script.js"
+            ]
+        },
+        {
+            "name": "App Layout",
+            "description": "Main application layout with sidebar, topbar, and responsive design",
+            "files": [
+                "resources/views/layouts/app.blade.php",
+                "resources/views/layouts/sidebar.blade.php"
+            ]
+        }
+    ]
+}

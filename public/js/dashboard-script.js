@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let categoryData = source[category] || {};
         let series = [];
         let labels = [];
-        
+
         Object.keys(categoryData).forEach(key => {
             if (key !== 'TOTAL' && key !== 'LAINNYA') {
                 series.push(Number(categoryData[key]));
@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // 1. CHART BUYERS
     // ==========================================================
     var initialBuyerTotal = getGrandTotal(data.rawTopBuyers, 'TOTAL');
-    var initialBuyerData  = processChartData(data.rawTopBuyers, 'TOTAL');
+    var initialBuyerData = processChartData(data.rawTopBuyers, 'TOTAL');
 
     var buyerOptions = {
         chart: { type: 'pie', height: 200, fontFamily: commonFont },
@@ -40,28 +40,28 @@ document.addEventListener("DOMContentLoaded", function () {
             enabled: true,
             formatter: function (val, opts) {
                 let value = opts.w.globals.series[opts.seriesIndex];
-                let grandTotal = window.currentBuyerTotal || initialBuyerTotal; 
+                let grandTotal = window.currentBuyerTotal || initialBuyerTotal;
                 let pct = grandTotal > 0 ? (value / grandTotal) * 100 : 0;
-                return Math.round(pct) + '%'; 
+                return Math.round(pct) + '%';
             },
             style: { fontSize: '11px', fontFamily: commonFont, fontWeight: 'bold' },
             dropShadow: { enabled: false }
         },
         plotOptions: {
-            pie: { 
-                offsetY: 0, 
+            pie: {
+                offsetY: 0,
                 customScale: 1,
                 donut: { size: '65%' },
-                dataLabels: { offset: -20 } 
+                dataLabels: { offset: -20 }
             }
         },
         legend: { show: false },
         stroke: { show: false },
         tooltip: {
-            y: { 
-                formatter: function (val) { 
-                    return new Intl.NumberFormat('id-ID').format(val / 1000) + " Ton"; 
-                } 
+            y: {
+                formatter: function (val) {
+                    return new Intl.NumberFormat('id-ID').format(val / 1000) + " Ton";
+                }
             }
         }
     };
@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // 2. CHART PRODUCTS
     // ==========================================================
     var initialProductTotal = getGrandTotal(data.rawTopProducts, 'TOTAL');
-    var initialProductData  = processChartData(data.rawTopProducts, 'TOTAL');
+    var initialProductData = processChartData(data.rawTopProducts, 'TOTAL');
 
     var productOptions = {
         chart: { type: 'pie', height: 200, fontFamily: commonFont },
@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", function () {
             formatter: function (val, opts) {
                 let value = opts.w.globals.series[opts.seriesIndex];
                 let valTon = value / 1000;
-                return new Intl.NumberFormat('id-ID').format(Math.round(valTon)) + " Ton"; 
+                return new Intl.NumberFormat('id-ID').format(Math.round(valTon)) + " Ton";
             },
             style: { fontSize: '10px', fontFamily: commonFont, fontWeight: 'bold' },
             dropShadow: { enabled: false }
@@ -97,15 +97,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 dataLabels: { offset: -20 }
             }
         },
-        legend: { show: false }, 
+        legend: { show: false },
         stroke: { show: false },
         tooltip: {
-            y: { 
-                formatter: function (val) { 
+            y: {
+                formatter: function (val) {
                     let grandTotal = window.currentProductTotal || initialProductTotal;
                     let pct = grandTotal > 0 ? (val / grandTotal) * 100 : 0;
                     return Math.round(pct) + '%';
-                } 
+                }
             }
         }
     };
@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================================
     // 3. UPDATE FUNCTION
     // ==========================================================
-    
+
     const buyerSelect = document.getElementById('buyer-filter');
     if (buyerSelect) {
         buyerSelect.addEventListener('change', function (e) {
@@ -142,14 +142,14 @@ document.addEventListener("DOMContentLoaded", function () {
             legendContainer = document.getElementById('buyer-legend-container');
             centerTotalEl = document.getElementById('buyer-center-total');
             grandTotal = getGrandTotal(rawSource, category);
-            window.currentBuyerTotal = grandTotal; 
+            window.currentBuyerTotal = grandTotal;
         } else {
             rawSource = data.rawTopProducts;
             colors = data.prodColors;
             legendContainer = document.getElementById('product-legend-container');
             centerTotalEl = document.getElementById('product-center-total');
             grandTotal = getGrandTotal(rawSource, category);
-            window.currentProductTotal = grandTotal; 
+            window.currentProductTotal = grandTotal;
         }
 
         let processed = processChartData(rawSource, category);
@@ -189,6 +189,8 @@ document.addEventListener("DOMContentLoaded", function () {
             type: 'line',
             height: 320,
             toolbar: { show: false },
+            zoom: { enabled: false },
+            selection: { enabled: false },
             fontFamily: commonFont,
             animations: {
                 enabled: true, easing: 'easeinout', speed: 600,
@@ -243,6 +245,73 @@ document.addEventListener("DOMContentLoaded", function () {
     filterPriceByMonth(12);
 
     // ==========================================================
+    // CUSTOM DRAG-TO-SCROLL FOR CHART CONTAINER
+    // Allows users to drag the chart horizontally to see hidden data
+    // Speed matches user's drag speed for natural feel
+    // ==========================================================
+    (function initChartDragScroll() {
+        const scrollContainer = document.querySelector('.price-chart-wrapper .chart-scroll-container');
+        if (!scrollContainer) return;
+
+        let isDragging = false;
+        let startX = 0;
+        let scrollLeft = 0;
+
+        // Mouse events
+        scrollContainer.addEventListener('mousedown', (e) => {
+            // Ignore if clicking on chart interactive elements
+            if (e.target.closest('.apexcharts-tooltip') || e.target.closest('.apexcharts-legend')) return;
+
+            isDragging = true;
+            scrollContainer.style.cursor = 'grabbing';
+            startX = e.pageX - scrollContainer.offsetLeft;
+            scrollLeft = scrollContainer.scrollLeft;
+            e.preventDefault();
+        });
+
+        scrollContainer.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.pageX - scrollContainer.offsetLeft;
+            const walk = (x - startX); // 1:1 speed ratio
+            scrollContainer.scrollLeft = scrollLeft - walk;
+        });
+
+        scrollContainer.addEventListener('mouseup', () => {
+            isDragging = false;
+            scrollContainer.style.cursor = 'grab';
+        });
+
+        scrollContainer.addEventListener('mouseleave', () => {
+            isDragging = false;
+            scrollContainer.style.cursor = 'grab';
+        });
+
+        // Touch events for mobile
+        scrollContainer.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.apexcharts-tooltip') || e.target.closest('.apexcharts-legend')) return;
+
+            isDragging = true;
+            startX = e.touches[0].pageX - scrollContainer.offsetLeft;
+            scrollLeft = scrollContainer.scrollLeft;
+        }, { passive: true });
+
+        scrollContainer.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const x = e.touches[0].pageX - scrollContainer.offsetLeft;
+            const walk = (x - startX);
+            scrollContainer.scrollLeft = scrollLeft - walk;
+        }, { passive: true });
+
+        scrollContainer.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // Set initial cursor style
+        scrollContainer.style.cursor = 'grab';
+    })();
+
+    // ==========================================================
     // 5. BAR CHARTS (Volume & Revenue)
     // ==========================================================
 
@@ -251,7 +320,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (val === 0 || val === null || isNaN(val)) return "0";
         let num = parseFloat(val);
         let absNum = Math.abs(num);
-        
+
         if (absNum >= 1000000000) return (num / 1000000000).toFixed(1) + ' M';
         else if (absNum >= 1000000) return (num / 1000000).toFixed(0) + ' Jt';
         else return num.toFixed(0) + ' M';
@@ -271,7 +340,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             return {
-                x: month, 
+                x: month,
                 y: 0,
                 borderColor: 'transparent',
                 label: {
@@ -294,34 +363,34 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // --- 3. Konfigurasi Umum ---
     const commonBarConfig = {
-        chart: { 
-            type: 'bar', 
-            height: 400, 
-            toolbar: { show: false }, 
-            fontFamily: commonFont 
+        chart: {
+            type: 'bar',
+            height: 400,
+            toolbar: { show: false },
+            fontFamily: commonFont
         },
-        plotOptions: { 
-            bar: { 
-                horizontal: false, 
+        plotOptions: {
+            bar: {
+                horizontal: false,
                 columnWidth: '60%', // Lebar batang sedikit ditambah agar rapat
                 borderRadius: 4,
                 dataLabels: {
                     position: 'top', // Label Angka tetap di Atas
                     hideOverflowingLabels: false // PENTING: Agar label tetap muncul walau sempit
                 }
-            } 
+            }
         },
-        stroke: { show: true, width: 6, colors: ['transparent'] }, 
+        stroke: { show: true, width: 6, colors: ['transparent'] },
         xaxis: {
             categories: data.monthLabels,
-            labels: { 
+            labels: {
                 style: { colors: '#64748B', fontSize: '12px', fontWeight: 600 }
             },
-            axisBorder: { show: false }, 
+            axisBorder: { show: false },
             axisTicks: { show: false }
         },
         yaxis: { show: false }, // Sembunyikan Y Axis
-        grid: { 
+        grid: {
             show: false,
             padding: { top: 40, bottom: 20 } // Padding atas utk Angka, Bawah utk Persen
         },
@@ -336,10 +405,10 @@ document.addEventListener("DOMContentLoaded", function () {
             points: createPercentAnnotations(data.volumeReal, data.rkapVol)
         },
         series: [
-            { name: 'Real', data: data.volumeReal }, 
+            { name: 'Real', data: data.volumeReal },
             { name: 'RKAP', data: data.rkapVol }
         ],
-        colors: ['#F97316', '#a2c4c9'], 
+        colors: ['#F97316', '#a2c4c9'],
         dataLabels: {
             enabled: true,
             offsetY: -25,
@@ -362,10 +431,10 @@ document.addEventListener("DOMContentLoaded", function () {
             points: createPercentAnnotations(data.revenueReal, data.rkapRev)
         },
         series: [
-            { name: 'Real', data: data.revenueReal }, 
+            { name: 'Real', data: data.revenueReal },
             { name: 'RKAP', data: data.rkapRev }
         ],
-        colors: ['#F97316', '#a2c4c9'], 
+        colors: ['#F97316', '#a2c4c9'],
         dataLabels: {
             enabled: true,
             offsetY: -25,
@@ -380,4 +449,24 @@ document.addEventListener("DOMContentLoaded", function () {
             // }
         }
     }).render();
+
+    // ==========================================================
+    // GLOBAL RESIZE HANDLER FOR ALL CHARTS
+    // Ensures all ApexCharts resize properly when window changes
+    // ==========================================================
+    let globalResizeTimer;
+    window.addEventListener('resize', function () {
+        clearTimeout(globalResizeTimer);
+        globalResizeTimer = setTimeout(function () {
+            // Trigger ApexCharts resize event
+            window.dispatchEvent(new Event('resize'));
+
+            // Update all chart widths to match container
+            document.querySelectorAll('.apexcharts-canvas').forEach(function (canvas) {
+                if (canvas.parentElement) {
+                    canvas.style.width = '100%';
+                }
+            });
+        }, 150);
+    });
 });
