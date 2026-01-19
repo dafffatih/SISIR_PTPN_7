@@ -446,12 +446,7 @@
     max-width: 100%;
 }
 
-.price-filter {
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    z-index: 10;
-}
+/* Price filter moved to header */
 
 .price-filter select {
     font-size: 12px;

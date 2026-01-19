@@ -110,8 +110,8 @@
         <div class="split-col">
             {{-- Daily Price --}}
             <div class="card-std price-chart-wrapper">
-                <div class="card-header"><h3>Daily Selling Price</h3></div>
-                <div class="price-filter">
+                <div class="card-header">
+                    <h3>Daily Selling Price</h3>
                     <select id="price-range" class="dashboard-select">
                         <option value="3">3 Bulan Terakhir</option>
                         <option value="6">6 Bulan Terakhir</option>
