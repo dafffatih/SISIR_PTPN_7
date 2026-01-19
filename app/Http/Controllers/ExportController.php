@@ -53,6 +53,21 @@ class ExportController extends Controller
         }
     }
 
+    private function penyerahanHeaders($max = 5)
+    {
+        $headers = [];
+
+        for ($i = 1; $i <= $max; $i++) {
+            $headers[] = "Penyerahan {$i} Tgl";
+            $headers[] = "Penyerahan {$i} Kg";
+        }
+
+        $headers[] = "Total Penyerahan (Kg)";
+
+        return $headers;
+    }
+
+
     private function fetchFromGoogleSheets($startDate, $endDate)
     {
         try {
@@ -63,8 +78,7 @@ class ExportController extends Controller
 
             $sheetRanges = [
                 "'SC Sudah Bayar'!A4:BA",
-                "'SC Belum Bayar'!A4:BA",
-                "'SC Summary'!A4:BA",
+    
             ];
 
             foreach ($sheetRanges as $range) {
@@ -182,12 +196,12 @@ class ExportController extends Controller
             fwrite($file, "\xEF\xBB\xBF");
 
             if ($includeTables) {
-                $csvHeaders = [
+                $csvHeaders = array_merge([
                     'Nomor DO/SI', 'Nomor Kontrak', 'Nama Pembeli', 'Tanggal Kontrak', 'Volume',
                     'Harga', 'Nilai', 'Inc. PPN', 'Tanggal Bayar', 'Unit', 'Mutu', 'Tanggal DO/SI',
                     'Port', 'Kontrak SAP', 'DP SAP', 'SO SAP', 'Kode DO', 'Sisa Awal',
                     'Total Layanan', 'Sisa Akhir', 'Jatuh Tempo',
-                ];
+                ], $this->penyerahanHeaders(5));
 
                 fputcsv($file, $csvHeaders);
 
@@ -234,12 +248,13 @@ class ExportController extends Controller
                 $sheet = $excel->getActiveSheet();
                 $sheet->setTitle('Data');
 
-                $headers = [
+                $headers = array_merge([
                     'Nomor DO/SI', 'Nomor Kontrak', 'Nama Pembeli', 'Tanggal Kontrak', 'Volume',
                     'Harga', 'Nilai', 'Inc. PPN', 'Tanggal Bayar', 'Unit', 'Mutu', 'Tanggal DO/SI',
                     'Port', 'Kontrak SAP', 'DP SAP', 'SO SAP', 'Kode DO', 'Sisa Awal',
                     'Total Layanan', 'Sisa Akhir', 'Jatuh Tempo',
-                ];
+                ], $this->penyerahanHeaders(5));
+
 
                 for ($col = 0; $col < count($headers); $col++) {
                     $sheet->setCellValueByColumnAndRow($col + 1, 1, $headers[$col]);
@@ -354,8 +369,11 @@ class ExportController extends Controller
 
     private function extractDataRow($item)
     {
+        // ===============================
+        // JIKA DATA ARRAY (Google Sheet / DB toArray)
+        // ===============================
         if (is_array($item)) {
-            return [
+            $row = [
                 $item['nomor_dosi'] ?? '',
                 $item['nomor_kontrak'] ?? '',
                 $item['nama_pembeli'] ?? '',
@@ -378,9 +396,23 @@ class ExportController extends Controller
                 $item['sisa_akhir'] ?? '',
                 $item['jatuh_tempo'] ?? '',
             ];
+
+            // 🔽 PENYERAHAN 1–5
+            for ($i = 1; $i <= 5; $i++) {
+                $row[] = $item["penyerahan_{$i}_tgl"] ?? '';
+                $row[] = $item["penyerahan_{$i}_kg"] ?? '';
+            }
+
+            // 🔽 TOTAL PENYERAHAN
+            $row[] = $item['total_penyerahan'] ?? '';
+
+            return $row;
         }
 
-        return [
+        // ===============================
+        // JIKA DATA OBJECT (Eloquent)
+        // ===============================
+        $row = [
             $item->nomor_dosi ?? '',
             $item->nomor_kontrak ?? '',
             $item->nama_pembeli ?? '',
@@ -403,7 +435,17 @@ class ExportController extends Controller
             $item->sisa_akhir ?? '',
             $item->jatuh_tempo ?? '',
         ];
+
+        for ($i = 1; $i <= 5; $i++) {
+            $row[] = $item->{"penyerahan_{$i}_tgl"} ?? '';
+            $row[] = $item->{"penyerahan_{$i}_kg"} ?? '';
+        }
+
+        $row[] = $item->total_penyerahan ?? '';
+
+        return $row;
     }
+
 
     private function generateSummary($data)
     {
