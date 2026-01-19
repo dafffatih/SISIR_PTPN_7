@@ -288,7 +288,7 @@
                         <div class="custom-legend" id="buyer-legend-container">
                             @php $i=0; @endphp
                             @foreach($initBuyers as $buyer => $vol)
-                                @if($buyer === 'TOTAL') @continue @endif
+                                @if($buyer === 'TOTAL' || strtoupper(trim($buyer)) === 'LAINNYA') @continue @endif
                                 <div class="legend-item">
                                     <span class="dot" style="background: {{ $chartColors[$i % count($chartColors)] }}"></span>
                                     <span class="name" title="{{ $buyer }}">{{ $buyer }}</span>
@@ -322,7 +322,7 @@
                         <div class="custom-legend" id="product-legend-container">
                             @php $i=0; @endphp
                             @foreach($initProducts as $prod => $vol)
-                                @if($prod === 'TOTAL') @continue @endif
+                                @if($prod === 'TOTAL' || strtoupper(trim($prod)) === 'LAINNYA') @continue @endif
                                 <div class="legend-item">
                                     <span class="dot" style="background: {{ $prodColors[$i % count($prodColors)] }}"></span>
                                     <span class="name">{{ $prod }}</span>

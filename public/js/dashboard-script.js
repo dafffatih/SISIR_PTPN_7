@@ -17,7 +17,8 @@ document.addEventListener("DOMContentLoaded", function () {
         let labels = [];
 
         Object.keys(categoryData).forEach(key => {
-            if (key !== 'TOTAL' && key !== 'LAINNYA') {
+            let normalizedKey = key.trim().toUpperCase();
+            if (normalizedKey !== 'TOTAL' && normalizedKey !== 'LAINNYA') {
                 series.push(Number(categoryData[key]));
                 labels.push(key);
             }
