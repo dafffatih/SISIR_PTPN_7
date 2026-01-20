@@ -378,7 +378,7 @@
 
         {{-- HEADER --}}
         <div class="warehouse-header">
-            <h3>UTILITAS GUDANG PRODUKSI DI UNIT</h3>
+            <h3>Utilitas Gudang Produksi Di Unit</h3>
             <select class="warehouse-select">
                 <option>SIR 20</option>
                 <option>RSS 1</option>
@@ -390,7 +390,7 @@
 
         {{-- CONTENT --}}
         <div class="warehouse-box">
-            <h4>GUDANG SIR 20</h4>
+            
 
             {{-- ROW --}}
             <div class="warehouse-row">

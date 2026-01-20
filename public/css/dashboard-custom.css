@@ -999,22 +999,24 @@
     overflow-x: auto;
 }
 
-/* ================================================= */
-/* VARIABEL WARNA UTILITAS GUDANG (SUMBER UTAMA) */
-/* ================================================= */
+/* =====================================================
+   VARIABEL WARNA UTILITAS GUDANG
+   ===================================================== */
 :root {
     --stock-color: #134f5c;      /* Hijau Stock */
     --capacity-color: #fce5cd;   /* Cream Kapasitas */
     --percent-color: #60656c;    /* Abu-coklat Persentase */
 }
 
-/* ================================================= */
-/* UTILITAS GUDANG - CARD */
-/* ================================================= */
+/* =====================================================
+   UTILITAS GUDANG - CARD
+   ===================================================== */
 .warehouse-card {
     padding: 18px;
+    font-family: 'Inter', sans-serif;
 }
 
+/* HEADER */
 .warehouse-header {
     display: flex;
     justify-content: space-between;
@@ -1022,11 +1024,12 @@
 }
 
 .warehouse-header h3 {
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: 0.4px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0F172A;
 }
 
+/* SELECT */
 .warehouse-select {
     padding: 6px 10px;
     border-radius: 6px;
@@ -1036,9 +1039,9 @@
     background: #ffffff;
 }
 
-/* ================================================= */
-/* BOX UTILITAS */
-/* ================================================= */
+/* =====================================================
+   BOX GUDANG
+   ===================================================== */
 .warehouse-box {
     border: 1px solid #d1d5db;
     padding: 14px;
@@ -1047,35 +1050,36 @@
 }
 
 .warehouse-box h4 {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
+    color: #0F172A;
     margin-bottom: 12px;
 }
 
-/* ================================================= */
-/* BARIS GUDANG */
-/* ================================================= */
+/* =====================================================
+   ROW GUDANG
+   ===================================================== */
 .warehouse-row {
     display: grid;
     grid-template-columns: 60px 1fr 45px;
     align-items: center;
-    margin-bottom: 10px;
     gap: 10px;
+    margin-bottom: 10px;
 }
 
+/* LABEL KIRI */
 .warehouse-row .label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    color: #0f172a;
+    color: #0F172A;
 }
 
-/* ================================================= */
-/* BAR WRAPPER */
-/* ================================================= */
+/* =====================================================
+   BAR WRAPPER
+   ===================================================== */
 .bar-wrapper {
     position: relative;
     height: 24px;
-    background: transparent;
 }
 
 /* BAR UMUM */
@@ -1107,143 +1111,23 @@
 .bar.capacity .cap {
     position: absolute;
     right: 8px;
-    color: #6b5e55;
+    font-size: 12px;
     font-weight: 600;
+    color: #64748B;
 }
 
-/* ================================================= */
-/* PERSENTASE */
-/* ================================================= */
-.percent {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--percent-color);
-}
-
-/* ================================================= */
-/* VARIABEL WARNA UTILITAS GUDANG (SUMBER UTAMA) */
-/* ================================================= */
-:root {
-    --stock-color: #134f5c;      /* Hijau Stock */
-    --capacity-color: #fce5cd;   /* Cream Kapasitas */
-    --percent-color: #60656c;    /* Abu-coklat Persentase */
-}
-
-/* ================================================= */
-/* UTILITAS GUDANG - CARD */
-/* ================================================= */
-.warehouse-card {
-    padding: 18px;
-}
-
-.warehouse-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.warehouse-header h3 {
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: 0.4px;
-}
-
-.warehouse-select {
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
-    font-size: 13px;
-    font-weight: 600;
-    background: #ffffff;
-}
-
-/* ================================================= */
-/* BOX UTILITAS */
-/* ================================================= */
-.warehouse-box {
-    border: 1px solid #d1d5db;
-    padding: 14px;
-    margin-top: 12px;
-    background: #ffffff;
-}
-
-.warehouse-box h4 {
-    font-size: 14px;
-    font-weight: 700;
-    margin-bottom: 12px;
-}
-
-/* ================================================= */
-/* BARIS GUDANG */
-/* ================================================= */
-.warehouse-row {
-    display: grid;
-    grid-template-columns: 60px 1fr 45px;
-    align-items: center;
-    margin-bottom: 10px;
-    gap: 10px;
-}
-
-.warehouse-row .label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #0f172a;
-}
-
-/* ================================================= */
-/* BAR WRAPPER */
-/* ================================================= */
-.bar-wrapper {
-    position: relative;
-    height: 24px;
-    background: transparent;
-}
-
-/* BAR UMUM */
-.bar {
-    position: absolute;
-    height: 100%;
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    padding-left: 8px;
+/* =====================================================
+   PERSENTASE
+   ===================================================== */
+.warehouse-row .percent {
     font-size: 12px;
     font-weight: 700;
-}
-
-/* BAR STOCK */
-.bar.stock {
-    background: var(--stock-color);
-    color: #ffffff;
-    z-index: 2;
-}
-
-/* BAR KAPASITAS */
-.bar.capacity {
-    background: var(--capacity-color);
-    width: 100%;
-    z-index: 1;
-}
-
-.bar.capacity .cap {
-    position: absolute;
-    right: 8px;
-    color: #6b5e55;
-    font-weight: 600;
-}
-
-/* ================================================= */
-/* PERSENTASE */
-/* ================================================= */
-.percent {
-    font-size: 13px;
-    font-weight: 700;
     color: var(--percent-color);
 }
 
-/* ================================================= */
-/* LEGEND UTILITAS GUDANG */
-/* ================================================= */
+/* =====================================================
+   LEGEND UTILITAS GUDANG
+   ===================================================== */
 .warehouse-legend {
     display: flex;
     gap: 20px;
@@ -1264,21 +1148,21 @@
     width: 12px;
     height: 12px;
     border-radius: 2px;
-    display: inline-block;
 }
 
-/* WARNA LEGEND (PASTI SAMA DENGAN BAR & PERSEN) */
-.warehouse-legend .legend-box.stock {
+/* WARNA LEGEND (PASTI SAMA DENGAN BAR) */
+.legend-box.stock {
     background: var(--stock-color);
 }
 
-.warehouse-legend .legend-box.capacity {
+.legend-box.capacity {
     background: var(--capacity-color);
 }
 
-.warehouse-legend .legend-box.percent {
+.legend-box.percent {
     background: var(--percent-color);
 }
+
 
 
 
