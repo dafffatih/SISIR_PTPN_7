@@ -62,7 +62,23 @@ class DashboardController extends Controller
             "SC Sudah Bayar!AD4:AD5359", // data pembeli
             "SC Sudah Bayar!Q4:Q5359", // data unit
             "SC Sudah Bayar!AA4:AA5359", // data volume
-            "SC Sudah Bayar!R4:R5359" // data mutu
+            "SC Sudah Bayar!R4:R5359", // data mutu
+
+            // SIR 20
+            "Rekap3!K29:K33", "Rekap3!L29:L33", "Rekap3!M29:M33", "Rekap3!N29:N33",
+            // RSS
+            "Rekap3!K35:K39", "Rekap3!O35:O39", "Rekap3!P35:P39", "Rekap3!Q35:Q39",
+            // SIR 3WL (Single Row)
+            "Rekap3!K36:K36", "Rekap3!R36:R36", "Rekap3!S36:S36", "Rekap3!T36:T36",
+            // IPMG - SIR
+            "Rekap3!K44:K46", "Rekap3!Q44:Q46", "Rekap3!R44:R46", "Rekap3!S44:S46",
+            // IPMG - RSS (Label pakai K44:K46 sama dgn IPMG SIR)
+            "Rekap3!T44:T46", "Rekap3!U44:U46", "Rekap3!V44:V46",
+
+            "Rekap1!E36:I36", // 1. Penyerahan (SIR20, RSS, 3L, 3WF, Rata2)
+            "Rekap1!E38:I38", // 2. Sudah Bayar (Mengambil baris 38 full: E s/d I)
+            "Rekap1!E39:I39", // 3. Belum Bayar
+            "Rekap1!E40:I40",
         ];
 
         // ... (Kode fetch data sama seperti sebelumnya) ...
@@ -459,6 +475,65 @@ class DashboardController extends Controller
             'bahan_baku'  => [ 'sir20' => $cleanNum([$rawBatch["Rekap3!I27:I27"][0][0] ?? 0] ?? []) ?: 0, 'rss' => 0, 'sir3l' => 0, 'sir3wf' => 0 ]
         ];
 
+
+        $processWarehouse = function($rLabel, $rStock, $rCap, $rPct) use ($rawBatch, $cleanNum) {
+        $labels = $rawBatch[$rLabel] ?? [];
+        $stocks = $rawBatch[$rStock] ?? [];
+        $caps   = $rawBatch[$rCap] ?? [];
+        $pcts   = $rawBatch[$rPct] ?? [];
+
+        $result = [];
+        foreach ($labels as $i => $row) {
+            $name = $row[0] ?? '-';
+            // Bersihkan angka
+            $stock = isset($stocks[$i]) ? $cleanNum($stocks[$i]) : 0;
+            $cap   = isset($caps[$i]) ? $cleanNum($caps[$i]) : 0;
+            
+            // Handle persentase: kadang dari sheet berupa 0.73 atau 73%
+            $rawPct = isset($pcts[$i]) ? $pcts[$i][0] : 0;
+            $pctVal = $cleanNum([$rawPct]);
+            
+            // Jika desimal kecil (misal 0.73), jadikan 73. Jika sudah 73, biarkan.
+            if ($pctVal <= 1 && $pctVal > 0) { $pctVal = $pctVal * 100; }
+            
+            $result[] = [
+                'name'     => $name,
+                'stock'    => $stock,
+                'capacity' => $cap,
+                'percent'  => round($pctVal, 1) // Bulatkan 1 desimal
+            ];
+        }
+        return $result;
+        };
+
+        $utilitasGudang = [
+            'SIR 20' => $processWarehouse("Rekap3!K29:K33", "Rekap3!L29:L33", "Rekap3!M29:M33", "Rekap3!N29:N33"),
+            'RSS 1'    => $processWarehouse("Rekap3!K35:K39", "Rekap3!O35:O39", "Rekap3!P35:P39", "Rekap3!Q35:Q39"),
+            'SIR 3WL'=> $processWarehouse("Rekap3!K36:K36", "Rekap3!R36:R36", "Rekap3!S36:S36", "Rekap3!T36:T36"),
+            'IPMG SIR' => $processWarehouse("Rekap3!K44:K46", "Rekap3!Q44:Q46", "Rekap3!R44:R46", "Rekap3!S44:S46"),
+            'IPMG RSS' => $processWarehouse("Rekap3!K44:K46", "Rekap3!T44:T46", "Rekap3!U44:U46", "Rekap3!V44:V46"),
+        ];
+
+
+        $processPriceRow = function($rangeKey) use ($rawBatch, $cleanNum) {
+        $row = $rawBatch[$rangeKey][0] ?? []; 
+        
+        return [
+            'sir20'   => $cleanNum([$row[0] ?? 0]), // Kolom E
+            'rss'     => $cleanNum([$row[1] ?? 0]), // Kolom F
+            'sir3l'   => $cleanNum([$row[2] ?? 0]), // Kolom G
+            'sir3wf'  => $cleanNum([$row[3] ?? 0]), // Kolom H
+            'average' => $cleanNum([$row[4] ?? 0]), // Kolom I
+        ];
+        };
+
+        $hargaRataRata = [
+            'penyerahan'  => $processPriceRow("Rekap1!E36:I36"),
+            'sudah_bayar' => $processPriceRow("Rekap1!E38:I38"),
+            'belum_bayar' => $processPriceRow("Rekap1!E39:I39"),
+            'total'       => $processPriceRow("Rekap1!E40:I40"),
+        ];
+
         // dd($rawBatch["Rekap3!I20:I20"]);
         // dd([
         //     '1. CEK DATA MENTAH DARI GOOGLE SHEET' => [
@@ -473,7 +548,8 @@ class DashboardController extends Controller
         // Tambahkan lastTender ke view
         return view('dashboard.index', compact(
             'totalVolume', 'totalRevenue', 'rkapVolume', 'rkapRevenue', 'mutu', 'lastTender',
-            'topBuyers', 'top5Buyers', 'topProducts', 'top5Products', 'rekap4', 'stokData', 'trendPriceDaily', 'useDbFallback'
+            'topBuyers', 'top5Buyers', 'topProducts', 'top5Products', 'rekap4', 'stokData', 'trendPriceDaily', 'utilitasGudang',
+            'hargaRataRata','useDbFallback'
         ));
     }
 }

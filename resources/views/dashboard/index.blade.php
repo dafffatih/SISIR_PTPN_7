@@ -39,7 +39,7 @@
     <div class="dashboard-header">
         <div>
             <h1>Dashboard Overview</h1>
-            <p>PTPN 1 Regional 7 - Rubber Trading Analytics</p>
+            <p>PTPN 1 Regional 7 - Sales and Inventories</p>
         </div>
     </div>
 
@@ -49,19 +49,34 @@
         <div class="card-metric">
             <div class="metric-content">
                 <div class="metric-left">
-                    <span class="metric-label">Total Volume</span>
+                
+                    {{-- 1. WRAPPER JUDUL & TANGGAL (Agar sejajar horizontal) --}}
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                        <span class="metric-label" style="margin-bottom: 0;">Total Volume</span>
+                        
+                        {{-- Tanggal H-1 --}}
+                        <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
+                            {{ \Carbon\Carbon::now()->subDay()->format('d/m/Y') }}
+                        </span>
+                    </div>
+
+                    {{-- 2. NILAI UTAMA --}}
                     <div class="metric-value-group">
                         <span class="metric-number">{{ number_format($top5Buyers["TOTAL"]["TOTAL"]/1000, 0, ',', '.') }}</span>
                         <span class="metric-unit">Ton</span>
                     </div>
-                    @php $progress = $rkapRevenue > 0 ? round(($totalVolume / $rkapVolume) * 100, 1) : 0; @endphp
+
+                    {{-- 3. PROGRESS --}}
+                    @php 
+                        $progress = $rkapRevenue > 0 ? round(($totalVolume / $rkapVolume) * 100, 1) : 0; 
+                    @endphp
                     <div class="metric-progress">
                         Progress: <span class="progress-val {{ $progress >= 100 ? 'progress-green' : 'progress-red' }}">{{ $progress }}%</span>
                     </div>
                 </div>
                 <div class="metric-right">
                     <div class="rkap-info">
-                        <span class="metric-label">Total Volume RKAP</span>
+                        <span class="metric-label1">Total Volume RKAP</span>
                         <div class="metric-value-group right-align">
                             <span class="metric-number-small">{{ number_format($rkapVolume, 0, ',', '.') }}</span>
                             <span class="metric-unit-small">Ton</span>
@@ -77,19 +92,35 @@
         <div class="card-metric">
             <div class="metric-content">
                 <div class="metric-left">
-                    <span class="metric-label">Total Revenue</span>
+                    
+                    {{-- 1. WRAPPER JUDUL & TANGGAL (Agar sejajar horizontal) --}}
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                        <span class="metric-label" style="margin-bottom: 0;">Total Revenue</span>
+                        
+                        {{-- Tanggal H-1 --}}
+                        <span class="badge-date" style="padding: 2px 6px; border-radius: 4px; background-color: #eee;">
+                            {{ \Carbon\Carbon::now()->subDay()->format('d/m/Y') }}
+                        </span>
+                    </div>
+
+                    {{-- 2. NILAI UTAMA --}}
                     <div class="metric-value-group">
                         <span class="metric-number">Rp {{ number_format($totalRevenue / 1000000000, 0, ',', '.') }}</span>
                         <span class="metric-unit">Milyar</span>
                     </div>
-                    @php $progress = $rkapRevenue > 0 ? round(($totalRevenue / $rkapRevenue) * 100, 1) : 0; @endphp
+
+                    {{-- 3. PROGRESS --}}
+                    @php 
+                        $progress = $rkapRevenue > 0 ? round(($totalRevenue / $rkapRevenue) * 100, 1) : 0; 
+                    @endphp
                     <div class="metric-progress">
                         Progress: <span class="progress-val {{ $progress >= 100 ? 'progress-green' : 'progress-red' }}">{{ $progress }}%</span>
                     </div>
+
                 </div>
                 <div class="metric-right">
                     <div class="rkap-info">
-                        <span class="metric-label">Total Revenue RKAP</span>
+                        <span class="metric-label1">Total Revenue RKAP</span>
                         <div class="metric-value-group right-align">
                             <span class="metric-number-small">Rp {{ number_format($rkapRevenue/1000000000, 0, ',', '.') }}</span>
                             <span class="metric-unit-small">Milyar</span>
@@ -128,7 +159,7 @@
             
             {{-- Last Price --}}
             <div class="card-std last-tender-card">
-                <div style="margin-bottom: 16px; font-size: 14px; color: #64748B;">Last Selling Price/Kg</div>
+                <div style="margin-bottom: 16px; font-size: 14px; color: #64748B;">Last Selling Price</div>
                 <div class="tender-grid">
                     @php
                         $pSir20 = $lastTender['sir20']['price'] ?? 0; $dSir20 = $lastTender['sir20']['date'] ?? '-';
@@ -154,7 +185,7 @@
             <div class="card-std card-table-compact">
                 <div class="card-header flex-between">
                     <h3>Stok Bebas</h3>
-                    <span class="badge-date">{{ \Carbon\Carbon::now()->format('d/m/Y') }}</span>
+                    <span class="badge-date">{{ \Carbon\Carbon::now()->subDay()->format('d/m/Y') }}</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table-stok">
@@ -370,7 +401,7 @@
 
 
 
-    {{-- ================== --}}
+{{-- ================== --}}
 {{-- UTILITAS GUDANG --}}
 {{-- ================== --}}
 <div class="warehouse-wrapper">
@@ -379,77 +410,43 @@
         {{-- HEADER --}}
         <div class="warehouse-header">
             <h3>Utilitas Gudang Produksi Di Unit</h3>
-            <select class="warehouse-select">
-                <option>SIR 20</option>
-                <option>RSS 1</option>
-                <option>SIR 3L</option>
-                <option>IPMG SIR</option>
-                <option>IPMG RSS</option>
+            <select class="dashboard-select" id="warehouseSelector" onchange="changeWarehouseTab(this.value)">
+                @foreach($utilitasGudang as $key => $data)
+                    <option value="{{ Str::slug($key) }}">{{ $key }}</option>
+                @endforeach
             </select>
         </div>
 
         {{-- CONTENT --}}
         <div class="warehouse-box">
             
+            @foreach($utilitasGudang as $key => $items)
+                <div id="warehouse-{{ Str::slug($key) }}" class="warehouse-tab-content" style="{{ $loop->first ? '' : 'display:none;' }}">
+                    
+                    @forelse($items as $item)
+                        <div class="warehouse-row">
+                            <span class="label">{{ $item['name'] }}</span>
+                            <div class="bar-wrapper">
+                                {{-- Bar Stock (Warna Oranye/Utama) --}}
+                                <div class="bar stock" style="width: {{ $item['percent'] > 100 ? 100 : $item['percent'] }}%">
+                                    {{ number_format($item['stock'], 0, ',', '.') }}
+                                </div>
+                                {{-- Bar Kapasitas (Background Abu/Penuh) --}}
+                                <div class="bar capacity">
+                                    <span class="cap">{{ number_format($item['capacity'], 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                            <span class="percent">{{ $item['percent'] }}%</span>
+                        </div>
+                    @empty
+                        <div class="text-center p-3 text-muted">Tidak ada data</div>
+                    @endforelse
 
-            {{-- ROW --}}
-            <div class="warehouse-row">
-                <span class="label">Pewa</span>
-                <div class="bar-wrapper">
-                    <div class="bar stock" style="width:73%">426</div>
-                    <div class="bar capacity">
-                        <span class="cap">585</span>
-                    </div>
                 </div>
-                <span class="percent">73%</span>
-            </div>
+            @endforeach
 
-            <div class="warehouse-row">
-                <span class="label">Tubu</span>
-                <div class="bar-wrapper">
-                    <div class="bar stock" style="width:56%">315</div>
-                    <div class="bar capacity">
-                        <span class="cap">567</span>
-                    </div>
-                </div>
-                <span class="percent">56%</span>
-            </div>
-
-            <div class="warehouse-row">
-                <span class="label">Tebe</span>
-                <div class="bar-wrapper">
-                    <div class="bar stock" style="width:18%">101</div>
-                    <div class="bar capacity">
-                        <span class="cap">550</span>
-                    </div>
-                </div>
-                <span class="percent">18%</span>
-            </div>
-
-            <div class="warehouse-row">
-                <span class="label">Baja</span>
-                <div class="bar-wrapper">
-                    <div class="bar stock" style="width:17%">59</div>
-                    <div class="bar capacity">
-                        <span class="cap">350</span>
-                    </div>
-                </div>
-                <span class="percent">17%</span>
-            </div>
-
-            <div class="warehouse-row">
-                <span class="label">Pawi</span>
-                <div class="bar-wrapper">
-                    <div class="bar stock" style="width:11%">33</div>
-                    <div class="bar capacity">
-                        <span class="cap">300</span>
-                    </div>
-                </div>
-                <span class="percent">11%</span>
-            </div>
-
-            {{-- LEGEND / KETERANGAN WARNA --}}
-            <div class="warehouse-legend">
+            {{-- LEGEND / KETERANGAN WARNA (TETAP SAMA) --}}
+            <div class="warehouse-legend mt-3">
                 <div class="legend-item">
                     <span class="legend-box stock"></span>
                     <span>Stock</span>
@@ -493,135 +490,188 @@
                 </tr>
             </thead>
             <tbody>
+                {{-- BARIS 1: PENYERAHAN --}}
                 <tr>
                     <td>1. Penyerahan</td>
-                    <td>28.853</td>
-                    <td>30.855</td>
-                    <td>31.910</td>
-                    <td>28.000</td>
-                    <td>29.203</td>
+                    <td>{{ number_format($hargaRataRata['penyerahan']['sir20'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['penyerahan']['rss'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['penyerahan']['sir3l'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['penyerahan']['sir3wf'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['penyerahan']['average'], 0, ',', '.') }}</td>
                 </tr>
 
+                {{-- SECTION HEADER --}}
                 <tr class="section-row">
                     <td colspan="6">Outstanding Contract</td>
                 </tr>
 
+                {{-- BARIS: SUDAH BAYAR --}}
                 <tr>
                     <td class="indent">Sudah Bayar</td>
-                    <td>30.004</td>
-                    <td>33.202</td>
-                    <td>32.578</td>
-                    <td>-</td>
-                    <td>30.939</td>
+                    <td>{{ number_format($hargaRataRata['sudah_bayar']['sir20'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['sudah_bayar']['rss'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['sudah_bayar']['sir3l'], 0, ',', '.') }}</td>
+                    <td>
+                        {{-- Logika: Jika 0 tampilkan strip (-), jika ada isi tampilkan angka --}}
+                        @if($hargaRataRata['sudah_bayar']['sir3wf'] == 0) - 
+                        @else {{ number_format($hargaRataRata['sudah_bayar']['sir3wf'], 0, ',', '.') }} 
+                        @endif
+                    </td>
+                    <td>{{ number_format($hargaRataRata['sudah_bayar']['average'], 0, ',', '.') }}</td>
                 </tr>
 
+                {{-- BARIS: BELUM BAYAR --}}
                 <tr>
                     <td class="indent">Belum Bayar</td>
-                    <td>29.670</td>
-                    <td>33.489</td>
-                    <td>34.346</td>
-                    <td>28.000</td>
-                    <td>31.343</td>
+                    <td>{{ number_format($hargaRataRata['belum_bayar']['sir20'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['belum_bayar']['rss'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['belum_bayar']['sir3l'], 0, ',', '.') }}</td>
+                    <td>
+                        @if($hargaRataRata['belum_bayar']['sir3wf'] == 0) - 
+                        @else {{ number_format($hargaRataRata['belum_bayar']['sir3wf'], 0, ',', '.') }} 
+                        @endif
+                    </td>
+                    <td>{{ number_format($hargaRataRata['belum_bayar']['average'], 0, ',', '.') }}</td>
                 </tr>
 
+                {{-- BARIS: TOTAL RATA-RATA --}}
                 <tr class="avg-row">
                     <td>Rata-Rata</td>
-                    <td>29.746</td>
-                    <td>33.448</td>
-                    <td>34.032</td>
-                    <td>28.000</td>
-                    <td>31.264</td>
+                    <td>{{ number_format($hargaRataRata['total']['sir20'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['total']['rss'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['total']['sir3l'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['total']['sir3wf'], 0, ',', '.') }}</td>
+                    <td>{{ number_format($hargaRataRata['total']['average'], 0, ',', '.') }}</td>
                 </tr>
             </tbody>
         </table>
     </div>
-
 </div>
 
 
-</div>
 {{-- ========== END SPLIT-COL KANAN ========== --}}
-
-
-
     </div>
-
-    
-
-    
-
     {{-- 3. MONTHLY CHARTS (BAWAH) --}}
     <div class="card-std p-0 full-row-card">
-        <div class="layout-3-cols">
-            <div class="col-chart">
+        {{-- UBAH LAYOUT JADI FLEX 2 KOLOM --}}
+        <div class="layout-split-chart" style="display: flex; flex-wrap: wrap;">
+            
+            {{-- KOLOM KIRI: CHART (Lebar lebih besar, misal 75%) --}}
+            <div class="col-chart-main" style="flex: 3; min-width: 600px; border-right: 1px solid #eee;">
                 <div class="chart-header-padded"><h3>Monthly Volume</h3></div>
                 {{-- WRAPPER SCROLL UNTUK CHART --}}
                 <div class="chart-scroll-container">
                     <div id="chart-monthly-vol"></div>
                 </div>
             </div>
-            <div class="col-middle bg-light">
-                <p class="sidebar-title">Rincian</p>
-                <div class="mutu-list">
-                    @foreach($mutu['label'] as $index => $label)
-                        @if(strtoupper(trim($label)) === 'TOTAL') @continue @endif
-                        @php $vol = $mutu['volume'][$index] ?? 0; $pct = $totalVolume > 0 ? round(($vol/$totalVolume)*100, 1) : 0; @endphp
-                        <div class="mutu-item">
-                            <div class="mutu-info"><span class="mutu-name">{{ $label }}</span><span class="mutu-pct">{{ $pct }}%</span></div>
-                            <div class="progress-bar-bg"><div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div></div>
-                            <span class="mutu-val">{{ number_format($vol, 0, ',', '.') }} Ton</span>
-                        </div>
-                    @endforeach
+
+            {{-- KOLOM KANAN: SIDEBAR (Lebar lebih kecil, misal 25%) --}}
+            <div class="col-sidebar-right bg-light" style="flex: 1; min-width: 250px; display: flex; flex-direction: column;">
+                
+                {{-- BAGIAN BAWAH: RINCIAN --}}
+                <div class="sidebar-section" style="padding: 1.5rem; flex-grow: 1;">
+                    <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Rincian</p>
+                    <div class="mutu-list">
+                        @foreach($mutu['label'] as $index => $label)
+                            @if(strtoupper(trim($label)) === 'TOTAL') @continue @endif
+                            @php $vol = $mutu['volume'][$index] ?? 0; $pct = $totalVolume > 0 ? round(($vol/$totalVolume)*100, 1) : 0; @endphp
+                            <div class="mutu-item">
+                                <div class="mutu-info"><span class="mutu-name">{{ $label }}</span><span class="mutu-pct">{{ $pct }}%</span></div>
+                                <div class="progress-bar-bg"><div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div></div>
+                                <span class="mutu-val">{{ number_format($vol, 0, ',', '.') }} Ton</span>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
-            </div>
-            <div class="col-right bg-light border-left">
-                <p class="sidebar-title">Total</p>
-                <div class="stats-container">
-                    <div class="summary-item"><span class="sum-label">Real</span><span class="sum-val orange">{{ number_format($totalVolume, 0, ',', '.') }} <small>Ton</small></span></div>
-                    <div class="summary-item"><span class="sum-label">RKAP</span><span class="sum-val dark">{{ number_format($rkapVolume, 0, ',', '.') }} <small>Ton</small></span></div>
-                    <div class="summary-item"><span class="sum-label">Percentage</span><span class="sum-val huge">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%</span></div>
+
+                {{-- BAGIAN ATAS: TOTAL --}}
+                <div class="sidebar-section border-bottom" style="padding: 1.5rem;">
+                    <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Total</p>
+                    <div class="stats-container2">
+                        <div class="summary-item"><span class="sum-label">Real</span><span class="sum-val orange">{{ number_format($totalVolume, 0, ',', '.') }} <small>Ton</small></span></div>
+                        <div class="summary-item"><span class="sum-label">RKAP</span><span class="sum-val dark">{{ number_format($rkapVolume, 0, ',', '.') }} <small>Ton</small></span></div>
+                        <div class="summary-item"><span class="sum-label">Percentage</span><span class="sum-val huge">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%</span></div>
+                    </div>
                 </div>
+
             </div>
+
         </div>
     </div>
 
     <div class="card-std p-0 full-row-card">
-        <div class="layout-3-cols">
-            <div class="col-chart">
+        <div class="layout-split-chart" style="display: flex; flex-wrap: wrap;">
+
+            {{-- KOLOM KIRI: CHART --}}
+            <div class="col-chart-main" style="flex: 3; min-width: 600px; border-right: 1px solid #eee;">
                 <div class="chart-header-padded"><h3>Monthly Revenue</h3></div>
-                {{-- WRAPPER SCROLL UNTUK CHART --}}
                 <div class="chart-scroll-container">
                     <div id="chart-monthly-rev"></div>
                 </div>
             </div>
-            <div class="col-middle bg-light">
-                <p class="sidebar-title">Rincian</p>
-                <div class="mutu-list">
-                    @foreach($mutu['label'] as $index => $label)
-                        @if(strtoupper(trim($label)) === 'TOTAL') @continue @endif
-                        @php $rev = $mutu['revenue'][$index] ?? 0; $totalR = $totalRevenue/1000000000; $pct = $totalR > 0 ? round(($rev/$totalR)*100, 1) : 0; @endphp
-                        <div class="mutu-item">
-                            <div class="mutu-info"><span class="mutu-name">{{ $label }}</span><span class="mutu-pct">{{ $pct }}%</span></div>
-                            <div class="progress-bar-bg"><div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div></div>
-                            <span class="mutu-val">Rp {{ number_format($rev, 0, ',', '.') }} M</span>
+
+            {{-- KOLOM KANAN: SIDEBAR --}}
+            <div class="col-sidebar-right bg-light" style="flex: 1; min-width: 250px; display: flex; flex-direction: column;">
+
+                {{-- RINCIAN --}}
+                <div class="sidebar-section" style="padding: 1.5rem; flex-grow: 1;">
+                    <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Rincian</p>
+                    <div class="mutu-list">
+                        @foreach($mutu['label'] as $index => $label)
+                            @if(strtoupper(trim($label)) === 'TOTAL') @continue @endif
+                            @php
+                                $rev = $mutu['revenue'][$index] ?? 0;
+                                $totalR = $totalRevenue / 1000000000;
+                                $pct = $totalR > 0 ? round(($rev/$totalR)*100, 1) : 0;
+                            @endphp
+                            <div class="mutu-item">
+                                <div class="mutu-info">
+                                    <span class="mutu-name">{{ $label }}</span>
+                                    <span class="mutu-pct">{{ $pct }}%</span>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div>
+                                </div>
+                                <span class="mutu-val">Rp {{ number_format($rev, 0, ',', '.') }} M</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- TOTAL --}}
+                <div class="sidebar-section border-bottom" style="padding: 1.5rem;">
+                    <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Total</p>
+                    <div class="stats-container2">
+                        <div class="summary-item">
+                            <span class="sum-label">Real</span>
+                            <span class="sum-val orange">
+                                Rp {{ number_format($totalRevenue/1000000000, 0, ',', '.') }} <small>Milyar</small>
+                            </span>
                         </div>
-                    @endforeach
+                        <div class="summary-item">
+                            <span class="sum-label">RKAP</span>
+                            <span class="sum-val dark">
+                                Rp {{ number_format($rkapRevenue/1000000000, 0, ',', '.') }} <small>Milyar</small>
+                            </span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="sum-label">Percentage</span>
+                            <span class="sum-val huge">
+                                {{ $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 0) : 0 }}%
+                            </span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="col-right bg-light border-left">
-                <p class="sidebar-title">Total</p>
-                <div class="stats-container">
-                    <div class="summary-item"><span class="sum-label">Real</span><span class="sum-val orange">Rp {{ number_format($totalRevenue/1000000000, 0, ',', '.') }}<small>Milyar</small></span></div>
-                    <div class="summary-item"><span class="sum-label">RKAP</span><span class="sum-val dark">Rp {{ number_format($rkapRevenue/1000000000, 0, ',', '.') }}<small>Milyar</small></span></div>
-                    <div class="summary-item"><span class="sum-label">Percentage</span><span class="sum-val huge">{{ $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 0) : 0 }}%</span></div>
-                </div>
+
             </div>
         </div>
+
     </div>
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
 <script>
     window.dashboardData = {
         priceDaily: @json($trendPriceDaily),
@@ -633,6 +683,21 @@
         monthLabels: @json($rekap4['labels']),
         chartColors: @json($chartColors), prodColors: @json($prodColors)
     };
+
+        function changeWarehouseTab(selectedId) {
+        // 1. Sembunyikan semua konten tab
+        const allTabs = document.querySelectorAll('.warehouse-tab-content');
+        allTabs.forEach(tab => {
+            tab.style.display = 'none';
+        });
+
+        // 2. Tampilkan tab yang dipilih
+        const activeTab = document.getElementById('warehouse-' + selectedId);
+        if (activeTab) {
+            activeTab.style.display = 'block';
+        }
+    };
+
 </script>
 <script src="{{ asset('js/dashboard-script.js') }}"></script>
 @endsection

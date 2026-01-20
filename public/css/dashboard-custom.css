@@ -157,6 +157,14 @@
 }
 
 .dashboard-container .metric-label {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-gray);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.dashboard-container .metric-label1 {
     font-size: 12px;
     font-weight: 500;
     color: var(--text-gray);
@@ -715,6 +723,12 @@
     flex-direction: column;
     gap: 20px;
 }
+.dashboard-container .stats-container2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
 
 .dashboard-container .summary-item {
     display: flex;
