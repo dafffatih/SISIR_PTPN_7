@@ -85,10 +85,15 @@ document.addEventListener("DOMContentLoaded", function () {
             enabled: true,
             formatter: function (val, opts) {
                 let value = opts.w.globals.series[opts.seriesIndex];
-                let valTon = value / 1000;
-                return new Intl.NumberFormat('id-ID').format(Math.round(valTon)) + " Ton";
+                let grandTotal = window.currentProductTotal || initialProductTotal;
+                let pct = grandTotal > 0 ? (value / grandTotal) * 100 : 0;
+                return Math.round(pct) + '%';
             },
-            style: { fontSize: '10px', fontFamily: commonFont, fontWeight: 'bold' },
+            style: {
+                fontSize: '11px',
+                fontFamily: commonFont,
+                fontWeight: 'bold'
+            },
             dropShadow: { enabled: false }
         },
         plotOptions: {
