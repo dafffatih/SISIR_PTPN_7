@@ -408,30 +408,37 @@
     <div class="card-std warehouse-card">
 
         {{-- HEADER --}}
-        <div class="warehouse-header">
-            <h3>Utilitas Gudang Produksi Di Unit</h3>
-            <select class="dashboard-select" id="warehouseSelector" onchange="changeWarehouseTab(this.value)">
-                @foreach($utilitasGudang as $key => $data)
-                    <option value="{{ Str::slug($key) }}">{{ $key }}</option>
-                @endforeach
+        <div class="warehouse-header" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h3 style="margin: 0; white-space: nowrap;">Utilitas Gudang Produksi Di</h3>
+            
+            {{-- DROPDOWN 1: KATEGORI (UNIT / IPMG) --}}
+            <select class="dashboard-select" id="warehouseGroup" onchange="updateWarehouseTypes()" style="width: auto; min-width: 80px;">
+                <option value="unit">Unit</option>
+                <option value="ipmg">IPMG</option>
+            </select>
+
+            {{-- DROPDOWN 2: TIPE MUTU (Isinya berubah via JS) --}}
+            <select class="dashboard-select" id="warehouseSelector" onchange="changeWarehouseTab(this.value)" style="width: auto;">
+                {{-- Options akan diisi oleh JavaScript --}}
             </select>
         </div>
 
-        {{-- CONTENT --}}
+        {{-- CONTENT (LOOPING PHP TETAP SAMA) --}}
         <div class="warehouse-box">
             
             @foreach($utilitasGudang as $key => $items)
-                <div id="warehouse-{{ Str::slug($key) }}" class="warehouse-tab-content" style="{{ $loop->first ? '' : 'display:none;' }}">
+                {{-- ID dibuat slug agar cocok dengan value dropdown (misal: SIR 20 -> sir-20) --}}
+                <div id="warehouse-{{ Str::slug($key) }}" class="warehouse-tab-content" style="display: none;">
                     
                     @forelse($items as $item)
                         <div class="warehouse-row">
                             <span class="label">{{ $item['name'] }}</span>
                             <div class="bar-wrapper">
-                                {{-- Bar Stock (Warna Oranye/Utama) --}}
+                                {{-- Bar Stock --}}
                                 <div class="bar stock" style="width: {{ $item['percent'] > 100 ? 100 : $item['percent'] }}%">
                                     {{ number_format($item['stock'], 0, ',', '.') }}
                                 </div>
-                                {{-- Bar Kapasitas (Background Abu/Penuh) --}}
+                                {{-- Bar Kapasitas --}}
                                 <div class="bar capacity">
                                     <span class="cap">{{ number_format($item['capacity'], 0, ',', '.') }}</span>
                                 </div>
@@ -445,26 +452,16 @@
                 </div>
             @endforeach
 
-            {{-- LEGEND / KETERANGAN WARNA (TETAP SAMA) --}}
+            {{-- LEGEND --}}
             <div class="warehouse-legend mt-3">
-                <div class="legend-item">
-                    <span class="legend-box stock"></span>
-                    <span>Stock</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-box capacity"></span>
-                    <span>Kapasitas</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-box percent"></span>
-                    <span>Persentase</span>
-                </div>
+                <div class="legend-item"><span class="legend-box stock"></span><span>Stock</span></div>
+                <div class="legend-item"><span class="legend-box capacity"></span><span>Kapasitas</span></div>
+                <div class="legend-item"><span class="legend-box percent"></span><span>Persentase</span></div>
             </div>
 
         </div>
     </div>
 </div>
-{{-- ===== END UTILITAS GUDANG ===== --}}
 
 
 
@@ -684,19 +681,65 @@
         chartColors: @json($chartColors), prodColors: @json($prodColors)
     };
 
-        function changeWarehouseTab(selectedId) {
-        // 1. Sembunyikan semua konten tab
+        const warehouseData = {
+        'unit': [
+            { id: 'sir-20',  label: 'SIR 20' },
+            { id: 'rss-1',   label: 'RSS 1' },   
+            { id: 'sir-3wl', label: 'SIR 3WF' } // Sesuaikan dengan key controller kamu
+        ],
+        'ipmg': [
+            { id: 'ipmg-sir', label: 'IPMG SIR' },
+            { id: 'ipmg-rss', label: 'IPMG RSS' }
+        ]
+    };
+
+    // 2. FUNGSI UPDATE DROPDOWN KEDUA
+    function updateWarehouseTypes() {
+        const groupSelect = document.getElementById('warehouseGroup');
+        const typeSelect = document.getElementById('warehouseSelector');
+        const selectedGroup = groupSelect.value;
+        
+        // Kosongkan dropdown kedua
+        typeSelect.innerHTML = '';
+
+        // Ambil data array berdasarkan grup yg dipilih
+        const options = warehouseData[selectedGroup];
+
+        // Loop untuk membuat <option> baru
+        if (options) {
+            options.forEach(opt => {
+                const newOption = document.createElement('option');
+                newOption.value = opt.id;
+                newOption.text = opt.label;
+                typeSelect.appendChild(newOption);
+            });
+        }
+
+        // Otomatis trigger perubahan tab untuk opsi pertama
+        if (typeSelect.options.length > 0) {
+            changeWarehouseTab(typeSelect.value);
+        }
+    }
+
+    // 3. FUNGSI GANTI TAMPILAN KONTEN (LOGIC SEBELUMNYA)
+    function changeWarehouseTab(selectedId) {
+        // Sembunyikan semua tab content
         const allTabs = document.querySelectorAll('.warehouse-tab-content');
         allTabs.forEach(tab => {
             tab.style.display = 'none';
         });
 
-        // 2. Tampilkan tab yang dipilih
+        // Tampilkan tab yang sesuai ID
         const activeTab = document.getElementById('warehouse-' + selectedId);
         if (activeTab) {
             activeTab.style.display = 'block';
         }
-    };
+    }
+
+    // 4. INISIALISASI SAAT HALAMAN DIMUAT
+    document.addEventListener('DOMContentLoaded', function() {
+        updateWarehouseTypes(); // Load default (Unit)
+    });
 
 </script>
 <script src="{{ asset('js/dashboard-script.js') }}"></script>
