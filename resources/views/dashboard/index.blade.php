@@ -261,81 +261,294 @@
             </div>
         </div>
 
-        {{-- BAGIAN 2 (KANAN) --}}
-        <div class="split-col">
-            {{-- Wrapper Top 5 (Side by Side on Wide Screen) --}}
-            <div class="top5-row">
-                {{-- Top 5 Buyers --}}
-                <div class="card-std card-half">
-                    <div class="card-header flex-between">
-                        <h3>Top 5 Buyers</h3>
-                        <select id="buyer-filter" class="dashboard-select">
-                            <option value="TOTAL" selected>TOTAL</option>
-                            <option value="SIR 20">SIR 20</option>
-                            <option value="RSS 1">RSS 1</option>
-                            <option value="SIR 3L">SIR 3L</option>
-                            <option value="SIR 3WF">SIR 3WF</option>
-                        </select>
-                    </div>
-                    <div class="donut-container">
-                        <div class="chart-side-wrapper">
-                            <div id="chart-buyer" class="chart-donut"></div>
-                            <div class="donut-center-label">
-                                <span class="lbl">Total Ton</span>
-                                <span class="num" id="buyer-center-total">{{ number_format($buyersTotalVol/1000, 0, ',', '.') }}</span>
-                            </div>
-                        </div>
-                        <div class="custom-legend" id="buyer-legend-container">
-                            @php $i=0; @endphp
-                            @foreach($initBuyers as $buyer => $vol)
-                                @if($buyer === 'TOTAL' || strtoupper(trim($buyer)) === 'LAINNYA') @continue @endif
-                                <div class="legend-item">
-                                    <span class="dot" style="background: {{ $chartColors[$i % count($chartColors)] }}"></span>
-                                    <span class="name" title="{{ $buyer }}">{{ $buyer }}</span>
-                                </div>
-                                @php $i++; @endphp
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
+        
 
-                {{-- Top 5 Products --}}
-                <div class="card-std card-half">
-                    <div class="card-header flex-between">
-                        <h3>Top 5 Products</h3>
-                        <select id="product-filter" class="dashboard-select">
-                            <option value="TOTAL" selected>TOTAL</option>
-                            <option value="SIR 20">SIR 20</option>
-                            <option value="RSS 1">RSS 1</option>
-                            <option value="SIR 3L">SIR 3L</option>
-                            <option value="SIR 3WF">SIR 3WF</option>
-                        </select>
-                    </div>
-                    <div class="donut-container">
-                        <div class="chart-side-wrapper">
-                            <div id="chart-product" class="chart-donut"></div>
-                            <div class="donut-center-label">
-                                <span class="lbl">Total Ton</span>
-                                <span class="num" id="product-center-total">{{ number_format($productsTotalVol/1000, 0, ',', '.') }}</span>
-                            </div>
-                        </div>
-                        <div class="custom-legend" id="product-legend-container">
-                            @php $i=0; @endphp
-                            @foreach($initProducts as $prod => $vol)
-                                @if($prod === 'TOTAL' || strtoupper(trim($prod)) === 'LAINNYA') @continue @endif
-                                <div class="legend-item">
-                                    <span class="dot" style="background: {{ $prodColors[$i % count($prodColors)] }}"></span>
-                                    <span class="name">{{ $prod }}</span>
-                                </div>
-                                @php $i++; @endphp
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            </div>
+{{-- ================== --}}
+{{-- BAGIAN 2 (KANAN) --}}
+{{-- ================== --}}
+<div class="split-col">
+
+{{-- ================== --}}
+{{-- TOP 5 ROW --}}
+{{-- ================== --}}
+<div class="top5-row">
+
+    {{-- ================== --}}
+    {{-- Top 5 Buyers --}}
+    {{-- ================== --}}
+    <div class="card-std card-half">
+        <div class="card-header flex-between">
+            <h3>Top 5 Buyers</h3>
+            <select id="buyer-filter" class="dashboard-select">
+                <option value="TOTAL" selected>TOTAL</option>
+                <option value="SIR 20">SIR 20</option>
+                <option value="RSS 1">RSS 1</option>
+                <option value="SIR 3L">SIR 3L</option>
+                <option value="SIR 3WF">SIR 3WF</option>
+            </select>
         </div>
 
+        <div class="donut-container">
+            <div class="chart-side-wrapper">
+                <div id="chart-buyer" class="chart-donut"></div>
+                <div class="donut-center-label">
+                    <span class="lbl">Total Ton</span>
+                    <span class="num" id="buyer-center-total">
+                        {{ number_format($buyersTotalVol/1000, 0, ',', '.') }}
+                    </span>
+                </div>
+            </div>
+
+            {{-- LEGEND BUYERS --}}
+            <div class="custom-legend" id="buyer-legend-container">
+                @php $i = 0; @endphp
+                @foreach($initBuyers as $buyer => $vol)
+                    @if($buyer === 'TOTAL' || strtoupper(trim($buyer)) === 'LAINNYA')
+                        @continue
+                    @endif
+                    <div class="legend-item">
+                        <span
+                            class="dot"
+                            style="background: {{ $chartColors[$i % count($chartColors)] }}"
+                        ></span>
+                        <span class="name" title="{{ $buyer }}">{{ $buyer }}</span>
+                    </div>
+                    @php $i++; @endphp
+                @endforeach
+            </div>
+        </div>
     </div>
+
+    {{-- ================== --}}
+    {{-- Top 5 Products --}}
+    {{-- ================== --}}
+    <div class="card-std card-half">
+        <div class="card-header flex-between">
+            <h3>Top 5 Products</h3>
+            <select id="product-filter" class="dashboard-select">
+                <option value="TOTAL" selected>TOTAL</option>
+                <option value="SIR 20">SIR 20</option>
+                <option value="RSS 1">RSS 1</option>
+                <option value="SIR 3L">SIR 3L</option>
+                <option value="SIR 3WF">SIR 3WF</option>
+            </select>
+        </div>
+
+        <div class="donut-container">
+            <div class="chart-side-wrapper">
+                <div id="chart-product" class="chart-donut"></div>
+                <div class="donut-center-label">
+                    <span class="lbl">Total Ton</span>
+                    <span class="num" id="product-center-total">
+                        {{ number_format($productsTotalVol/1000, 0, ',', '.') }}
+                    </span>
+                </div>
+            </div>
+
+            {{-- LEGEND PRODUCTS --}}
+            <div class="custom-legend" id="product-legend-container">
+                @php $i = 0; @endphp
+                @foreach($initProducts as $prod => $vol)
+                    @if($prod === 'TOTAL' || strtoupper(trim($prod)) === 'LAINNYA')
+                        @continue
+                    @endif
+                    <div class="legend-item">
+                        <span
+                            class="dot"
+                            style="background: {{ $prodColors[$i % count($prodColors)] }}"
+                        ></span>
+                        <span class="name">{{ $prod }}</span>
+                    </div>
+                    @php $i++; @endphp
+                @endforeach
+            </div>
+        </div>
+    </div>
+
+</div>
+{{-- ===== END TOP 5 ROW ===== --}}
+
+
+
+    {{-- ================== --}}
+{{-- UTILITAS GUDANG --}}
+{{-- ================== --}}
+<div class="warehouse-wrapper">
+    <div class="card-std warehouse-card">
+
+        {{-- HEADER --}}
+        <div class="warehouse-header">
+            <h3>UTILITAS GUDANG PRODUKSI DI UNIT</h3>
+            <select class="warehouse-select">
+                <option>SIR 20</option>
+                <option>RSS 1</option>
+                <option>SIR 3L</option>
+                <option>IPMG SIR</option>
+                <option>IPMG RSS</option>
+            </select>
+        </div>
+
+        {{-- CONTENT --}}
+        <div class="warehouse-box">
+            <h4>GUDANG SIR 20</h4>
+
+            {{-- ROW --}}
+            <div class="warehouse-row">
+                <span class="label">Pewa</span>
+                <div class="bar-wrapper">
+                    <div class="bar stock" style="width:73%">426</div>
+                    <div class="bar capacity">
+                        <span class="cap">585</span>
+                    </div>
+                </div>
+                <span class="percent">73%</span>
+            </div>
+
+            <div class="warehouse-row">
+                <span class="label">Tubu</span>
+                <div class="bar-wrapper">
+                    <div class="bar stock" style="width:56%">315</div>
+                    <div class="bar capacity">
+                        <span class="cap">567</span>
+                    </div>
+                </div>
+                <span class="percent">56%</span>
+            </div>
+
+            <div class="warehouse-row">
+                <span class="label">Tebe</span>
+                <div class="bar-wrapper">
+                    <div class="bar stock" style="width:18%">101</div>
+                    <div class="bar capacity">
+                        <span class="cap">550</span>
+                    </div>
+                </div>
+                <span class="percent">18%</span>
+            </div>
+
+            <div class="warehouse-row">
+                <span class="label">Baja</span>
+                <div class="bar-wrapper">
+                    <div class="bar stock" style="width:17%">59</div>
+                    <div class="bar capacity">
+                        <span class="cap">350</span>
+                    </div>
+                </div>
+                <span class="percent">17%</span>
+            </div>
+
+            <div class="warehouse-row">
+                <span class="label">Pawi</span>
+                <div class="bar-wrapper">
+                    <div class="bar stock" style="width:11%">33</div>
+                    <div class="bar capacity">
+                        <span class="cap">300</span>
+                    </div>
+                </div>
+                <span class="percent">11%</span>
+            </div>
+
+            {{-- LEGEND / KETERANGAN WARNA --}}
+            <div class="warehouse-legend">
+                <div class="legend-item">
+                    <span class="legend-box stock"></span>
+                    <span>Stock</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-box capacity"></span>
+                    <span>Kapasitas</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-box percent"></span>
+                    <span>Persentase</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{{-- ===== END UTILITAS GUDANG ===== --}}
+
+
+
+{{-- ================== --}}
+{{-- HARGA RATA-RATA --}}
+{{-- ================== --}}
+<div class="card-std avg-price-card">
+
+    <div class="card-header">
+        <h3>Harga Rata-Rata</h3>
+    </div>
+
+    <div class="avg-table-box">
+        <table class="avg-table">
+            <thead>
+                <tr>
+                    <th>Uraian</th>
+                    <th>SIR 20</th>
+                    <th>RSS</th>
+                    <th>SIR 3L</th>
+                    <th>SIR 3WF</th>
+                    <th>Rata-Rata</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1. Penyerahan</td>
+                    <td>28.853</td>
+                    <td>30.855</td>
+                    <td>31.910</td>
+                    <td>28.000</td>
+                    <td>29.203</td>
+                </tr>
+
+                <tr class="section-row">
+                    <td colspan="6">Outstanding Contract</td>
+                </tr>
+
+                <tr>
+                    <td class="indent">Sudah Bayar</td>
+                    <td>30.004</td>
+                    <td>33.202</td>
+                    <td>32.578</td>
+                    <td>-</td>
+                    <td>30.939</td>
+                </tr>
+
+                <tr>
+                    <td class="indent">Belum Bayar</td>
+                    <td>29.670</td>
+                    <td>33.489</td>
+                    <td>34.346</td>
+                    <td>28.000</td>
+                    <td>31.343</td>
+                </tr>
+
+                <tr class="avg-row">
+                    <td>Rata-Rata</td>
+                    <td>29.746</td>
+                    <td>33.448</td>
+                    <td>34.032</td>
+                    <td>28.000</td>
+                    <td>31.264</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+
+</div>
+{{-- ========== END SPLIT-COL KANAN ========== --}}
+
+
+
+    </div>
+
+    
+
+    
 
     {{-- 3. MONTHLY CHARTS (BAWAH) --}}
     <div class="card-std p-0 full-row-card">
