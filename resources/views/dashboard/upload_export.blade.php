@@ -81,7 +81,7 @@ body{ background:var(--bg); }
   color:var(--text-muted);
 }
 
-/* BODY GRID (HORIZONTAL) */
+/* BODY GRID */
 .ue-card-body{
   padding:22px 24px 26px;
 }
@@ -181,10 +181,6 @@ body{ background:var(--bg); }
   color:#fff;
   box-shadow:0 12px 26px rgba(245,158,11,.4);
 }
-
-.ue-btn:hover{
-  transform:translateY(-1px);
-}
 </style>
 
 <div class="ue-wrap">
@@ -207,8 +203,20 @@ body{ background:var(--bg); }
     </div>
 
     <div class="ue-card-body">
+
+      {{-- TAMPILKAN ERROR VALIDASI --}}
+      @if ($errors->any())
+        <div style="color:red; margin-bottom:15px;">
+          {{ $errors->first() }}
+        </div>
+      @endif
+
       <form method="POST" action="{{ route('upload.export.kontrak.detail') }}">
         @csrf
+
+        {{-- WAJIB ADA --}}
+        <input type="hidden" name="data_source" value="sheets">
+        <input type="hidden" name="format" id="exportFormat" value="excel">
 
         <div class="ue-form-grid">
 
@@ -219,7 +227,6 @@ body{ background:var(--bg); }
               <button type="button" class="ue-tab active" data-format="excel">Excel</button>
               <button type="button" class="ue-tab" data-format="csv">CSV</button>
             </div>
-            <input type="hidden" name="format" id="exportFormat" value="excel">
           </div>
 
           {{-- DATE --}}
@@ -256,6 +263,7 @@ body{ background:var(--bg); }
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
+  // FORMAT SWITCH
   document.querySelectorAll('.ue-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.ue-tab').forEach(x => x.classList.remove('active'));
@@ -264,8 +272,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  flatpickr("#startDate",{ dateFormat:"m/d/Y", defaultDate:"01/01/2025" });
-  flatpickr("#endDate",{ dateFormat:"m/d/Y", defaultDate:"01/31/2025" });
+  // DATE PICKER (FORMAT SESUAI VALIDASI CONTROLLER)
+  flatpickr("#startDate",{
+    dateFormat:"Y-m-d",
+    defaultDate:"2025-01-01"
+  });
+
+  flatpickr("#endDate",{
+    dateFormat:"Y-m-d",
+    defaultDate:"2025-01-31"
+  });
 
 });
 </script>
