@@ -41,11 +41,20 @@
             <h1>Dashboard Overview</h1>
             <p>PTPN 1 Regional 7 - Sales and Inventories</p>
             <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
-                {{ $sharedCurrentYear ?? date('Y') }}
+                01/01/{{ $sharedCurrentYear ?? date('Y') }}
             </span>
             -
             <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
-                {{ \Carbon\Carbon::now()->subDay()->format('d/m/Y') }}
+                @php
+                    use Carbon\Carbon;
+                    $currentYear = Carbon::now()->year;
+                    if (($sharedCurrentYear ?? $currentYear) == $currentYear) {
+                        $displayDate = Carbon::now()->subDay();
+                    } else {
+                        $displayDate = Carbon::create($sharedCurrentYear, 12, 31);
+                    }
+                @endphp
+                {{ $displayDate->format('d/m/Y') }}
             </span>
         </div>
     </div>
@@ -62,9 +71,9 @@
                         <span class="metric-label" style="margin-bottom: 0;">Total Volume</span>
                         
                         {{-- Tanggal H-1 --}}
-                        <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
+                        <!-- <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
                             {{ \Carbon\Carbon::now()->subDay()->format('d/m/Y') }}
-                        </span>
+                        </span> -->
                     </div>
 
                     {{-- 2. NILAI UTAMA --}}
@@ -106,9 +115,9 @@
                         <span class="metric-label" style="margin-bottom: 0;">Total Revenue</span>
                         
                         {{-- Tanggal H-1 --}}
-                        <span class="badge-date" style="padding: 2px 6px; border-radius: 4px; background-color: #eee;">
+                        <!-- <span class="badge-date" style="padding: 2px 6px; border-radius: 4px; background-color: #eee;">
                             {{ \Carbon\Carbon::now()->subDay()->format('d/m/Y') }}
-                        </span>
+                        </span> -->
                     </div>
 
                     {{-- 2. NILAI UTAMA --}}
