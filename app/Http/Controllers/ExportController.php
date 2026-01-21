@@ -7,7 +7,6 @@ use Illuminate\Support\Collection;
 use Carbon\Carbon;
 use App\Services\GoogleSheetService;
 
-// PhpSpreadsheet
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -20,9 +19,10 @@ class ExportController extends Controller
     {
         $request->validate([
             'format' => 'required|in:csv,excel',
+            'year'   => 'required', // angka atau "all"
         ]);
 
-        $data = $this->fetchFromGoogleSheets();
+        $data = $this->fetchFromGoogleSheets($request->year);
 
         return $request->format === 'csv'
             ? $this->exportToCsv($data)
@@ -30,57 +30,140 @@ class ExportController extends Controller
     }
 
     /* =====================================================
-     * AMBIL DATA LANGSUNG DARI SPREADSHEET (INDEX BASED)
+     * PARSE TANGGAL (UNTUK FILTER TAHUN SAJA)
      * ===================================================== */
-    private function fetchFromGoogleSheets(): Collection
+    private function parseTanggal($value): ?Carbon
+    {
+        if (!$value) return null;
+
+        $value = trim($value);
+
+        $formats = [
+            'd/m/y', 'd/m/Y',
+            'd-M-Y', 'd-M-y',
+            'd-m-Y',
+        ];
+
+        foreach ($formats as $format) {
+            try {
+                return Carbon::createFromFormat($format, $value);
+            } catch (\Exception $e) {}
+        }
+
+        return null;
+    }
+
+    /* =====================================================
+     * BERSIHKAN TANGGAL DUMMY & #N/A
+     * ===================================================== */
+    private function cleanTanggal($value): string
+    {
+        if (!$value) return '';
+
+        $value = trim($value);
+
+        if ($value === '30/12/99' || $value === '#N/A') {
+            return '';
+        }
+
+        return $value;
+    }
+
+    /* =====================================================
+     * NORMALISASI ANGKA (FORMAT INDONESIA)
+     * ===================================================== */
+    private function num($value)
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        $value = trim($value);
+        $value = str_replace('.', '', $value);
+        $value = str_replace(',', '.', $value);
+
+        return is_numeric($value) ? (float)$value : null;
+    }
+
+    /* =====================================================
+     * AMBIL DATA RAW + FILTER TAHUN
+     * ===================================================== */
+    private function fetchFromGoogleSheets($year): Collection
     {
         $service = new GoogleSheetService();
 
-        // Ambil semua data (TANPA HEADER)
-        $rows = $service->getData(null, 'SC Sudah Bayar', 'A4:AW');
+        // RANGE DIPERPANJANG (SAMPAI BC)
+        $rows = $service->getData(null, 'SC Sudah Bayar', 'A4:CA');
 
         $data = [];
 
         foreach ($rows as $row) {
-            if (empty(array_filter($row))) continue;
 
+            if (empty(array_filter($row))) {
+                continue;
+            }
+
+            /* ================= FILTER TAHUN ================= */
+            $tanggalKontrak = $this->parseTanggal($row[10] ?? null);
+
+            if ($year !== 'all') {
+                if (!$tanggalKontrak || $tanggalKontrak->year !== (int)$year) {
+                    continue;
+                }
+            }
+
+            /* ================= DATA ================= */
             $data[] = [
-                // ================= KONTRAK =================
-                'lo_ex'            => $row[7]  ?? '',
-                'nomor_kontrak'    => $row[1]  ?? '',
-                'nama_pembeli'     => $row[9]  ?? '',
-                'tanggal_kontrak'  => $row[10] ?? '',
-                'volume'           => $row[11] ?? '',
-                'harga'            => $row[12] ?? '',
-                'nilai'            => $row[13] ?? '',
-                'inc_ppn'          => $row[14] ?? '',
-                'tanggal_bayar'    => $row[15] ?? '',
-                'unit'             => $row[16] ?? '',
-                'mutu'             => $row[17] ?? '',
-                'kontrak_sap'      => $row[18] ?? '',
-                'sisa_awal'        => $row[21] ?? '',
 
-                // ================= PENGIRIMAN =================
-                'nomor_do_si'      => $row[24] ?? '',
-                'tanggal_do_si'    => $row[19] ?? '',
-                'port'             => $row[20] ?? '',
-                'kode_do'          => $row[29] ?? '',
-                'total_dilayani'   => $row[22] ?? '',
-                'sisa_akhir'       => $row[23] ?? '',
-                'jatuh_tempo'      => '',
+                // KONTRAK
+                'lo_ex'           => $row[7]  ?? '',
+                'nomor_kontrak'   => $row[1]  ?? '',
+                'nama_pembeli'    => $row[9]  ?? '',
+                'tanggal_kontrak' => $row[10] ?? '',
 
-                // ================= PENYERAHAN =================
-                'p1_tgl' => $row[38] ?? '',
-                'p1_kg'  => $row[39] ?? '',
-                'p2_tgl' => $row[40] ?? '',
-                'p2_kg'  => $row[41] ?? '',
-                'p3_tgl' => $row[42] ?? '',
-                'p3_kg'  => $row[43] ?? '',
-                'p4_tgl' => $row[44] ?? '',
-                'p4_kg'  => $row[45] ?? '',
-                'p5_tgl' => $row[46] ?? '',
-                'p5_kg'  => $row[47] ?? '',
-                'total_penyerahan' => $row[48] ?? '',
+                // ANGKA (DINORMALISASI)
+                'volume'          => $this->num($row[11] ?? null),
+                'harga'           => $this->num($row[12] ?? null),
+                'nilai'           => $this->num($row[13] ?? null),
+                'inc_ppn'         => $this->num($row[14] ?? null),
+
+                'tanggal_bayar'   => $row[15] ?? '',
+                'unit'            => $row[16] ?? '',
+                'mutu'            => $row[17] ?? '',
+                'kontrak_sap'     => $row[18] ?? '',
+
+                // HASIL RUMUS → BIARKAN KOSONG JIKA KOSONG
+                'sisa_awal'       => '',
+
+                // PENGIRIMAN
+                'nomor_do_si'     => $row[24] ?? '',
+                'tanggal_do_si'   => $row[19] ?? '',
+                'port'            => $row[20] ?? '',
+                'kode_do'         => $row[29] ?? '',
+                'total_dilayani'  => '',
+                'sisa_akhir'      => '',
+
+                // BC = INDEX 54
+                'jatuh_tempo'     => $this->cleanTanggal($row[54] ?? ''),
+
+                // PENYERAHAN
+                'p1_tgl' => $this->cleanTanggal($row[38] ?? ''),
+                'p1_kg'  => $this->num($row[39] ?? null),
+
+                'p2_tgl' => $this->cleanTanggal($row[40] ?? ''),
+                'p2_kg'  => $this->num($row[41] ?? null),
+
+                'p3_tgl' => $this->cleanTanggal($row[42] ?? ''),
+                'p3_kg'  => $this->num($row[43] ?? null),
+
+                'p4_tgl' => $this->cleanTanggal($row[44] ?? ''),
+                'p4_kg'  => $this->num($row[45] ?? null),
+
+                'p5_tgl' => $this->cleanTanggal($row[46] ?? ''),
+                'p5_kg'  => $this->num($row[47] ?? null),
+
+                // AY = INDEX 50
+                'total_penyerahan' => $this->num($row[50] ?? null),
             ];
         }
 
@@ -98,10 +181,8 @@ class ExportController extends Controller
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
 
-            // HEADER
             fputcsv($out, $this->headers());
 
-            // DATA
             foreach ($data as $item) {
                 fputcsv($out, $this->mapRow($item));
             }
@@ -118,12 +199,11 @@ class ExportController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // HEADER
         foreach ($this->headers() as $i => $h) {
             $sheet->setCellValueByColumnAndRow($i + 1, 1, $h);
+            $sheet->getColumnDimensionByColumn($i + 1)->setAutoSize(true);
         }
 
-        // DATA
         $rowNum = 2;
         foreach ($data as $item) {
             foreach ($this->mapRow($item) as $c => $val) {
@@ -133,6 +213,7 @@ class ExportController extends Controller
         }
 
         $writer = new Xlsx($spreadsheet);
+
         return response()->streamDownload(
             fn () => $writer->save('php://output'),
             'Kontrak_Export_' . now()->format('Ymd_His') . '.xlsx'
@@ -140,7 +221,7 @@ class ExportController extends Controller
     }
 
     /* =====================================================
-     * HEADER EXPORT (SESUAI UI)
+     * HEADER EXPORT
      * ===================================================== */
     private function headers(): array
     {
@@ -160,7 +241,7 @@ class ExportController extends Controller
     }
 
     /* =====================================================
-     * MAP DATA → SATU BARIS EXPORT
+     * MAP ROW
      * ===================================================== */
     private function mapRow(array $i): array
     {
@@ -192,5 +273,5 @@ class ExportController extends Controller
             $i['p5_tgl'], $i['p5_kg'],
             $i['total_penyerahan'],
         ];
-    }
+    }   
 }

@@ -5,8 +5,6 @@
 
 @section('content')
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
 <style>
 :root{
   --primary:#0f766e;
@@ -20,11 +18,7 @@
 
 body{ background:var(--bg); }
 
-/* WRAP */
-.ue-wrap{
-  max-width:1400px;
-  margin:0 auto;
-}
+.ue-wrap{ max-width:1400px; margin:0 auto; }
 
 .ue-title{
   font-size:26px;
@@ -38,7 +32,6 @@ body{ background:var(--bg); }
   margin-bottom:22px;
 }
 
-/* CARD */
 .ue-card{
   background:#fff;
   border-radius:18px;
@@ -46,7 +39,6 @@ body{ background:var(--bg); }
   box-shadow:0 14px 40px rgba(15,23,42,.06);
 }
 
-/* HEADER */
 .ue-card-head{
   display:flex;
   align-items:center;
@@ -81,7 +73,6 @@ body{ background:var(--bg); }
   color:var(--text-muted);
 }
 
-/* BODY GRID */
 .ue-card-body{
   padding:22px 24px 26px;
 }
@@ -94,12 +85,9 @@ body{ background:var(--bg); }
 }
 
 @media (max-width:1100px){
-  .ue-form-grid{
-    grid-template-columns:1fr;
-  }
+  .ue-form-grid{ grid-template-columns:1fr; }
 }
 
-/* FORM */
 .ue-label{
   font-size:12px;
   font-weight:800;
@@ -122,7 +110,6 @@ body{ background:var(--bg); }
   box-shadow:0 0 0 3px rgba(15,118,110,.15);
 }
 
-/* TABS */
 .ue-tabs{
   display:flex;
   gap:10px;
@@ -145,26 +132,6 @@ body{ background:var(--bg); }
   border-color:var(--primary);
 }
 
-/* DATE */
-.ue-date-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px;
-}
-
-.ue-date-wrap{
-  position:relative;
-}
-
-.ue-date-icon{
-  position:absolute;
-  right:14px;
-  top:50%;
-  transform:translateY(-50%);
-  color:#94a3b8;
-}
-
-/* BUTTON */
 .ue-btn{
   width:100%;
   height:46px;
@@ -197,14 +164,13 @@ body{ background:var(--bg); }
       <div>
         <p class="ue-head-title">Export Data</p>
         <div class="ue-head-desc">
-          Export detail kontrak penjualan berdasarkan rentang tanggal
+          Export detail kontrak penjualan berdasarkan tahun
         </div>
       </div>
     </div>
 
     <div class="ue-card-body">
 
-      {{-- TAMPILKAN ERROR VALIDASI --}}
       @if ($errors->any())
         <div style="color:red; margin-bottom:15px;">
           {{ $errors->first() }}
@@ -214,8 +180,6 @@ body{ background:var(--bg); }
       <form method="POST" action="{{ route('upload.export.kontrak.detail') }}">
         @csrf
 
-        {{-- WAJIB ADA --}}
-        <input type="hidden" name="data_source" value="sheets">
         <input type="hidden" name="format" id="exportFormat" value="excel">
 
         <div class="ue-form-grid">
@@ -229,19 +193,21 @@ body{ background:var(--bg); }
             </div>
           </div>
 
-          {{-- DATE --}}
+          {{-- YEAR --}}
           <div>
-            <div class="ue-label">Rentang Tanggal</div>
-            <div class="ue-date-grid">
-              <div class="ue-date-wrap">
-                <input id="startDate" name="start_date" class="ue-input" required>
-                <i class="fas fa-calendar-alt ue-date-icon"></i>
-              </div>
-              <div class="ue-date-wrap">
-                <input id="endDate" name="end_date" class="ue-input" required>
-                <i class="fas fa-calendar-alt ue-date-icon"></i>
-              </div>
-            </div>
+            <div class="ue-label">Tahun</div>
+            <select name="year" class="ue-input" required>
+              <option value="all">Semua Tahun</option>
+
+              @php
+                $currentYear = now()->year;
+              @endphp
+
+              @for ($y = $currentYear; $y >= 2020; $y--)
+                <option value="{{ $y }}">{{ $y }}</option>
+              @endfor
+          </select>
+
           </div>
 
           {{-- ACTION --}}
@@ -259,11 +225,8 @@ body{ background:var(--bg); }
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
-  // FORMAT SWITCH
   document.querySelectorAll('.ue-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.ue-tab').forEach(x => x.classList.remove('active'));
@@ -271,18 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('exportFormat').value = btn.dataset.format;
     });
   });
-
-  // DATE PICKER (FORMAT SESUAI VALIDASI CONTROLLER)
-  flatpickr("#startDate",{
-    dateFormat:"Y-m-d",
-    defaultDate:"2025-01-01"
-  });
-
-  flatpickr("#endDate",{
-    dateFormat:"Y-m-d",
-    defaultDate:"2025-01-31"
-  });
-
 });
 </script>
 
