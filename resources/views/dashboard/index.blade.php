@@ -66,28 +66,35 @@
                 </span>
             </div>
 
-            {{-- 2. BAGIAN DROPDOWN BULAN (Style mengikuti .dashboard-select) --}}
-            <div>
-                {{-- Ubah ID menjadi unik: month-start --}}
-                <select id="month-start" class="dashboard-select" style="min-width: 100px;">
-                    <option value="" disabled>Pilih Bulan</option>
+            {{-- 2. BAGIAN DROPDOWN BULAN (Form Filter) --}}
+            <form action="{{ url()->current() }}" method="GET" id="filterForm" style="display: inline-block;">
+                {{-- Simpan parameter tahun agar tidak hilang saat ganti bulan --}}
+                @if(request('year'))
+                    <input type="hidden" name="year" value="{{ request('year') }}">
+                @endif
+
+                {{-- Dropdown Awal (Start Month) --}}
+                <select name="start_month" id="month-start" class="dashboard-select" style="min-width: 100px;" onchange="document.getElementById('filterForm').submit()">
+                    <option value="all" {{ request('start_month', 'all') == 'all' ? 'selected' : '' }}>Seluruhnya</option>
                     @foreach(range(1,12) as $m)
-                        <option value="{{ $m }}" {{ $m == 1 ? 'selected' : '' }}>
+                        <option value="{{ $m }}" {{ request('start_month') == $m ? 'selected' : '' }}>
                             {{ DateTime::createFromFormat('!m', $m)->format('F') }}
                         </option>
                     @endforeach
                 </select>
-                -
-                {{-- Ubah ID menjadi unik: month-end --}}
-                <select id="month-end" class="dashboard-select" style="min-width: 100px;">
-                    <option value="" disabled>Pilih Bulan</option>
+                
+                <span>-</span>
+                
+                {{-- Dropdown Akhir (End Month) --}}
+                <select name="end_month" id="month-end" class="dashboard-select" style="min-width: 100px;" onchange="document.getElementById('filterForm').submit()">
+                    <option value="all" {{ request('end_month', 'all') == 'all' ? 'selected' : '' }}>Seluruhnya</option>
                     @foreach(range(1,12) as $m)
-                        <option value="{{ $m }}" {{ $m == 12 ? 'selected' : '' }}>
+                        <option value="{{ $m }}" {{ request('end_month') == $m ? 'selected' : '' }}>
                             {{ DateTime::createFromFormat('!m', $m)->format('F') }}
                         </option>
                     @endforeach
                 </select>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -102,28 +109,26 @@
                     </div>
 
                     <div class="metric-value-group">
-                        {{-- BERIKAN ID: metric-vol-real --}}
-                        {{-- Kita hapus blade logic statis disini, biarkan JS yang isi, atau beri default 0 --}}
-                        <span class="metric-number" id="metric-vol-real">0</span>
+                        {{-- FIX: Tampilkan langsung dari PHP --}}
+                        <span class="metric-number" id="metric-vol-real">{{ number_format($totalVolume, 0, ',', '.') }}</span>
                         <span class="metric-unit">Ton</span>
                     </div>
 
                     <div class="metric-progress">
-                        {{-- BERIKAN ID: metric-vol-progress --}}
-                        Progress: <span class="progress-val" id="metric-vol-progress">0%</span>
+                        @php $volPct = $rkapVolume > 0 ? round(($totalVolume / $rkapVolume) * 100, 1) : 0; @endphp
+                        Progress: <span class="progress-val" id="metric-vol-progress">{{ $volPct }}%</span>
                     </div>
                 </div>
                 <div class="metric-right">
                     <div class="rkap-info">
                         <span class="metric-label1">Total Volume RKAP</span>
                         <div class="metric-value-group right-align">
-                            {{-- BERIKAN ID: metric-vol-rkap --}}
-                            <span class="metric-number-small" id="metric-vol-rkap">0</span>
+                            {{-- FIX: Tampilkan langsung dari PHP --}}
+                            <span class="metric-number-small" id="metric-vol-rkap">{{ number_format($rkapVolume, 0, ',', '.') }}</span>
                             <span class="metric-unit-small">Ton</span>
                         </div>
                     </div>
                     <div class="icon-box bg-dark">
-                        {{-- SVG Icon --}}
                         <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     </div>
                 </div>
@@ -139,27 +144,26 @@
                     </div>
 
                     <div class="metric-value-group">
-                        {{-- BERIKAN ID: metric-rev-real --}}
-                        <span class="metric-number" id="metric-rev-real">0</span>
+                        {{-- FIX: Tampilkan langsung dari PHP (Dalam Milyar) --}}
+                        <span class="metric-number" id="metric-rev-real">{{ number_format($totalRevenue / 1000000000, 2, ',', '.') }}</span>
                         <span class="metric-unit">Milyar</span>
                     </div>
 
                     <div class="metric-progress">
-                        {{-- BERIKAN ID: metric-rev-progress --}}
-                        Progress: <span class="progress-val" id="metric-rev-progress">0%</span>
+                        @php $revPct = $rkapRevenue > 0 ? round(($totalRevenue / $rkapRevenue) * 100, 1) : 0; @endphp
+                        Progress: <span class="progress-val" id="metric-rev-progress">{{ $revPct }}%</span>
                     </div>
                 </div>
                 <div class="metric-right">
                     <div class="rkap-info">
                         <span class="metric-label1">Total Revenue RKAP</span>
                         <div class="metric-value-group right-align">
-                            {{-- BERIKAN ID: metric-rev-rkap --}}
-                            <span class="metric-number-small" id="metric-rev-rkap">0</span>
+                            {{-- FIX: Tampilkan langsung dari PHP --}}
+                            <span class="metric-number-small" id="metric-rev-rkap">{{ number_format($rkapRevenue / 1000000000, 2, ',', '.') }}</span>
                             <span class="metric-unit-small">Milyar</span>
                         </div>
                     </div>
                     <div class="icon-box bg-orange">
-                        {{-- SVG Icon --}}
                         <svg width="24" height="24" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                 </div>

@@ -3,30 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Services\GoogleSheetService;
-use App\Models\Kontrak;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     public function setYear($year)
-{
-    // Validate year format (4 digits)
-    if (preg_match('/^\d{4}$/', $year)) {
-        session(['selected_year' => $year]);
-        return back()->with('success', "Data switched to Year $year");
-    }
-    
-    // Reset to Default
-    if ($year === 'default') {
-        session()->forget('selected_year');
-        return back()->with('success', "Data switched to Default");
+    {
+        // Validate year format (4 digits)
+        if (preg_match('/^\d{4}$/', $year)) {
+            session(['selected_year' => $year]);
+            return back()->with('success', "Data switched to Year $year");
+        }
+        
+        // Reset to Default
+        if ($year === 'default') {
+            session()->forget('selected_year');
+            return back()->with('success', "Data switched to Default");
+        }
+
+        return back()->with('error', 'Invalid Year');
     }
 
-    return back()->with('error', 'Invalid Year');
-}
-
-    public function dashboard(GoogleSheetService $sheetService)
+    public function dashboard(Request $request, GoogleSheetService $sheetService)
     {
         // 1. Ambil Data Batch
         $ranges = [
@@ -44,11 +43,16 @@ class DashboardController extends Controller
             // --- DATA RINCIAN MUTU (TETAP) ---
             "Rekap4!B23:B27", "Rekap4!E23:E27", "Rekap4!E48:E52",
 
-            // --- DATA LAST TENDER PRICE (BARU) ---
-            // T2: Tgl SIR20, U2: Harga SIR20
-            // V2: Tgl RSS,   W2: Harga RSS
-            // X2: Tgl SIR3L, Y2: Harga SIR3L
+            // --- DATA LAST TENDER PRICE ---
             "Katalog!T2:Y2", 
+
+            // --- DATA UTAMA: SC SUDAH BAYAR (DIPERPANJANG KE 6000 AGAR AMAN) ---
+            "SC Sudah Bayar!K4:K6000",   // Tanggal Kontrak (Untuk Filter Bulan)
+            "SC Sudah Bayar!N4:N6000",   // Nilai (Revenue)
+            "SC Sudah Bayar!AD4:AD6000", // Pembeli
+            "SC Sudah Bayar!Q4:Q6000",   // Produk
+            "SC Sudah Bayar!AA4:AA6000", // Volume
+            "SC Sudah Bayar!R4:R6000",   // Mutu
 
             // --- DATA LAINNYA ---
             "Katalog!B4:B23", "Katalog!C4:C23", "Katalog!L4:L15", "Katalog!M4:M15",
@@ -57,31 +61,14 @@ class DashboardController extends Controller
             "Rekap3!I20:I20", "Rekap3!I48:I48", "Rekap3!D72:E72",
             "Rekap3!I21:I21", "Rekap3!I49:I49", "Rekap3!D73:E73",
             "Rekap3!I27:I27",
-
-            // --- DATA TOP BUYER DAN TOP PRODUCT ---
-            "SC Sudah Bayar!AD4:AD5359", // data pembeli
-            "SC Sudah Bayar!Q4:Q5359", // data unit
-            "SC Sudah Bayar!AA4:AA5359", // data volume
-            "SC Sudah Bayar!R4:R5359", // data mutu
-
-            // SIR 20
             "Rekap3!K29:K33", "Rekap3!L29:L33", "Rekap3!M29:M33", "Rekap3!N29:N33",
-            // RSS
             "Rekap3!K35:K39", "Rekap3!O35:O39", "Rekap3!P35:P39", "Rekap3!Q35:Q39",
-            // SIR 3WL (Single Row)
             "Rekap3!K36:K36", "Rekap3!R36:R36", "Rekap3!S36:S36", "Rekap3!T36:T36",
-            // IPMG - SIR
             "Rekap3!K44:K46", "Rekap3!Q44:Q46", "Rekap3!R44:R46", "Rekap3!S44:S46",
-            // IPMG - RSS (Label pakai K44:K46 sama dgn IPMG SIR)
             "Rekap3!T44:T46", "Rekap3!U44:U46", "Rekap3!V44:V46",
-
-            "Rekap1!E36:I36", // 1. Penyerahan (SIR20, RSS, 3L, 3WF, Rata2)
-            "Rekap1!E38:I38", // 2. Sudah Bayar (Mengambil baris 38 full: E s/d I)
-            "Rekap1!E39:I39", // 3. Belum Bayar
-            "Rekap1!E40:I40",
+            "Rekap1!E36:I36", "Rekap1!E38:I38", "Rekap1!E39:I39", "Rekap1!E40:I40",
         ];
 
-        // ... (Kode fetch data sama seperti sebelumnya) ...
         $rawBatch = [];
         $useDbFallback = false;
         try {
@@ -94,34 +81,20 @@ class DashboardController extends Controller
 
         $cleanNum = fn($v) => (float) str_replace(['.', ',', '-'], ['', '.', '0'], $v[0] ?? '0');
 
-        // --- PENGOLAHAN DATA LAST TENDER PRICE (BARU) ---
-        // Mengambil baris pertama dari range Katalog!T2:Y2
+        // --- PENGOLAHAN LAST TENDER PRICE ---
         $cleanTenderPrice = function($val) {
-            // 1. Hapus 'Rp', ' ' (spasi), dan '.' (titik ribuan)
             $cleaned = str_replace(['Rp', ' ', '.'], '', $val);
-            // 2. Ganti ',' (koma) jadi '.' (titik desimal) untuk float PHP
             $cleaned = str_replace(',', '.', $cleaned);
             return (float) $cleaned;
         };
         $tenderRow = $rawBatch["Katalog!T2:Y2"][0] ?? [];
-        
         $lastTender = [
-            'sir20' => [
-                'date'  => $tenderRow[0] ?? '-', 
-                'price' => isset($tenderRow[1]) ? $cleanTenderPrice($tenderRow[1]) : 0
-            ],
-            'rss' => [
-                'date'  => $tenderRow[2] ?? '-', 
-                'price' => isset($tenderRow[3]) ? $cleanTenderPrice($tenderRow[3]) : 0
-            ],
-            'sir3l' => [
-                'date'  => $tenderRow[4] ?? '-', 
-                'price' => isset($tenderRow[5]) ? $cleanTenderPrice($tenderRow[5]) : 0
-            ],
+            'sir20' => ['date' => $tenderRow[0] ?? '-', 'price' => isset($tenderRow[1]) ? $cleanTenderPrice($tenderRow[1]) : 0],
+            'rss'   => ['date' => $tenderRow[2] ?? '-', 'price' => isset($tenderRow[3]) ? $cleanTenderPrice($tenderRow[3]) : 0],
+            'sir3l' => ['date' => $tenderRow[4] ?? '-', 'price' => isset($tenderRow[5]) ? $cleanTenderPrice($tenderRow[5]) : 0],
         ];
 
-        // --- LOGIC BAWAAN (TIDAK DIUBAH) ---
-        // 2. Olah Data Rekap 4
+        // --- DATA REKAP 4 (Chart Bulanan) ---
         $rekap4 = [
             'labels'       => array_column($rawBatch["Rekap4!F77:F88"] ?? [], 0) ?: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             'volume_real'  => array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!Z77:Z88"] ?? []),
@@ -129,325 +102,164 @@ class DashboardController extends Controller
             'revenue_real' => array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!Z94:Z105"] ?? []),
             'revenue_rkap' => array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!K190:K201"] ?? []),
         ];
-        if (empty($rekap4['volume_real'])) {
-            $rekap4['volume_real'] = array_fill(0, 12, 0);
-            $rekap4['volume_rkap'] = array_fill(0, 12, 0);
-        }
+
         $rawLabels = array_column($rawBatch["Rekap4!B23:B27"] ?? [], 0);
-        // Cek apakah label dari sheet benar-benar ada isinya (bukan array kosong atau null semua)
         $hasLabels = !empty($rawLabels) && count(array_filter($rawLabels)) > 0;
-
         $mutu = [
-            'label'   => $hasLabels 
-                        ? array_values($rawLabels) 
-                        : ['SIR 20', 'RSS 1', 'SIR 3L', 'SIR 3WF', 'TOTAL'],
-            
-            'volume'  => (!empty($rawBatch["Rekap4!E23:E27"])) 
-                        ? array_values(array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!E23:E27"])) 
-                        : [0, 0, 0, 0, 0],
-            
-            'revenue' => (!empty($rawBatch["Rekap4!E48:E52"])) 
-                        ? array_values(array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!E48:E52"])) 
-                        : [0, 0, 0, 0, 0],
-        ];
-        $totalVolume = $cleanNum($rawBatch["Rekap4!E27:E27"][0] ?? [0]); 
-        $rkapVolume  = $cleanNum($rawBatch["Rekap4!H27:H27"][0] ?? [0]);
-        
-        $revRealSum = 0; foreach(($rawBatch["Rekap4!E48:E51"] ?? []) as $r) $revRealSum += $cleanNum($r);
-        $totalRevenue = $revRealSum * 1000000000;
-        
-        $revRkapSum = 0; foreach(($rawBatch["Rekap4!H48:H51"] ?? []) as $r) $revRkapSum += $cleanNum($r);
-        $rkapRevenue = $revRkapSum * 1000000000;
-
-        // HITUNG TOP BUYER
-        // =======================
-        // MASTER DATA (PATEN)
-        // =======================
-
-        $buyersList = [
-            "AIC","ASR","AKR","BGS","BIN","IKD","IDB","JAN","KJA","KIJ",
-            "KTK","KTI","KSM","MJI","MOP","OGA","SMN","STT","SNI","TCS",
-            "TKS","UKL","VME","WGT","WLK","WTP"
+            'label'   => $hasLabels ? array_values($rawLabels) : ['SIR 20', 'RSS 1', 'SIR 3L', 'SIR 3WF', 'TOTAL'],
+            'volume'  => (!empty($rawBatch["Rekap4!E23:E27"])) ? array_values(array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!E23:E27"])) : [0,0,0,0,0],
+            'revenue' => (!empty($rawBatch["Rekap4!E48:E52"])) ? array_values(array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!E48:E52"])) : [0,0,0,0,0],
         ];
 
-        $mutuList = ["SIR 20", "RSS 1", "SIR 3L", "SIR 3WF"];
+        // =========================================================================
+        // LOGIKA UTAMA: FILTER & AGREGASI (PERBAIKAN DATA KOSONG)
+        // =========================================================================
 
-        // Normalisasi
-        $buyersList = array_map('strtoupper', $buyersList);
-        $mutuList   = array_map('strtoupper', $mutuList);
+        // 1. Ambil Parameter Filter
+        $reqStart = $request->input('start_month', 'all');
+        $reqEnd   = $request->input('end_month', 'all');
+        
+        $startMonth = ($reqStart === 'all') ? 1 : (int)$reqStart;
+        $endMonth   = ($reqEnd === 'all') ? 12 : (int)$reqEnd;
 
-        // =======================
-        // 1. INISIALISASI
-        // =======================
-
-        $topBuyers = [];
-
-        foreach ($mutuList as $kategoriMutu) { 
-            foreach ($buyersList as $buyer) {
-                $topBuyers[$kategoriMutu][$buyer] = 0;
-            }
+        // Validasi Swap Bulan
+        if ($startMonth > $endMonth) { 
+            $temp = $startMonth; $startMonth = $endMonth; $endMonth = $temp; 
         }
 
-        // =======================
-        // 2. LOOP TRANSAKSI
-        // =======================
+        // --- PENTING: Flag untuk menandai apakah user memilih "Seluruhnya" ---
+        $isAllMonths = ($reqStart === 'all' && $reqEnd === 'all');
 
-        if (!empty($rawBatch["SC Sudah Bayar!AD4:AD5359"])) {
-            foreach ($rawBatch["SC Sudah Bayar!AD4:AD5359"] as $idx => $row) {
-
-                $buyer = isset($row[0]) ? strtoupper(trim($row[0])) : null;
-
-                $volumeStr = isset($rawBatch["SC Sudah Bayar!AA4:AA5359"][$idx][0])
-                    ? trim($rawBatch["SC Sudah Bayar!AA4:AA5359"][$idx][0])
-                    : null;
-
-                $jenisMutu = isset($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0])
-                    ? strtoupper(trim($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0]))
-                    : null;
-
-                if (!$buyer || !$volumeStr || !$jenisMutu) continue;
-                if (!in_array($buyer, $buyersList) || !in_array($jenisMutu, $mutuList)) continue;
-
-                $volume = (float) str_replace(['.', ','], ['', '.'], $volumeStr);
-
-                $topBuyers[$jenisMutu][$buyer] += $volume;
-            }
+        // 2. HITUNG TOTAL RKAP (Looping Array RKAP dari Sheet Rekap4)
+        $rkapVolTotal = 0;
+        $rkapRevTotal = 0;
+        for ($m = $startMonth; $m <= $endMonth; $m++) {
+            $idx = $m - 1; // Array index mulai dari 0
+            $rkapVolTotal += $rekap4['volume_rkap'][$idx] ?? 0;
+            $rkapRevTotal += $rekap4['revenue_rkap'][$idx] ?? 0;
         }
+        $rkapVolume  = $rkapVolTotal; 
+        $rkapRevenue = $rkapRevTotal * 1000000000;
 
-        // =======================
-        // 3. HITUNG TOTAL PER BUYER
-        // =======================
+        // 3. Ambil Data Mentah SC Sudah Bayar (Range Extended 6000)
+        $rawDates    = $rawBatch["SC Sudah Bayar!K4:K6000"] ?? [];
+        $rawValues   = $rawBatch["SC Sudah Bayar!N4:N6000"] ?? [];
+        $rawBuyers   = $rawBatch["SC Sudah Bayar!AD4:AD6000"] ?? [];
+        $rawProducts = $rawBatch["SC Sudah Bayar!Q4:Q6000"] ?? [];
+        $rawVolumes  = $rawBatch["SC Sudah Bayar!AA4:AA6000"] ?? [];
+        $rawMutu     = $rawBatch["SC Sudah Bayar!R4:R6000"] ?? [];
 
-        $topBuyers["TOTAL"] = array_fill_keys($buyersList, 0);
+        // Helper Parsing Tanggal (Handling penulisan manual/typo)
+        $getMonthFromRow = function($val) {
+            if (empty($val)) return 0; // Return 0 jika kosong
+            $val = trim($val);
+            $map = [
+                'Jan' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Apr', 'Mei' => 'May', 'Jun' => 'Jun',
+                'Jul' => 'Jul', 'Agt' => 'Aug', 'Agu' => 'Aug', 'Sep' => 'Sep', 'Okt' => 'Oct', 'Nov' => 'Nov', 'Des' => 'Dec',
+                'Agustus' => 'Aug', 'September' => 'Sep', 'Oktober' => 'Oct', 'Desember' => 'Dec'
+            ];
+            $val = str_ireplace(array_keys($map), array_values($map), $val);
+            try { return Carbon::parse($val)->month; } catch (\Exception $e) { return 0; }
+        };
 
-        foreach ($mutuList as $kategoriMutu) {
-            foreach ($buyersList as $buyer) {
-                $topBuyers["TOTAL"][$buyer] += $topBuyers[$kategoriMutu][$buyer];
-            }
-        }
+        // 4. Variables Agregasi
+        $calcTotalVol = 0;
+        $calcTotalRev = 0;
+        $buyersAgg    = [];
+        $productsAgg  = [];
 
-        // =======================
-        // 4. FILTER 0, SORTING, TAMBAH TOTAL
-        // =======================
+        // 5. Looping Utama
+        $rowCount = count($rawBuyers);
+        for ($i = 0; $i < $rowCount; $i++) {
+            // Normalisasi
+            $buyer = isset($rawBuyers[$i][0]) ? strtoupper(trim($rawBuyers[$i][0])) : '';
+            $prod  = isset($rawProducts[$i][0]) ? strtoupper(trim($rawProducts[$i][0])) : '';
+            $mutuName = isset($rawMutu[$i][0]) ? strtoupper(trim($rawMutu[$i][0])) : '';
+            
+            $volStr = $rawVolumes[$i][0] ?? '0';
+            $revStr = $rawValues[$i][0] ?? '0';
+            $vol    = (float) str_replace(['.', ','], ['', '.'], $volStr);
+            $rev    = (float) str_replace(['.', ','], ['', '.'], $revStr);
 
-        foreach ($topBuyers as $key => $buyersData) {
+            // Filter data tidak valid (tanpa volume/buyer)
+            if ($vol <= 0 || empty($buyer) || empty($mutuName)) continue;
 
-            // Hitung total sebelum difilter
-            $grandTotal = array_sum($buyersData);
+            // --- PERBAIKAN LOGIKA FILTER TANGGAL ---
+            $tglStr = $rawDates[$i][0] ?? '';
+            $month  = $getMonthFromRow($tglStr);
 
-            // Hapus buyer dengan volume 0
-            $buyersData = array_filter($buyersData, function ($volume) {
-                return $volume > 0;
-            });
-
-            // Sorting DESC
-            arsort($buyersData);
-
-            // Tambahkan TOTAL seperti buyer lain
-            $buyersData["TOTAL"] = $grandTotal;
-
-            $topBuyers[$key] = $buyersData;
-        }
-
-        // =======================
-        // 5. TOP 5 BUYERS + LAINNYA
-        // =======================
-
-        $top5Buyers = [];
-        $topN = 5;
-
-        foreach ($topBuyers as $kategoriMutu => $buyers) {
-
-            // Buang key TOTAL dulu
-            $buyersOnly = $buyers;
-            unset($buyersOnly["TOTAL"]);
-
-            // Hapus buyer dengan volume 0
-            $buyersOnly = array_filter($buyersOnly, fn($v) => $v > 0);
-
-            // Jika tidak ada data, skip
-            if (empty($buyersOnly)) continue;
-
-            // Sort descending
-            arsort($buyersOnly);
-
-            // Hitung TOTAL mutu
-            $totalMutu = array_sum($buyersOnly);
-
-            // Jika jumlah buyer > 5 → Top 5 + LAINNYA
-            if (count($buyersOnly) > $topN) {
-
-                $topOnly = array_slice($buyersOnly, 0, $topN, true);
-                $others  = array_slice($buyersOnly, $topN, null, true);
-
-                $top5Buyers[$kategoriMutu] = $topOnly;
-                $top5Buyers[$kategoriMutu]["LAINNYA"] = array_sum($others);
-
+            // Jika User TIDAK memilih "Seluruhnya" (artinya pilih range spesifik),
+            // maka kita harus membuang data yang bulannya 0 (tanggal error/kosong).
+            if (!$isAllMonths) {
+                // Jika bulan < start ATAU bulan > end ATAU bulan == 0 (invalid), skip.
+                if ($month < $startMonth || $month > $endMonth || $month === 0) continue;
             } 
-            // Jika ≤ 5 → ambil semua, TANPA LAINNYA
-            else {
-                $top5Buyers[$kategoriMutu] = $buyersOnly;
-            }
+            // Jika User memilih "Seluruhnya" ($isAllMonths = true), 
+            // kita TERIMA SEMUA data (termasuk yang tanggalnya kosong/month 0),
+            // asalkan Volume dan Buyer-nya ada.
 
-            // Tambahkan TOTAL
-            $top5Buyers[$kategoriMutu]["TOTAL"] = $totalMutu;
+            // --- AGREGASI ---
+            $calcTotalVol += $vol;
+            $calcTotalRev += $rev;
+
+            // Buyer Grouping
+            if (!isset($buyersAgg[$mutuName][$buyer])) $buyersAgg[$mutuName][$buyer] = 0;
+            $buyersAgg[$mutuName][$buyer] += $vol;
+            if (!isset($buyersAgg['TOTAL'][$buyer])) $buyersAgg['TOTAL'][$buyer] = 0;
+            $buyersAgg['TOTAL'][$buyer] += $vol;
+
+            // Product Grouping
+            if (!isset($productsAgg[$mutuName][$prod])) $productsAgg[$mutuName][$prod] = 0;
+            $productsAgg[$mutuName][$prod] += $vol;
+            if (!isset($productsAgg['TOTAL'][$prod])) $productsAgg['TOTAL'][$prod] = 0;
+            $productsAgg['TOTAL'][$prod] += $vol;
         }
 
+        // Set Total
+        $totalVolume  = $calcTotalVol;
+        $totalRevenue = $calcTotalRev;
 
-        // =======================
-        // HASIL AKHIR
-        // =======================
-        // $topBuyers   -> data lengkap semua buyer + TOTAL
-        // $top5Buyers  -> Top 5 + LAINNYA + TOTAL
-
-
-        $productList = [
-            "SBQ","SEL","SDZ","SEG","SEP","KETA","KEDA",
-            "WABE","TUBU","MULA","SDU"
-        ];
-
-        $mutuList = ["SIR 20", "RSS 1", "SIR 3L", "SIR 3WF"];
-
-        // Normalisasi
-        $productList = array_map('strtoupper', $productList);
-        $mutuList    = array_map('strtoupper', $mutuList);
-
-        // =======================
-        // 1. INISIALISASI TOP PRODUCTS
-        // =======================
-
-        $topProducts = [];
-
-        foreach ($mutuList as $kategoriMutu) { // Ubah jadi $kategoriMutu
-            foreach ($productList as $product) {
-                $topProducts[$kategoriMutu][$product] = 0;
-            }
-        }
-
-        // =======================
-        // 2. LOOP DATA TRANSAKSI
-        // =======================
-
-        if (!empty($rawBatch["SC Sudah Bayar!Q4:Q5359"])) {
-            foreach ($rawBatch["SC Sudah Bayar!Q4:Q5359"] as $idx => $row) {
-
-                $product = isset($row[0]) ? strtoupper(trim($row[0])) : null;
-
-                $volumeStr = isset($rawBatch["SC Sudah Bayar!AA4:AA5359"][$idx][0])
-                    ? trim($rawBatch["SC Sudah Bayar!AA4:AA5359"][$idx][0])
-                    : null;
-
-                $jenisMutu = isset($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0])
-                    ? strtoupper(trim($rawBatch["SC Sudah Bayar!R4:R5359"][$idx][0]))
-                    : null;
-
-                // Skip data tidak valid
-                if (!$product || !$volumeStr || !$jenisMutu) continue;
-                if (!in_array($product, $productList) || !in_array($jenisMutu, $mutuList)) continue;
-
-                // Konversi volume
-                $volume = (float) str_replace(['.', ','], ['', '.'], $volumeStr);
-
-                // Akumulasi
-                $topProducts[$jenisMutu][$product] += $volume;
-            }
-        }
-
-        // =======================
-        // 3. TOTAL SEMUA MUTU (TOP PRODUCTS TOTAL)
-        // =======================
-
-        $topProducts["TOTAL"] = array_fill_keys($productList, 0);
-
-        foreach ($mutuList as $kategoriMutu) {
-            foreach ($productList as $product) {
-                $topProducts["TOTAL"][$product] += $topProducts[$kategoriMutu][$product];
-            }
-        }
-
-        // =======================
-        // 4. FILTER 0, SORTING, TAMBAH TOTAL
-        // =======================
-
-        foreach ($topProducts as $key => $productsData) {
-
-            // Hitung total sebelum difilter
-            $grandTotal = array_sum($productsData);
-
-            // Hapus volume 0
-            $productsData = array_filter($productsData, fn($v) => $v > 0);
-
-            // Sorting DESC
-            arsort($productsData);
-
-            // Tambahkan TOTAL
-            $productsData["TOTAL"] = $grandTotal;
-
-            $topProducts[$key] = $productsData;
-        }
-
-        // =======================
-        // 4. TOP 5 PRODUCTS (PER MUTU + TOTAL)
-        // =======================
-
-        $top5Products = [];
-
-        foreach ($topProducts as $kategoriMutu => $products) {
-
-            if ($kategoriMutu === "TOTAL") continue;
-
-            // Ambil total mutu
-            $totalMutu = $products["TOTAL"] ?? 0;
-
-            // Buang TOTAL
-            $items = $products;
-            unset($items["TOTAL"]);
-
-            // Urutkan DESC
-            arsort($items);
-
-            // Ambil top 5
-            $top5 = array_slice($items, 0, 5, true);
-
-            // Hitung lainnya
+        // 6. Top 5 Buyers
+        $top5Buyers = [];
+        $loopKeys = array_keys($buyersAgg);
+        if(empty($loopKeys)) $loopKeys = ['TOTAL', 'SIR 20', 'RSS 1', 'SIR 3L', 'SIR 3WF'];
+        foreach ($loopKeys as $kategori) {
+            $data = $buyersAgg[$kategori] ?? [];
+            if (empty($data)) { $top5Buyers[$kategori] = ['TOTAL' => 0]; continue; }
+            
+            $grandTotal = array_sum($data);
+            arsort($data);
+            $top5 = array_slice($data, 0, 5, true);
             $sumTop5 = array_sum($top5);
-            $lainnya = $totalMutu - $sumTop5;
-
-            if ($lainnya > 0) {
-                $top5["LAINNYA"] = $lainnya;
-            }
-
-            // Tambahkan TOTAL
-            $top5["TOTAL"] = $totalMutu;
-
-            $top5Products[$kategoriMutu] = $top5;
+            $lainnya = $grandTotal - $sumTop5;
+            
+            if ($lainnya > 0) $top5['LAINNYA'] = $lainnya;
+            $top5['TOTAL'] = $grandTotal;
+            $top5Buyers[$kategori] = $top5;
         }
+        $topBuyers = $buyersAgg;
 
-        // =======================
-        // TOTAL (AKUMULASI SEMUA MUTU)
-        // =======================
-
-        $totalProducts = $topProducts["TOTAL"];
-        $totalAll = $totalProducts["TOTAL"];
-
-        unset($totalProducts["TOTAL"]);
-
-        arsort($totalProducts);
-
-        $top5Total = array_slice($totalProducts, 0, 5, true);
-
-        $sumTop5Total = array_sum($top5Total);
-        $lainnyaTotal = $totalAll - $sumTop5Total;
-
-        if ($lainnyaTotal > 0) {
-            $top5Total["LAINNYA"] = $lainnyaTotal;
+        // 7. Top 5 Products
+        $top5Products = [];
+        $loopKeysProd = array_keys($productsAgg);
+        if(empty($loopKeysProd)) $loopKeysProd = ['TOTAL', 'SIR 20', 'RSS 1', 'SIR 3L', 'SIR 3WF'];
+        foreach ($loopKeysProd as $kategori) {
+            $data = $productsAgg[$kategori] ?? [];
+            if (empty($data)) { $top5Products[$kategori] = ['TOTAL' => 0]; continue; }
+            
+            $grandTotal = array_sum($data);
+            arsort($data);
+            $top5 = array_slice($data, 0, 5, true);
+            $sumTop5 = array_sum($top5);
+            $lainnya = $grandTotal - $sumTop5;
+            
+            if ($lainnya > 0) $top5['LAINNYA'] = $lainnya;
+            $top5['TOTAL'] = $grandTotal;
+            $top5Products[$kategori] = $top5;
         }
+        $topProducts = $productsAgg;
 
-        $top5Total["TOTAL"] = $totalAll;
-
-        $top5Products["TOTAL"] = $top5Total;
-        // dd($topBuyers, $topProducts, $top5Buyers, $top5Products);
-
+        // --- FUNGSI BAWAAN LAINNYA (TIDAK BERUBAH) ---
         $processDaily = function($rows) {
             $points = [];
             foreach ($rows as $row) {
@@ -475,35 +287,22 @@ class DashboardController extends Controller
             'bahan_baku'  => [ 'sir20' => $cleanNum([$rawBatch["Rekap3!I27:I27"][0][0] ?? 0] ?? []) ?: 0, 'rss' => 0, 'sir3l' => 0, 'sir3wf' => 0 ]
         ];
 
-
         $processWarehouse = function($rLabel, $rStock, $rCap, $rPct) use ($rawBatch, $cleanNum) {
-        $labels = $rawBatch[$rLabel] ?? [];
-        $stocks = $rawBatch[$rStock] ?? [];
-        $caps   = $rawBatch[$rCap] ?? [];
-        $pcts   = $rawBatch[$rPct] ?? [];
-
-        $result = [];
-        foreach ($labels as $i => $row) {
-            $name = $row[0] ?? '-';
-            // Bersihkan angka
-            $stock = isset($stocks[$i]) ? $cleanNum($stocks[$i]) : 0;
-            $cap   = isset($caps[$i]) ? $cleanNum($caps[$i]) : 0;
-            
-            // Handle persentase: kadang dari sheet berupa 0.73 atau 73%
-            $rawPct = isset($pcts[$i]) ? $pcts[$i][0] : 0;
-            $pctVal = $cleanNum([$rawPct]);
-            
-            // Jika desimal kecil (misal 0.73), jadikan 73. Jika sudah 73, biarkan.
-            if ($pctVal <= 1 && $pctVal > 0) { $pctVal = $pctVal * 100; }
-            
-            $result[] = [
-                'name'     => $name,
-                'stock'    => $stock,
-                'capacity' => $cap,
-                'percent'  => round($pctVal, 1) // Bulatkan 1 desimal
-            ];
-        }
-        return $result;
+            $labels = $rawBatch[$rLabel] ?? [];
+            $stocks = $rawBatch[$rStock] ?? [];
+            $caps   = $rawBatch[$rCap] ?? [];
+            $pcts   = $rawBatch[$rPct] ?? [];
+            $result = [];
+            foreach ($labels as $i => $row) {
+                $name = $row[0] ?? '-';
+                $stock = isset($stocks[$i]) ? $cleanNum($stocks[$i]) : 0;
+                $cap   = isset($caps[$i]) ? $cleanNum($caps[$i]) : 0;
+                $rawPct = isset($pcts[$i]) ? $pcts[$i][0] : 0;
+                $pctVal = $cleanNum([$rawPct]);
+                if ($pctVal <= 1 && $pctVal > 0) { $pctVal = $pctVal * 100; }
+                $result[] = ['name' => $name, 'stock' => $stock, 'capacity' => $cap, 'percent' => round($pctVal, 1)];
+            }
+            return $result;
         };
 
         $utilitasGudang = [
@@ -514,17 +313,15 @@ class DashboardController extends Controller
             'IPMG RSS' => $processWarehouse("Rekap3!K44:K46", "Rekap3!T44:T46", "Rekap3!U44:U46", "Rekap3!V44:V46"),
         ];
 
-
         $processPriceRow = function($rangeKey) use ($rawBatch, $cleanNum) {
-        $row = $rawBatch[$rangeKey][0] ?? []; 
-        
-        return [
-            'sir20'   => $cleanNum([$row[0] ?? 0]), // Kolom E
-            'rss'     => $cleanNum([$row[1] ?? 0]), // Kolom F
-            'sir3l'   => $cleanNum([$row[2] ?? 0]), // Kolom G
-            'sir3wf'  => $cleanNum([$row[3] ?? 0]), // Kolom H
-            'average' => $cleanNum([$row[4] ?? 0]), // Kolom I
-        ];
+            $row = $rawBatch[$rangeKey][0] ?? []; 
+            return [
+                'sir20'   => $cleanNum([$row[0] ?? 0]),
+                'rss'     => $cleanNum([$row[1] ?? 0]),
+                'sir3l'   => $cleanNum([$row[2] ?? 0]),
+                'sir3wf'  => $cleanNum([$row[3] ?? 0]),
+                'average' => $cleanNum([$row[4] ?? 0]),
+            ];
         };
 
         $hargaRataRata = [
@@ -534,18 +331,6 @@ class DashboardController extends Controller
             'total'       => $processPriceRow("Rekap1!E40:I40"),
         ];
 
-        // dd($rawBatch["Rekap3!I20:I20"]);
-        // dd([
-        //     '1. CEK DATA MENTAH DARI GOOGLE SHEET' => [
-        //         'Label (B23:B27)'   => $rawBatch["Rekap4!B23:B27"] ?? 'TIDAK DITEMUKAN / NULL',
-        //         'Volume (E23:E27)'  => $rawBatch["Rekap4!E23:E27"] ?? 'TIDAK DITEMUKAN / NULL',
-        //         'Revenue (E48:E52)' => $rawBatch["Rekap4!E48:E52"] ?? 'TIDAK DITEMUKAN / NULL',
-        //     ],
-        //     '2. CEK VARIABEL $mutu SETELAH DIOLAH' => $mutu,
-        //     '3. CEK TOTAL VOLUME' => $totalVolume,
-        // ]);
-
-        // Tambahkan lastTender ke view
         return view('dashboard.index', compact(
             'rekap4','totalVolume', 'totalRevenue', 'rkapVolume', 'rkapRevenue', 'mutu', 'lastTender',
             'topBuyers', 'top5Buyers', 'topProducts', 'top5Products', 'rekap4', 'stokData', 'trendPriceDaily', 'utilitasGudang',
