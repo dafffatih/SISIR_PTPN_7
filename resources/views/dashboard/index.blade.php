@@ -49,11 +49,21 @@
                 <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
                     @php
                         use Carbon\Carbon;
-                        $currentYear = Carbon::now()->year;
-                        if (($sharedCurrentYear ?? $currentYear) == $currentYear) {
+                        $realCurrentYear = Carbon::now()->year;
+                        
+                        // 1. Sanitasi: Pastikan tahun yang diambil adalah angka. 
+                        // Jika isinya 'default' atau kosong, paksa jadi tahun sekarang/terbaru.
+                        $checkYear = $sharedCurrentYear ?? $realCurrentYear;
+                        if ($checkYear === 'default' || !is_numeric($checkYear)) {
+                            $checkYear = $realCurrentYear;
+                        }
+
+                        // 2. Logika Penentuan Tanggal
+                        if ($checkYear == $realCurrentYear) {
                             $displayDate = Carbon::now()->subDay();
                         } else {
-                            $displayDate = Carbon::create($sharedCurrentYear, 12, 31);
+                            // Carbon sekarang aman karena $checkYear pasti angka
+                            $displayDate = Carbon::create($checkYear, 12, 31);
                         }
                     @endphp
                     {{ $displayDate->format('d/m/Y') }}
