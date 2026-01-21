@@ -8,8 +8,21 @@
     /* Styling Reuse dari index lama */
     .k-container { padding: 20px; font-family: 'Inter', sans-serif; }
     .k-header { margin-bottom: 24px; }
-    .k-title { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; }
-    .k-subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
+    .k-title {
+    font-size: 24px;              /* sama */
+    font-weight: 700;             /* ⬅️ ini kuncinya */
+    font-family: 'Inter', sans-serif;
+    color: #0F172A;
+    line-height: 1.2;
+    margin: 0;
+    }
+
+    .k-subtitle {
+    font-size: 14px;
+    color: #64748B;   /* sama dengan dashboard */
+    margin-top: 4px;
+    }
+
     .k-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden; }
     
     /* Toolbar Filter */

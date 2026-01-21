@@ -8,8 +8,21 @@
     /* Container & Wrapper */
     .k-container { padding: 20px; font-family: 'Inter', sans-serif; }
     .k-header { margin-bottom: 24px; }
-    .k-title { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; }
-    .k-subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
+    .k-title {
+    font-size: 24px;              /* sama */
+    font-weight: 700;             /* ⬅️ ini kuncinya */
+    font-family: 'Inter', sans-serif;
+    color: #0F172A;
+    line-height: 1.2;
+    margin: 0;
+    }
+
+    .k-subtitle {
+    font-size: 14px;
+    color: #64748B;   /* sama dengan dashboard */
+    margin-top: 4px;
+   }
+
     /* --- TAB NAVIGASI --- */
     .nav-tabs { display: flex; gap: 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px; }
     .nav-item { padding: 12px 4px; font-weight: 600; font-size: 14px; color: #64748b; text-decoration: none; border-bottom: 2px solid transparent; cursor: pointer; }

@@ -24,8 +24,9 @@ body{ background:var(--bg); }
 }
 
 .ue-title{
-  font-size:26px;
-  font-weight:900;
+  font-size:24px;                 /* sama dengan Dashboard */
+  font-weight:700;                /* sama */
+  font-family:'Inter', sans-serif;/* paksa Inter */
   color:var(--text-dark);
 }
 

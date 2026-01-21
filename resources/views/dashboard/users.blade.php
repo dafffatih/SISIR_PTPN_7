@@ -6,6 +6,10 @@
 @section('content')
   <style>
     .page-header {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .page-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -15,11 +19,14 @@
     }
 
     .page-title {
-      font-size: 28px;
-      font-weight: 700;
-      color: #1e293b;
-      margin: 0 0 4px;
+    font-size: 24px;              /* sama dengan Dashboard */
+    font-weight: 700;             /* sama */
+    font-family: 'Inter', sans-serif;
+    color: #0F172A;               /* sama dengan --text-dark */
+    margin: 0 0 4px;
+    line-height: 1.2;
     }
+
 
     .page-subtitle {
       font-size: 14px;

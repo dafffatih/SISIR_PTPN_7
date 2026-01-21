@@ -29,23 +29,28 @@
 
   /* ====== Content ====== */
   .set-container{
-    padding: 22px 22px 34px;
-    max-width: 1000px;
-    margin: 0 auto;
+  padding: 22px 22px 34px;
+  max-width: 1000px;
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif; /* ⬅️ SAMAKAN */
   }
 
+
   .set-title{
-    margin: 0;
-    font-size: 26px;
-    font-weight: 800;
-    color: #111827;
-    letter-spacing: .1px;
-  }
+  margin: 0;
+  font-size: 24px;        /* sama dengan Dashboard */
+  font-weight: 700;       /* sama */
+  color: #0F172A;         /* sama */
+  line-height: 1.2;
+  letter-spacing: 0;      /* Dashboard tidak pakai spacing */
+ }
+
   .set-subtitle{
-    margin: 6px 0 0;
-    color: var(--muted);
-    font-size: 14px;
-  }
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #64748B;
+ }
+
 
   .set-card{
     background: var(--card);
