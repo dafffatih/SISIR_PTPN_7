@@ -19,11 +19,13 @@ class ListKontrakController extends Controller
 
     public function index(Request $request)
     {
-        // 1. Setup Data
-        $sheetName = 'List Kontrak'; 
-        $range = "'$sheetName'!A4:AI"; 
-        
-        $allData = $this->googleSheetService->getData(null, $range);
+        $yearToUse = session('year') ?? session('current_year') ?? session('selected_year') ?? date('Y');
+        if ($yearToUse === 'default') {
+            $yearToUse = date('Y');
+        }
+        $sheetName = 'List Kontrak ' . $yearToUse; 
+        $allData = $this->googleSheetService->getData(null, $sheetName);
+
         $filteredData = [];
         
         // Ambil Parameter Filter
