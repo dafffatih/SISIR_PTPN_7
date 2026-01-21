@@ -91,9 +91,9 @@
               </div>
 
               <button
-                type="submit"
-                class="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold transition">
-                Sign In to Dashboard
+                  type="submit"
+                  class="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-green-300 font-semibold transition">
+                  Sign In to Dashboard
               </button>
             </form>
 
