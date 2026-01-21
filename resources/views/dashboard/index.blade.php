@@ -42,30 +42,26 @@
             <h1>Dashboard Overview</h1>
             <p>PTPN 1 Regional 7 - Sales and Inventories</p>
             <div style="margin-bottom: 10px;">
+                @php
+                    use Carbon\Carbon;
+                    $realCurrentYear = Carbon::now()->year;
+                    
+                    // 1. Sanitasi: Pastikan tahun yang diambil adalah angka. 
+                    // Jika isinya 'default' atau kosong, paksa jadi tahun sekarang/terbaru.
+                    $checkYear = $sharedCurrentYear; 
+
+                    // Logika Penentuan Tanggal
+                    if ($checkYear == $realCurrentYear) {
+                        $displayDate = Carbon::now()->subDay();
+                    } else {
+                        $displayDate = Carbon::create($checkYear, 12, 31);
+                    }
+                @endphp
                 <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
-                    01/01/{{ $sharedCurrentYear ?? date('Y') }}
+                    01/01/{{ $checkYear }}
                 </span>
                 -
                 <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
-                    @php
-                        use Carbon\Carbon;
-                        $realCurrentYear = Carbon::now()->year;
-                        
-                        // 1. Sanitasi: Pastikan tahun yang diambil adalah angka. 
-                        // Jika isinya 'default' atau kosong, paksa jadi tahun sekarang/terbaru.
-                        $checkYear = $sharedCurrentYear ?? $realCurrentYear;
-                        if ($checkYear === 'default' || !is_numeric($checkYear)) {
-                            $checkYear = $realCurrentYear;
-                        }
-
-                        // 2. Logika Penentuan Tanggal
-                        if ($checkYear == $realCurrentYear) {
-                            $displayDate = Carbon::now()->subDay();
-                        } else {
-                            // Carbon sekarang aman karena $checkYear pasti angka
-                            $displayDate = Carbon::create($checkYear, 12, 31);
-                        }
-                    @endphp
                     {{ $displayDate->format('d/m/Y') }}
                 </span>
             </div>

@@ -46,7 +46,7 @@ class AppServiceProvider extends ServiceProvider
             // Logic Display:
             // Jika user belum pilih tahun (session kosong), kita anggap statusnya 'default'
             // Tapi nanti di View, label 'default' itu akan kita ganti teksnya jadi tahun terbaru.
-            $currentDisplay = $sessionYear ? $sessionYear : 'default';
+            $currentDisplay = $sessionYear ? $sessionYear : $latestYear;
 
             $view->with('sharedAvailableYears', $availableYears);
             $view->with('sharedCurrentYear', $currentDisplay);
