@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Carbon\Carbon;
 use App\Services\GoogleSheetService;
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -19,10 +18,9 @@ class ExportController extends Controller
     {
         $request->validate([
             'format' => 'required|in:csv,excel',
-            'year'   => 'required', // angka atau "all"
         ]);
 
-        $data = $this->fetchFromGoogleSheets($request->year);
+        $data = $this->fetchFromGoogleSheets();
 
         return $request->format === 'csv'
             ? $this->exportToCsv($data)
@@ -30,31 +28,24 @@ class ExportController extends Controller
     }
 
     /* =====================================================
-     * PARSE TANGGAL (UNTUK FILTER TAHUN SAJA)
+     * NORMALISASI ANGKA FORMAT INDONESIA
+     * 20.160 -> 20160
      * ===================================================== */
-    private function parseTanggal($value): ?Carbon
+    private function numId($value)
     {
-        if (!$value) return null;
-
-        $value = trim($value);
-
-        $formats = [
-            'd/m/y', 'd/m/Y',
-            'd-M-Y', 'd-M-y',
-            'd-m-Y',
-        ];
-
-        foreach ($formats as $format) {
-            try {
-                return Carbon::createFromFormat($format, $value);
-            } catch (\Exception $e) {}
+        if ($value === null || trim($value) === '') {
+            return '';
         }
 
-        return null;
+        $value = trim($value);
+        $value = str_replace('.', '', $value); // hapus ribuan
+        $value = str_replace(',', '.', $value);
+
+        return is_numeric($value) ? (float) $value : '';
     }
 
     /* =====================================================
-     * BERSIHKAN TANGGAL DUMMY & #N/A
+     * BERSIHKAN TANGGAL DUMMY & ERROR
      * ===================================================== */
     private function cleanTanggal($value): string
     {
@@ -62,7 +53,11 @@ class ExportController extends Controller
 
         $value = trim($value);
 
-        if ($value === '30/12/99' || $value === '#N/A') {
+        if (
+            $value === '30/12/99' ||
+            $value === '#N/A' ||
+            $value === '-'
+        ) {
             return '';
         }
 
@@ -70,29 +65,14 @@ class ExportController extends Controller
     }
 
     /* =====================================================
-     * NORMALISASI ANGKA (FORMAT INDONESIA)
+     * AMBIL DATA RAW DARI GOOGLE SHEET
+     * TANPA FILTER TAHUN
      * ===================================================== */
-    private function num($value)
-    {
-        if ($value === null || trim($value) === '') {
-            return null;
-        }
-
-        $value = trim($value);
-        $value = str_replace('.', '', $value);
-        $value = str_replace(',', '.', $value);
-
-        return is_numeric($value) ? (float)$value : null;
-    }
-
-    /* =====================================================
-     * AMBIL DATA RAW + FILTER TAHUN
-     * ===================================================== */
-    private function fetchFromGoogleSheets($year): Collection
+    private function fetchFromGoogleSheets(): Collection
     {
         $service = new GoogleSheetService();
 
-        // RANGE DIPERPANJANG (SAMPAI BC)
+        // Sampai CA agar semua kolom terbaca
         $rows = $service->getData(null, 'SC Sudah Bayar', 'A4:CA');
 
         $data = [];
@@ -103,67 +83,55 @@ class ExportController extends Controller
                 continue;
             }
 
-            /* ================= FILTER TAHUN ================= */
-            $tanggalKontrak = $this->parseTanggal($row[10] ?? null);
-
-            if ($year !== 'all') {
-                if (!$tanggalKontrak || $tanggalKontrak->year !== (int)$year) {
-                    continue;
-                }
-            }
-
-            /* ================= DATA ================= */
             $data[] = [
 
-                // KONTRAK
-                'lo_ex'           => $row[7]  ?? '',
-                'nomor_kontrak'   => $row[1]  ?? '',
-                'nama_pembeli'    => $row[9]  ?? '',
-                'tanggal_kontrak' => $row[10] ?? '',
+                /* ================= KONTRAK ================= */
+                'lo_ex'            => $row[7]  ?? '',
+                'nomor_kontrak'    => $row[1]  ?? '',
+                'nama_pembeli'     => $row[9]  ?? '',
+                'tanggal_kontrak'  => $row[10] ?? '',
 
-                // ANGKA (DINORMALISASI)
-                'volume'          => $this->num($row[11] ?? null),
-                'harga'           => $this->num($row[12] ?? null),
-                'nilai'           => $this->num($row[13] ?? null),
-                'inc_ppn'         => $this->num($row[14] ?? null),
+                'volume'           => $this->numId($row[11] ?? ''),
+                'harga'            => $this->numId($row[12] ?? ''),
+                'nilai'            => $this->numId($row[13] ?? ''),
+                'inc_ppn'          => $this->numId($row[14] ?? ''),
 
-                'tanggal_bayar'   => $row[15] ?? '',
-                'unit'            => $row[16] ?? '',
-                'mutu'            => $row[17] ?? '',
-                'kontrak_sap'     => $row[18] ?? '',
+                'tanggal_bayar'    => $row[15] ?? '',
+                'unit'             => $row[16] ?? '',
+                'mutu'             => $row[17] ?? '',
 
-                // HASIL RUMUS → BIARKAN KOSONG JIKA KOSONG
-                'sisa_awal'       => '',
+                /* ================= PENGIRIMAN ================= */
+                // Nomor DO/SI (kolom S)
+                'nomor_do_si'      => $row[18] ?? '',
+                'tanggal_do_si'    => $row[19] ?? '',
+                'port'             => $row[20] ?? '',
 
-                // PENGIRIMAN
-                'nomor_do_si'     => $row[24] ?? '',
-                'tanggal_do_si'   => $row[19] ?? '',
-                'port'            => $row[20] ?? '',
-                'kode_do'         => $row[29] ?? '',
-                'total_dilayani'  => '',
-                'sisa_akhir'      => '',
+                // Sisa & realisasi
+                'sisa_awal'        => $row[25] ?? '',
+                'total_dilayani'   => $row[26] ?? '',
+                'sisa_akhir'       => $row[27] ?? '',
 
-                // BC = INDEX 54
-                'jatuh_tempo'     => $this->cleanTanggal($row[54] ?? ''),
-
-                // PENYERAHAN
+                /* ================= PENYERAHAN ================= */
                 'p1_tgl' => $this->cleanTanggal($row[38] ?? ''),
-                'p1_kg'  => $this->num($row[39] ?? null),
+                'p1_kg'  => $this->numId($row[39] ?? ''),
 
                 'p2_tgl' => $this->cleanTanggal($row[40] ?? ''),
-                'p2_kg'  => $this->num($row[41] ?? null),
+                'p2_kg'  => $this->numId($row[41] ?? ''),
 
                 'p3_tgl' => $this->cleanTanggal($row[42] ?? ''),
-                'p3_kg'  => $this->num($row[43] ?? null),
+                'p3_kg'  => $this->numId($row[43] ?? ''),
 
                 'p4_tgl' => $this->cleanTanggal($row[44] ?? ''),
-                'p4_kg'  => $this->num($row[45] ?? null),
+                'p4_kg'  => $this->numId($row[45] ?? ''),
 
                 'p5_tgl' => $this->cleanTanggal($row[46] ?? ''),
-                'p5_kg'  => $this->num($row[47] ?? null),
+                'p5_kg'  => $this->numId($row[47] ?? ''),
 
-                // AY = INDEX 50
-                'total_penyerahan' => $this->num($row[50] ?? null),
+                // Total Penyerahan (AY)
+                'total_penyerahan' => $this->numId($row[50] ?? ''),
+
+                // Jatuh Tempo Pembayaran (BC)
+                'jatuh_tempo'      => $this->cleanTanggal($row[54] ?? ''),
             ];
         }
 
@@ -221,27 +189,31 @@ class ExportController extends Controller
     }
 
     /* =====================================================
-     * HEADER EXPORT
+     * HEADER EXPORT (URUTAN SESUAI SPREADSHEET)
      * ===================================================== */
     private function headers(): array
     {
         return [
-            'LO/EX','Nomor Kontrak','Nama Pembeli','Tanggal Kontrak','Volume',
-            'Harga','Nilai','Inc PPN','Tanggal Bayar','Unit','Mutu',
-            'Kontrak SAP','Sisa Awal',
-            'Nomor DO/SI','Tanggal DO/SI','Port','Kode DO',
-            'Total Dilayani','Sisa Akhir','Jatuh Tempo',
+            'LO/EX','Nomor Kontrak','Nama Pembeli','Tanggal Kontrak',
+            'Volume','Harga','Nilai','Inc PPN',
+            'Tanggal Bayar','Unit','Mutu',
+
+            'Nomor DO/SI','Tanggal DO/SI','Port',
+            'Sisa Awal','Total Dilayani','Sisa Akhir',
+
             'Penyerahan 1 Tgl','Penyerahan 1 Kg',
             'Penyerahan 2 Tgl','Penyerahan 2 Kg',
             'Penyerahan 3 Tgl','Penyerahan 3 Kg',
             'Penyerahan 4 Tgl','Penyerahan 4 Kg',
             'Penyerahan 5 Tgl','Penyerahan 5 Kg',
             'Total Penyerahan Kg',
+
+            'Jatuh Tempo Pembayaran',
         ];
     }
 
     /* =====================================================
-     * MAP ROW
+     * MAP ROW → EXPORT
      * ===================================================== */
     private function mapRow(array $i): array
     {
@@ -257,21 +229,22 @@ class ExportController extends Controller
             $i['tanggal_bayar'],
             $i['unit'],
             $i['mutu'],
-            $i['kontrak_sap'],
-            $i['sisa_awal'],
+
             $i['nomor_do_si'],
             $i['tanggal_do_si'],
             $i['port'],
-            $i['kode_do'],
+            $i['sisa_awal'],
             $i['total_dilayani'],
             $i['sisa_akhir'],
-            $i['jatuh_tempo'],
+
             $i['p1_tgl'], $i['p1_kg'],
             $i['p2_tgl'], $i['p2_kg'],
             $i['p3_tgl'], $i['p3_kg'],
             $i['p4_tgl'], $i['p4_kg'],
             $i['p5_tgl'], $i['p5_kg'],
             $i['total_penyerahan'],
+
+            $i['jatuh_tempo'],
         ];
-    }   
+    }
 }

@@ -85,7 +85,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     // UPLOAD & EXPORT
     // ====================================================
     Route::get('/upload-export', function () {
-        return view('dashboard.upload_export');
+        return view('exports.upload_export');
     })
     ->name('upload.export')
     ->middleware('role:admin,staff');

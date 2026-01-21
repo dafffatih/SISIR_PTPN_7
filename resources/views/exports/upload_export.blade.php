@@ -18,7 +18,10 @@
 
 body{ background:var(--bg); }
 
-.ue-wrap{ max-width:1400px; margin:0 auto; }
+.ue-wrap{
+  max-width:1200px;
+  margin:0 auto;
+}
 
 .ue-title{
   font-size:26px;
@@ -32,6 +35,7 @@ body{ background:var(--bg); }
   margin-bottom:22px;
 }
 
+/* CARD */
 .ue-card{
   background:#fff;
   border-radius:18px;
@@ -73,21 +77,26 @@ body{ background:var(--bg); }
   color:var(--text-muted);
 }
 
+/* BODY */
 .ue-card-body{
-  padding:22px 24px 26px;
+  padding:22px 24px 28px;
 }
 
+/* GRID */
 .ue-form-grid{
   display:grid;
-  grid-template-columns: 1.2fr 2fr 1.3fr;
-  gap:22px;
+  grid-template-columns: 1fr 1fr auto;
+  gap:20px;
   align-items:end;
 }
 
-@media (max-width:1100px){
-  .ue-form-grid{ grid-template-columns:1fr; }
+@media (max-width:900px){
+  .ue-form-grid{
+    grid-template-columns:1fr;
+  }
 }
 
+/* FORM */
 .ue-label{
   font-size:12px;
   font-weight:800;
@@ -102,14 +111,15 @@ body{ background:var(--bg); }
   border:1px solid var(--border);
   padding:0 14px;
   font-size:13px;
+  background:#f8fafc;
 }
 
-.ue-input:focus{
-  outline:none;
-  border-color:var(--primary);
-  box-shadow:0 0 0 3px rgba(15,118,110,.15);
+.ue-input[readonly]{
+  cursor:not-allowed;
+  color:#475569;
 }
 
+/* FORMAT TABS */
 .ue-tabs{
   display:flex;
   gap:10px;
@@ -132,8 +142,9 @@ body{ background:var(--bg); }
   border-color:var(--primary);
 }
 
+/* BUTTON */
 .ue-btn{
-  width:100%;
+  min-width:180px;
   height:46px;
   border-radius:14px;
   border:none;
@@ -147,6 +158,21 @@ body{ background:var(--bg); }
   background:linear-gradient(135deg,#f59e0b,#d97706);
   color:#fff;
   box-shadow:0 12px 26px rgba(245,158,11,.4);
+}
+
+@media (max-width:900px){
+  .ue-btn{ width:100%; }
+}
+
+/* INFO */
+.ue-info{
+  font-size:12px;
+  color:#475569;
+  background:#f1f5f9;
+  border:1px dashed #cbd5f5;
+  padding:10px 14px;
+  border-radius:12px;
+  margin-top:18px;
 }
 </style>
 
@@ -164,7 +190,7 @@ body{ background:var(--bg); }
       <div>
         <p class="ue-head-title">Export Data</p>
         <div class="ue-head-desc">
-          Export detail kontrak penjualan berdasarkan tahun
+          Export detail kontrak sesuai tahun yang sedang aktif
         </div>
       </div>
     </div>
@@ -180,11 +206,12 @@ body{ background:var(--bg); }
       <form method="POST" action="{{ route('upload.export.kontrak.detail') }}">
         @csrf
 
+        {{-- FORMAT --}}
         <input type="hidden" name="format" id="exportFormat" value="excel">
 
         <div class="ue-form-grid">
 
-          {{-- FORMAT --}}
+          {{-- FORMAT FILE --}}
           <div>
             <div class="ue-label">Format File</div>
             <div class="ue-tabs">
@@ -193,26 +220,18 @@ body{ background:var(--bg); }
             </div>
           </div>
 
-          {{-- YEAR --}}
+          {{-- TAHUN AKTIF (READ ONLY) --}}
           <div>
-            <div class="ue-label">Tahun</div>
-            <select name="year" class="ue-input" required>
-              <option value="all">Semua Tahun</option>
-
-              @php
-                $currentYear = now()->year;
-              @endphp
-
-              @for ($y = $currentYear; $y >= 2020; $y--)
-                <option value="{{ $y }}">{{ $y }}</option>
-              @endfor
-          </select>
-
+            <div class="ue-label">Tahun Aktif</div>
+            <input
+              class="ue-input"
+              value="{{ session('selected_year', 'Tahun Terbaru') }}"
+              readonly
+            >
           </div>
 
           {{-- ACTION --}}
           <div>
-            <div class="ue-label">&nbsp;</div>
             <button class="ue-btn" type="submit">
               <i class="fas fa-download"></i>
               Export Data
@@ -220,6 +239,12 @@ body{ background:var(--bg); }
           </div>
 
         </div>
+
+        <div class="ue-info">
+          📌 Data yang diexport mengikuti <b>tahun yang sedang dipilih di header</b>.
+          Untuk mengganti tahun, silakan ubah pilihan tahun di header aplikasi.
+        </div>
+
       </form>
     </div>
   </div>
