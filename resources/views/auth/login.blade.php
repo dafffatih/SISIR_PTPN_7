@@ -91,10 +91,11 @@
               </div>
 
               <button
-                type="submit"
-                class="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold transition">
-                Sign In to Dashboard
+                  type="submit"
+                  class="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-semibold transition">
+                  Sign In to Dashboard
               </button>
+
             </form>
 
             <p class="text-center text-xs text-slate-400 mt-6">
