@@ -7,6 +7,7 @@
   <style>
     .page-header {
       font-family: 'Inter', sans-serif;
+      padding: 24px;
     }
 
     .page-header {
@@ -62,6 +63,7 @@
       -webkit-overflow-scrolling:touch;
 
       width:100%;
+      padding: 24px;
       max-width:100%;
     }
 
@@ -84,6 +86,7 @@
     width: 100%;          /* ✅ tabel ikut full container */
     min-width: 980px;     /* ✅ tetap bisa scroll di layar kecil */
     border-collapse: collapse;
+    padding: 24px;
     table-layout: auto;
     }
 

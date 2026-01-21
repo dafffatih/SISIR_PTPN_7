@@ -6,7 +6,7 @@
 @section('content')
 <style>
     /* Container & Wrapper */
-    .k-container { padding: 20px; font-family: 'Inter', sans-serif; }
+    .k-container { padding: 22px; font-family: 'Inter', sans-serif; }
     .k-header { margin-bottom: 24px; }
     .k-title {
     font-size: 24px;              /* sama */
