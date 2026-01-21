@@ -18,6 +18,7 @@
     $hexPalette = ['#134E5E', '#2C7A7B', '#7FB3B8', '#F59E0B', '#FDBA74', '#FED7AA'];
     $chartColors = $hexPalette;
     $prodColors  = $hexPalette;
+    // dd($rekap4);
 @endphp
 
 <link rel="stylesheet" href="{{ asset('css/dashboard-custom.css') }}">
@@ -40,22 +41,59 @@
         <div>
             <h1>Dashboard Overview</h1>
             <p>PTPN 1 Regional 7 - Sales and Inventories</p>
-            <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
-                01/01/{{ $sharedCurrentYear ?? date('Y') }}
-            </span>
-            -
-            <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
-                @php
-                    use Carbon\Carbon;
-                    $currentYear = Carbon::now()->year;
-                    if (($sharedCurrentYear ?? $currentYear) == $currentYear) {
-                        $displayDate = Carbon::now()->subDay();
-                    } else {
-                        $displayDate = Carbon::create($sharedCurrentYear, 12, 31);
-                    }
-                @endphp
-                {{ $displayDate->format('d/m/Y') }}
-            </span>
+            <div style="margin-bottom: 10px;">
+                <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
+                    01/01/{{ $sharedCurrentYear ?? date('Y') }}
+                </span>
+                -
+                <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
+                    @php
+                        use Carbon\Carbon;
+                        $currentYear = Carbon::now()->year;
+                        if (($sharedCurrentYear ?? $currentYear) == $currentYear) {
+                            $displayDate = Carbon::now()->subDay();
+                        } else {
+                            $displayDate = Carbon::create($sharedCurrentYear, 12, 31);
+                        }
+                    @endphp
+                    {{ $displayDate->format('d/m/Y') }}
+                </span>
+            </div>
+
+            {{-- 2. BAGIAN DROPDOWN BULAN (Style mengikuti .dashboard-select) --}}
+            <div>
+                <select id="global-month-filter" class="dashboard-select" style="min-width: 100px;">
+                    <option value="" disabled>Pilih Bulan</option>
+                    <option value="1" selected>Januari</option>
+                    <option value="2">Februari</option>
+                    <option value="3">Maret</option>
+                    <option value="4">April</option>
+                    <option value="5">Mei</option>
+                    <option value="6">Juni</option>
+                    <option value="7">Juli</option>
+                    <option value="8">Agustus</option>
+                    <option value="9">September</option>
+                    <option value="10">Oktober</option>
+                    <option value="11">November</option>
+                    <option value="12">Desember</option>
+                </select>
+                -
+                <select id="global-month-filter" class="dashboard-select" style="min-width: 100px;">
+                    <option value="" disabled>Pilih Bulan</option>
+                    <option value="1">Januari</option>
+                    <option value="2">Februari</option>
+                    <option value="3">Maret</option>
+                    <option value="4">April</option>
+                    <option value="5">Mei</option>
+                    <option value="6">Juni</option>
+                    <option value="7">Juli</option>
+                    <option value="8">Agustus</option>
+                    <option value="9">September</option>
+                    <option value="10">Oktober</option>
+                    <option value="11">November</option>
+                    <option value="12" selected>Desember</option>
+                </select>
+            </div>
         </div>
     </div>
 

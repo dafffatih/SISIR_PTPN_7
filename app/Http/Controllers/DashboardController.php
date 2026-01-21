@@ -547,7 +547,7 @@ class DashboardController extends Controller
 
         // Tambahkan lastTender ke view
         return view('dashboard.index', compact(
-            'totalVolume', 'totalRevenue', 'rkapVolume', 'rkapRevenue', 'mutu', 'lastTender',
+            'rekap4','totalVolume', 'totalRevenue', 'rkapVolume', 'rkapRevenue', 'mutu', 'lastTender',
             'topBuyers', 'top5Buyers', 'topProducts', 'top5Products', 'rekap4', 'stokData', 'trendPriceDaily', 'utilitasGudang',
             'hargaRataRata','useDbFallback'
         ));
