@@ -40,6 +40,13 @@
         <div>
             <h1>Dashboard Overview</h1>
             <p>PTPN 1 Regional 7 - Sales and Inventories</p>
+            <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
+                {{ $sharedCurrentYear ?? date('Y') }}
+            </span>
+            -
+            <span class="badge-date" style=" padding: 2px 6px; border-radius: 4px; background-color: #eee;">
+                {{ \Carbon\Carbon::now()->subDay()->format('d/m/Y') }}
+            </span>
         </div>
     </div>
 
@@ -62,7 +69,8 @@
 
                     {{-- 2. NILAI UTAMA --}}
                     <div class="metric-value-group">
-                        <span class="metric-number">{{ number_format($top5Buyers["TOTAL"]["TOTAL"]/1000, 0, ',', '.') }}</span>
+                        {{-- Tambahkan ( ... ?? 0 ) agar tidak error saat data kosong --}}
+                        <span class="metric-number">{{ number_format(($top5Buyers["TOTAL"]["TOTAL"] ?? 0)/1000, 0, ',', '.') }}</span>
                         <span class="metric-unit">Ton</span>
                     </div>
 

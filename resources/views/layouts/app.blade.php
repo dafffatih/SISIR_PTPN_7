@@ -241,7 +241,10 @@
                     
                     {{-- Opsi Default --}}
                     {{-- Teksnya sekarang dinamis: "2027 (Default)" --}}
-                    <option value="default" {{ ($sharedCurrentYear ?? 'default') === 'default' ? 'selected' : '' }}>
+                    <option value="{{ $sharedLatestYear ?? date('Y') }}" 
+                        {{-- Logika Selected: Cek apakah tahun saat ini 'default' ATAU sama dengan tahun terbaru --}}
+                        {{ ($sharedCurrentYear ?? 'default') == 'default' || $sharedCurrentYear == ($sharedLatestYear ?? date('Y')) ? 'selected' : '' }}>
+                        
                         {{ $sharedLatestYear ?? date('Y') }} (Default)
                     </option>
         
