@@ -475,4 +475,108 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }, 150);
     });
+    // ==========================================================
+    // 6. LOGIKA FILTER BULAN & KALKULASI TOTAL METRICS
+    // ==========================================================
+    
+    const startSelect = document.getElementById('month-start');
+    const endSelect = document.getElementById('month-end');
+    
+    // Elemen DOM untuk Volume
+    const elVolReal = document.getElementById('metric-vol-real');
+    const elVolRkap = document.getElementById('metric-vol-rkap');
+    const elVolProg = document.getElementById('metric-vol-progress');
+    
+    // Elemen DOM untuk Revenue
+    const elRevReal = document.getElementById('metric-rev-real');
+    const elRevRkap = document.getElementById('metric-rev-rkap');
+    const elRevProg = document.getElementById('metric-rev-progress');
+
+    function calculateMetrics() {
+        // Ambil value bulan (1-12)
+        let startMonth = parseInt(startSelect.value); 
+        let endMonth = parseInt(endSelect.value);
+
+        // Validasi: Jika start > end, tukar atau set sama (opsional, disini kita biarkan user tanggung jawab atau force end >= start)
+        if (startMonth > endMonth) {
+            // Opsional: Alert user atau otomatis ubah endMonth
+            endMonth = startMonth; 
+            endSelect.value = endMonth;
+        }
+
+        // Array index dimulai dari 0 (Januari) s/d 11 (Desember)
+        // Kita kurangi 1 karena value dropdown 1-12
+        const startIndex = startMonth - 1; 
+        const endIndex = endMonth; // Slice di JS bersifat exclusive di parameter kedua, jadi tidak perlu dikurangi 1 agar bulan akhir terbawa
+
+        // Fungsi Helper Penjumlahan Array
+        const sumArray = (arr) => {
+            if (!arr || arr.length === 0) return 0;
+            // Ambil potongan array dari startIndex sampai endIndex
+            const sliced = arr.slice(startIndex, endIndex); 
+            // Jumlahkan
+            return sliced.reduce((a, b) => a + b, 0);
+        };
+
+        // --- 1. HITUNG VOLUME ---
+        // Data diambil dari rekap4['volume_real'] dan rekap4['volume_rkap']
+        const totalVolReal = sumArray(data.volumeReal); 
+        const totalVolRkap = sumArray(data.rkapVol);
+        
+        // Progress Volume
+        let progVol = 0;
+        if (totalVolRkap > 0) {
+            progVol = (totalVolReal / totalVolRkap) * 100;
+        }
+
+        // --- 2. HITUNG REVENUE ---
+        // Data diambil dari rekap4['revenue_real'] dan rekap4['revenue_rkap']
+        const totalRevReal = sumArray(data.revenueReal);
+        const totalRevRkap = sumArray(data.rkapRev);
+
+        // Progress Revenue
+        let progRev = 0;
+        if (totalRevRkap > 0) {
+            progRev = (totalRevReal / totalRevRkap) * 100;
+        }
+
+        // --- 3. UPDATE TAMPILAN (FORMAT ANGKA) ---
+        const fmt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }); // Format ribuan (titik)
+
+        // Update Volume (Dibagi 1000 untuk Ton jika data aslinya Kg, sesuaikan dengan logic backend Anda)
+        // Cek backend Anda: $rekap4 sudah berupa angka murni. 
+        // Di blade lama Anda pakai /1000. Saya asumsikan data di rekap4 perlu dibagi 1000 untuk jadi TON?
+        // Note: Biasanya rekap4 sudah dalam satuan yang pas, tapi mari kita ikuti pola blade lama Anda yang membagi.
+        // TAPI: Di DashboardController, rekap4['volume_real'] sepertinya sudah float. 
+        // Jika di grafik angkanya jutaan, berarti Kg. Jika ribuan, berarti Ton.
+        // Mari asumsikan logic blade Anda sebelumnya: ($top5Buyers... / 1000). 
+        // JIKA data.volumeReal satuannya KG, maka bagi 1000. JIKA sudah TON, hapus pembagiannya.
+        // Amannya kita lihat metric number blade Anda: number_format(X / 1000). Jadi kita bagi 1000.
+        
+        elVolReal.innerText = fmt.format(totalVolReal); 
+        elVolRkap.innerText = fmt.format(totalVolRkap); // RKAP biasanya juga perlu disesuaikan satuannya
+        
+        elVolProg.innerText = progVol.toFixed(1) + '%';
+        // Update warna progress
+        elVolProg.className = 'progress-val ' + (progVol >= 100 ? 'progress-green' : 'progress-red');
+
+
+        // Update Revenue (Dibagi 1.000.000.000 untuk Milyar)
+        // Di controller Anda: $rekap4['revenue_real'] sepertinya raw number.
+        // Blade lama: number_format($totalRevenue / 1000000000).
+        elRevReal.innerText = 'Rp ' + fmt.format(totalRevReal);
+        elRevRkap.innerText = 'Rp ' + fmt.format(totalRevRkap);
+
+        elRevProg.innerText = progRev.toFixed(1) + '%';
+        elRevProg.className = 'progress-val ' + (progRev >= 100 ? 'progress-green' : 'progress-red');
+    }
+
+    // Event Listeners
+    if (startSelect && endSelect) {
+        startSelect.addEventListener('change', calculateMetrics);
+        endSelect.addEventListener('change', calculateMetrics);
+    }
+
+    // Jalankan sekali saat load agar angka muncul (Default Jan-Des)
+    calculateMetrics();
 });
