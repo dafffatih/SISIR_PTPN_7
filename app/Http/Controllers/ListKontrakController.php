@@ -34,8 +34,8 @@ class ListKontrakController extends Controller
         $endDate = $request->input('end_date');
         
         // Default sort 'tgl_kontrak' agar data terbaru muncul duluan jika tidak ada pilihan
-        $sort = $request->input('sort'); 
-        $direction = $request->input('direction', 'asc');
+        $sort = $request->input('sort', 'tgl_kontrak'); 
+        $direction = $request->input('direction', 'desc');
 
         // --- HELPER PARSING TANGGAL ---
         $parseDate = function($val) {

@@ -229,10 +229,13 @@
                   <option value="tgl_kontrak" {{ request('sort') == 'tgl_kontrak' ? 'selected' : '' }}>Urut Tanggal</option>
               </select>
 
-              <select name="direction" class="k-select-limit" onchange="document.getElementById('filterForm').submit()" title="Arah urutan">
-                  <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>↑ Ascending</option>
-                  <option value="desc" {{ request('direction') == 'desc' ? 'selected' : '' }}>↓ Descending</option>
-              </select>
+                <select name="direction" class="k-select-limit" onchange="document.getElementById('filterForm').submit()" title="Arah urutan">
+                    <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>↑ Ascending</option>
+                    
+                    <option value="desc" {{ request('direction', 'desc') == 'desc' ? 'selected' : '' }}>↓ Descending</option>
+                </select>
+
+              <button type="submit" style="display:none"></button>
 
               <select name="per_page" class="k-select-limit" onchange="document.getElementById('filterForm').submit()" title="Data per halaman">
                   @foreach([10, 50, 100, 250, 500, 1000] as $limit)

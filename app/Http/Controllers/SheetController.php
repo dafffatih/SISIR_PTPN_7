@@ -36,7 +36,7 @@ class SheetController extends Controller
         $search = $request->input('search');
         $perPage = (int) $request->input('per_page', 10);
         $sort = $request->input('sort', 'nomor_dosi'); 
-        $direction = $request->input('direction', 'asc');
+        $direction = $request->input('direction', 'desc');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
 

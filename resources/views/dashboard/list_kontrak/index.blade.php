@@ -80,15 +80,15 @@
                 </div>
 
                 <select name="sort" class="k-select-limit" onchange="document.getElementById('filterForm').submit()">
-                    <option value="" disabled {{ !request('sort') ? 'selected' : '' }}>Urutkan</option>
+                    <option value="" disabled>Urutkan</option>
                     <option value="no_kontrak" {{ request('sort') == 'no_kontrak' ? 'selected' : '' }}>No Kontrak</option>
-                    <option value="tgl_kontrak" {{ request('sort') == 'tgl_kontrak' ? 'selected' : '' }}>Tanggal</option>
+                    <option value="tgl_kontrak" {{ request('sort', 'tgl_kontrak') == 'tgl_kontrak' ? 'selected' : '' }}>Tanggal</option>
                     <option value="kuantum" {{ request('sort') == 'kuantum' ? 'selected' : '' }}>Kuantum</option>
                 </select>
 
                 <select name="direction" class="k-select-limit" onchange="document.getElementById('filterForm').submit()">
-                    <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>↑ Asc</option>
-                    <option value="desc" {{ request('direction') == 'desc' ? 'selected' : '' }}>↓ Desc</option>
+                    <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>↑ Ascending</option>
+                    <option value="desc" {{ request('direction', 'desc') == 'desc' ? 'selected' : '' }}>↓ Descending</option>
                 </select>
 
                 <select name="per_page" class="k-select-limit" onchange="document.getElementById('filterForm').submit()">
