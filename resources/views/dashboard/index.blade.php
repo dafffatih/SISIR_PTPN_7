@@ -547,7 +547,7 @@
         <div class="layout-split-chart" style="display: flex; flex-wrap: wrap;">
             
             {{-- KOLOM KIRI: CHART --}}
-            <div class="col-chart-main" style="flex: 3; min-width: 600px; border-right: 1px solid #eee;">
+            <div class="col-chart-main" style="flex: 3; min-width: 0; border-right: 1px solid #eee;">
                 <div class="chart-header-padded"><h3>Monthly Volume</h3></div>
                 <div class="chart-scroll-container">
                     <div id="chart-monthly-vol"></div>
@@ -583,20 +583,23 @@
                     <div class="stats-container2">
                         <div class="summary-item">
                             <span class="sum-label">Real (Jan-Dec)</span>
-                            {{-- ID DITAMBAHKAN: sidebar-vol-real --}}
-                            {{-- PHP Render: KG / 1000 = TON --}}
                             <span class="sum-val orange" id="sidebar-vol-real">
                                 {{ number_format($totalVolume / 1000, 0, ',', '.') }} <small>Ton</small>
                             </span>
                         </div>
                         <div class="summary-item">
-                            <span class="sum-label">RKAP</span>
-                            {{-- PHP Render: KG / 1000 = TON --}}
-                            <span class="sum-val dark">{{ number_format($rkapVolume / 1000, 0, ',', '.') }} <small>Ton</small></span>
+                            <span class="sum-label">RKAP (Jan-Dec)</span>
+                            {{-- TAMBAHKAN ID: sidebar-vol-rkap --}}
+                            <span class="sum-val dark" id="sidebar-vol-rkap">
+                                {{ number_format($rkapVolume / 1000, 0, ',', '.') }} <small>Ton</small>
+                            </span>
                         </div>
                         <div class="summary-item">
                             <span class="sum-label">Percentage</span>
-                            <span class="sum-val huge">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%</span>
+                            {{-- TAMBAHKAN ID: sidebar-vol-pct --}}
+                            <span class="sum-val huge" id="sidebar-vol-pct">
+                                {{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -610,7 +613,7 @@
         <div class="layout-split-chart" style="display: flex; flex-wrap: wrap;">
 
             {{-- KOLOM KIRI: CHART --}}
-            <div class="col-chart-main" style="flex: 3; min-width: 600px; border-right: 1px solid #eee;">
+            <div class="col-chart-main" style="flex: 3; min-width: 0; border-right: 1px solid #eee;">
                 <div class="chart-header-padded"><h3>Monthly Revenue</h3></div>
                 <div class="chart-scroll-container">
                     <div id="chart-monthly-rev"></div>
@@ -651,22 +654,21 @@
                     <div class="stats-container2">
                         <div class="summary-item">
                             <span class="sum-label">Real (Jan-Dec)</span>
-                            {{-- ID DITAMBAHKAN: sidebar-rev-real --}}
-                            {{-- PHP Render: Rupiah / 1 Milyar = Milyar --}}
                             <span class="sum-val orange" id="sidebar-rev-real">
                                 Rp {{ number_format($totalRevenue/1000000000, 0, ',', '.') }} <small>Milyar</small>
                             </span>
                         </div>
                         <div class="summary-item">
-                            <span class="sum-label">RKAP</span>
-                            {{-- PHP Render: Rupiah / 1 Milyar = Milyar --}}
-                            <span class="sum-val dark">
+                            <span class="sum-label">RKAP (Jan-Dec)</span>
+                            {{-- TAMBAHKAN ID: sidebar-rev-rkap --}}
+                            <span class="sum-val dark" id="sidebar-rev-rkap">
                                 Rp {{ number_format($rkapRevenue/1000000000, 0, ',', '.') }} <small>Milyar</small>
                             </span>
                         </div>
                         <div class="summary-item">
                             <span class="sum-label">Percentage</span>
-                            <span class="sum-val huge">
+                            {{-- TAMBAHKAN ID: sidebar-rev-pct --}}
+                            <span class="sum-val huge" id="sidebar-rev-pct">
                                 {{ $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 0) : 0 }}%
                             </span>
                         </div>

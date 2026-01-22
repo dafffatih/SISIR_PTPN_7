@@ -61,7 +61,8 @@ document.addEventListener("DOMContentLoaded", function () {
         tooltip: {
             y: {
                 formatter: function (val) {
-                    return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 }).format(val / 1000) + " Ton";
+                    // PERBAIKAN 1: Desimal diubah jadi 0
+                    return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(val / 1000) + " Ton";
                 }
             }
         }
@@ -108,9 +109,8 @@ document.addEventListener("DOMContentLoaded", function () {
         tooltip: {
             y: {
                 formatter: function (val) {
-                    let grandTotal = window.currentProductTotal || initialProductTotal;
-                    let pct = grandTotal > 0 ? (val / grandTotal) * 100 : 0;
-                    return Math.round(pct) + '%';
+                    // PERBAIKAN 2: Ubah dari Persentase ke Ton, dan Desimal 0
+                    return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(val / 1000) + " Ton";
                 }
             }
         }
@@ -165,8 +165,9 @@ document.addEventListener("DOMContentLoaded", function () {
             chartInstance.updateSeries(processed.series);
         }
 
+        // PERBAIKAN 3: Update angka tengah saat ganti dropdown (Desimal 0)
         if (centerTotalEl) {
-            centerTotalEl.innerText = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 })
+            centerTotalEl.innerText = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 })
                 .format(grandTotal / 1000);
         }
 
@@ -311,12 +312,10 @@ document.addEventListener("DOMContentLoaded", function () {
     })();
 
     // ==========================================================
-    // 5. BAR CHARTS (Volume & Revenue) -- DIUPDATE
+    // 5. BAR CHARTS (Volume & Revenue)
     // ==========================================================
 
     function createPercentAnnotations(realData, rkapData) {
-        // Data yang masuk bisa raw (Kg) atau sudah dibagi (Ton), 
-        // yang penting rasio (real/rkap) tetap sama.
         return data.monthLabels.map((month, index) => {
             const real = parseFloat(realData[index] || 0);
             const rkap = parseFloat(rkapData[index] || 0);
@@ -388,14 +387,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const fmtBarChart = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 1 });
 
     // --- CHART MONTHLY VOLUME (BAGI 1000 -> TON) ---
-    // Siapkan data dalam Ton
     const volRealTon = data.volumeReal.map(v => v / 1000);
     const volRkapTon = data.rkapVol.map(v => v / 1000);
 
     new ApexCharts(document.querySelector("#chart-monthly-vol"), {
         ...commonBarConfig,
         annotations: {
-            // Percent tetap sama walau data dibagi
             points: createPercentAnnotations(data.volumeReal, data.rkapVol)
         },
         series: [
@@ -405,13 +402,13 @@ document.addEventListener("DOMContentLoaded", function () {
         colors: ['#F97316', '#a2c4c9'],
         dataLabels: {
             enabled: true,
-            offsetY: -20, // Posisi di atas bar
+            offsetY: -20,
             style: { 
                 fontSize: '10px', 
-                colors: ['#334155'] // Warna teks gelap agar terbaca di background putih
+                colors: ['#334155'] 
             },
             formatter: function (val) {
-                return fmtBarChart.format(val); // Format angka (misal: 6.086)
+                return fmtBarChart.format(val);
             },
             background: { enabled: false },
             dropShadow: { enabled: false }
@@ -419,7 +416,6 @@ document.addEventListener("DOMContentLoaded", function () {
         tooltip: {
             y: {
                 formatter: function (val) {
-                    // Tampilkan satuan Ton di tooltip
                     return fmtBarChart.format(val) + " Ton";
                 }
             }
@@ -427,7 +423,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }).render();
 
     // --- CHART MONTHLY REVENUE (BAGI 1 MILYAR -> MILYAR) ---
-    // Siapkan data dalam Milyar
     const revRealBil = data.revenueReal.map(v => v / 1000000000);
     const revRkapBil = data.rkapRev.map(v => v / 1000000000);
 
@@ -449,7 +444,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 colors: ['#334155'] 
             },
             formatter: function (val) {
-                return fmtBarChart.format(val); // Format angka (misal: 154)
+                return fmtBarChart.format(val);
             },
             background: { enabled: false },
             dropShadow: { enabled: false }
@@ -457,7 +452,6 @@ document.addEventListener("DOMContentLoaded", function () {
         tooltip: {
             y: {
                 formatter: function (val) {
-                    // Tampilkan satuan Milyar di tooltip
                     return "Rp " + fmtBarChart.format(val) + " Milyar";
                 }
             }
@@ -488,7 +482,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const startSelect = document.getElementById('month-start');
     const endSelect = document.getElementById('month-end');
     
-    // Elemen DOM untuk Header (Atas)
     const elVolReal = document.getElementById('metric-vol-real');
     const elVolRkap = document.getElementById('metric-vol-rkap');
     const elVolProg = document.getElementById('metric-vol-progress');
@@ -497,9 +490,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const elRevRkap = document.getElementById('metric-rev-rkap');
     const elRevProg = document.getElementById('metric-rev-progress');
 
-    // Elemen DOM untuk Sidebar (Bawah)
     const elSidebarVol = document.getElementById('sidebar-vol-real');
+    const elSidebarVolRkap = document.getElementById('sidebar-vol-rkap');
+    const elSidebarVolPct = document.getElementById('sidebar-vol-pct');
+
     const elSidebarRev = document.getElementById('sidebar-rev-real');
+    const elSidebarRevRkap = document.getElementById('sidebar-rev-rkap');
+    const elSidebarRevPct = document.getElementById('sidebar-rev-pct');
 
     function calculateMetrics() {
         let startMonth = parseInt(startSelect.value);
@@ -513,7 +510,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const startIndex = startMonth - 1; 
         const endIndex = endMonth; 
 
-        // Fungsi Hitung (Sum data RAW array yang nilainya besar)
         const sumFiltered = (arr) => {
             if (!arr || arr.length === 0) return 0;
             return arr.slice(startIndex, endIndex).reduce((a, b) => a + b, 0);
@@ -524,8 +520,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return arr.reduce((a, b) => a + b, 0);
         };
 
-        // 3. KALKULASI DATA DARI RAW (Data masih KG dan Rupiah Penuh)
-        // --- Data Header (Filtered) ---
+        // --- 1. DATA HEADER (DINAMIS SESUAI FILTER) ---
         const headVolReal = sumFiltered(data.volumeReal); 
         const headVolRkap = sumFiltered(data.rkapVol);
         const headRevReal = sumFiltered(data.revenueReal);
@@ -534,52 +529,66 @@ document.addEventListener("DOMContentLoaded", function () {
         let progVol = headVolRkap > 0 ? (headVolReal / headVolRkap) * 100 : 0;
         let progRev = headRevRkap > 0 ? (headRevReal / headRevRkap) * 100 : 0;
 
-        // --- Data Sidebar (Full Year / Jan-Des) ---
+        // --- 2. DATA SIDEBAR (STATIS JAN-DES) ---
         const sideVolReal = sumFullYear(data.volumeReal);
         const sideRevReal = sumFullYear(data.revenueReal);
+        
+        const sideVolRkap = sumFullYear(data.rkapVol);
+        const sideRevRkap = sumFullYear(data.rkapRev);
 
-        // ==========================================================
-        // FORMATTER UNTUK TOTAL METRICS
-        // ==========================================================
+        let sideVolPct = sideVolRkap > 0 ? (sideVolReal / sideVolRkap) * 100 : 0;
+        let sideRevPct = sideRevRkap > 0 ? (sideRevReal / sideRevRkap) * 100 : 0;
+
+        // ==========================================
+        // FORMATTER
+        // ==========================================
         const fmtDec = new Intl.NumberFormat('id-ID', { 
             minimumFractionDigits: 0,
             maximumFractionDigits: 3 
-        }); 
+        });
+        const fmtInt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
 
         // ==========================================
-        // UPDATE BAGIAN ATAS (SESUAI FILTER)
+        // UPDATE HEADER (DINAMIS)
         // ==========================================
-        
-        // Volume Header (Bagi 1000 -> Ton)
         if (elVolReal) elVolReal.innerText = fmtDec.format(headVolReal / 1000); 
         if (elVolRkap) elVolRkap.innerText = fmtDec.format(headVolRkap / 1000);
-        
         if (elVolProg) {
             elVolProg.innerText = progVol.toFixed(1) + '%';
             elVolProg.className = 'progress-val ' + (progVol >= 100 ? 'progress-green' : 'progress-red');
         }
 
-        // Revenue Header (Bagi 1 Milyar -> Milyar)
         if (elRevReal) elRevReal.innerText = 'Rp ' + fmtDec.format(headRevReal / 1000000000); 
         if (elRevRkap) elRevRkap.innerText = 'Rp ' + fmtDec.format(headRevRkap / 1000000000);
-
         if (elRevProg) {
             elRevProg.innerText = progRev.toFixed(1) + '%';
             elRevProg.className = 'progress-val ' + (progRev >= 100 ? 'progress-green' : 'progress-red');
         }
 
         // ==========================================
-        // UPDATE BAGIAN BAWAH (FULL YEAR)
+        // UPDATE SIDEBAR (STATIS FULL YEAR)
         // ==========================================
         
-        // Sidebar Volume (Full Year) - Bagi 1000
+        // --- VOLUME SIDEBAR ---
         if (elSidebarVol) {
             elSidebarVol.innerHTML = fmtDec.format(sideVolReal / 1000) + ' <small>Ton</small>';
         }
+        if (elSidebarVolRkap) {
+            elSidebarVolRkap.innerHTML = fmtDec.format(sideVolRkap / 1000) + ' <small>Ton</small>';
+        }
+        if (elSidebarVolPct) {
+            elSidebarVolPct.innerText = fmtInt.format(sideVolPct) + '%';
+        }
 
-        // Sidebar Revenue (Full Year) - Bagi 1 Milyar
+        // --- REVENUE SIDEBAR ---
         if (elSidebarRev) {
             elSidebarRev.innerHTML = 'Rp ' + fmtDec.format(sideRevReal / 1000000000) + ' <small>Milyar</small>';
+        }
+        if (elSidebarRevRkap) {
+            elSidebarRevRkap.innerHTML = 'Rp ' + fmtDec.format(sideRevRkap / 1000000000) + ' <small>Milyar</small>';
+        }
+        if (elSidebarRevPct) {
+            elSidebarRevPct.innerText = fmtInt.format(sideRevPct) + '%';
         }
     }
 
