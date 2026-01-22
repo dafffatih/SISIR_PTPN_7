@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", function () {
         tooltip: {
             y: {
                 formatter: function (val) {
-                    return new Intl.NumberFormat('id-ID').format(val / 1000) + " Ton";
+                    return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 }).format(val / 1000) + " Ton";
                 }
             }
         }
@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     // ==========================================================
-    // 3. UPDATE FUNCTION
+    // 3. UPDATE FUNCTION (DONUT)
     // ==========================================================
 
     const buyerSelect = document.getElementById('buyer-filter');
@@ -166,8 +166,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (centerTotalEl) {
-            centerTotalEl.innerText = new Intl.NumberFormat('id-ID')
-                .format(Math.round(grandTotal / 1000));
+            centerTotalEl.innerText = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 })
+                .format(grandTotal / 1000);
         }
 
         if (legendContainer) {
@@ -252,8 +252,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ==========================================================
     // CUSTOM DRAG-TO-SCROLL FOR CHART CONTAINER
-    // Allows users to drag the chart horizontally to see hidden data
-    // Speed matches user's drag speed for natural feel
     // ==========================================================
     (function initChartDragScroll() {
         const scrollContainer = document.querySelector('.price-chart-wrapper .chart-scroll-container');
@@ -263,9 +261,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let startX = 0;
         let scrollLeft = 0;
 
-        // Mouse events
         scrollContainer.addEventListener('mousedown', (e) => {
-            // Ignore if clicking on chart interactive elements
             if (e.target.closest('.apexcharts-tooltip') || e.target.closest('.apexcharts-legend')) return;
 
             isDragging = true;
@@ -279,7 +275,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!isDragging) return;
             e.preventDefault();
             const x = e.pageX - scrollContainer.offsetLeft;
-            const walk = (x - startX); // 1:1 speed ratio
+            const walk = (x - startX); 
             scrollContainer.scrollLeft = scrollLeft - walk;
         });
 
@@ -293,10 +289,8 @@ document.addEventListener("DOMContentLoaded", function () {
             scrollContainer.style.cursor = 'grab';
         });
 
-        // Touch events for mobile
         scrollContainer.addEventListener('touchstart', (e) => {
             if (e.target.closest('.apexcharts-tooltip') || e.target.closest('.apexcharts-legend')) return;
-
             isDragging = true;
             startX = e.touches[0].pageX - scrollContainer.offsetLeft;
             scrollLeft = scrollContainer.scrollLeft;
@@ -313,28 +307,16 @@ document.addEventListener("DOMContentLoaded", function () {
             isDragging = false;
         });
 
-        // Set initial cursor style
         scrollContainer.style.cursor = 'grab';
     })();
 
     // ==========================================================
-    // 5. BAR CHARTS (Volume & Revenue)
+    // 5. BAR CHARTS (Volume & Revenue) -- DIUPDATE
     // ==========================================================
 
-    // --- 1. Fungsi Smart Formatter (Revenue) ---
-    function smartRevenueFormat(val) {
-        if (val === 0 || val === null || isNaN(val)) return "0";
-        let num = parseFloat(val);
-        let absNum = Math.abs(num);
-
-        if (absNum >= 1000000000) return (num / 1000000000).toFixed(1) + ' M';
-        else if (absNum >= 1000000) return (num / 1000000).toFixed(0) + ' Jt';
-        else return num.toFixed(0) + ' M';
-    }
-
-    // --- 2. Fungsi Membuat Anotasi Persentase di Bawah ---
-    // Ini trik untuk menaruh teks persentase di dasar grafik (y=0)
     function createPercentAnnotations(realData, rkapData) {
+        // Data yang masuk bisa raw (Kg) atau sudah dibagi (Ton), 
+        // yang penting rasio (real/rkap) tetap sama.
         return data.monthLabels.map((month, index) => {
             const real = parseFloat(realData[index] || 0);
             const rkap = parseFloat(rkapData[index] || 0);
@@ -352,22 +334,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 label: {
                     borderColor: 'transparent',
                     style: {
-                        // Warna akan di-override oleh CSS (!important), tapi set transparant untuk safety
-                        background: 'transparent', // <--- PENTING: Hapus background kotak
-                        fontSize: '11px',          // Sesuaikan ukuran font
+                        background: 'transparent',
+                        fontSize: '11px',
                         fontFamily: 'Inter, sans-serif',
                         padding: { left: 0, right: 0, top: 0, bottom: 0 },
-                        cssClass: 'apexcharts-point-annotation-label' // Pastikan class ini terbaca
+                        cssClass: 'apexcharts-point-annotation-label'
                     },
                     text: percentText,
                     position: 'center',
-                    offsetY: 0, // Sesuaikan posisi vertikal jika perlu
+                    offsetY: 0,
                 }
             };
         });
     }
 
-    // --- 3. Konfigurasi Umum ---
     const commonBarConfig = {
         chart: {
             type: 'bar',
@@ -378,11 +358,11 @@ document.addEventListener("DOMContentLoaded", function () {
         plotOptions: {
             bar: {
                 horizontal: false,
-                columnWidth: '60%', // Lebar batang sedikit ditambah agar rapat
+                columnWidth: '60%',
                 borderRadius: 4,
                 dataLabels: {
-                    position: 'top', // Label Angka tetap di Atas
-                    hideOverflowingLabels: false // PENTING: Agar label tetap muncul walau sempit
+                    position: 'top',
+                    hideOverflowingLabels: false
                 }
             }
         },
@@ -395,79 +375,104 @@ document.addEventListener("DOMContentLoaded", function () {
             axisBorder: { show: false },
             axisTicks: { show: false }
         },
-        yaxis: { show: false }, // Sembunyikan Y Axis
+        yaxis: { show: false },
         grid: {
             show: false,
-            padding: { top: 40, bottom: 20 } // Padding atas utk Angka, Bawah utk Persen
+            padding: { top: 40, bottom: 20 }
         },
         legend: { position: 'bottom', offsetY: 10 },
         tooltip: { shared: true, intersect: false }
     };
 
-    // --- A. CHART MONTHLY VOLUME ---
+    // Helper formatter untuk Label Bar Chart
+    const fmtBarChart = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 1 });
+
+    // --- CHART MONTHLY VOLUME (BAGI 1000 -> TON) ---
+    // Siapkan data dalam Ton
+    const volRealTon = data.volumeReal.map(v => v / 1000);
+    const volRkapTon = data.rkapVol.map(v => v / 1000);
+
     new ApexCharts(document.querySelector("#chart-monthly-vol"), {
         ...commonBarConfig,
         annotations: {
+            // Percent tetap sama walau data dibagi
             points: createPercentAnnotations(data.volumeReal, data.rkapVol)
         },
         series: [
-            { name: 'Real', data: data.volumeReal },
-            { name: 'RKAP', data: data.rkapVol }
+            { name: 'Real', data: volRealTon },
+            { name: 'RKAP', data: volRkapTon }
         ],
         colors: ['#F97316', '#a2c4c9'],
         dataLabels: {
             enabled: true,
-            offsetY: -25,
-            style: {
-                fontSize: '11px',
-                // Hapus colors, cssClass, dll dari sini. Kita atur di CSS saja.
+            offsetY: -20, // Posisi di atas bar
+            style: { 
+                fontSize: '10px', 
+                colors: ['#334155'] // Warna teks gelap agar terbaca di background putih
             },
-            background: { enabled: false }, // Matikan background
-            dropShadow: { enabled: false },
-            // formatter: function (val) {
-            //     return smartRevenueFormat(val);
-            // }
+            formatter: function (val) {
+                return fmtBarChart.format(val); // Format angka (misal: 6.086)
+            },
+            background: { enabled: false },
+            dropShadow: { enabled: false }
+        },
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    // Tampilkan satuan Ton di tooltip
+                    return fmtBarChart.format(val) + " Ton";
+                }
+            }
         }
     }).render();
 
-    // --- B. CHART MONTHLY REVENUE ---
+    // --- CHART MONTHLY REVENUE (BAGI 1 MILYAR -> MILYAR) ---
+    // Siapkan data dalam Milyar
+    const revRealBil = data.revenueReal.map(v => v / 1000000000);
+    const revRkapBil = data.rkapRev.map(v => v / 1000000000);
+
     new ApexCharts(document.querySelector("#chart-monthly-rev"), {
         ...commonBarConfig,
         annotations: {
             points: createPercentAnnotations(data.revenueReal, data.rkapRev)
         },
         series: [
-            { name: 'Real', data: data.revenueReal },
-            { name: 'RKAP', data: data.rkapRev }
+            { name: 'Real', data: revRealBil },
+            { name: 'RKAP', data: revRkapBil }
         ],
         colors: ['#F97316', '#a2c4c9'],
         dataLabels: {
             enabled: true,
-            offsetY: -25,
-            style: {
-                fontSize: '11px',
-                // Hapus colors, cssClass, dll dari sini. Kita atur di CSS saja.
+            offsetY: -20,
+            style: { 
+                fontSize: '10px', 
+                colors: ['#334155'] 
             },
-            background: { enabled: false }, // Matikan background
-            dropShadow: { enabled: false },
-            // formatter: function (val) {
-            //     return smartRevenueFormat(val);
-            // }
+            formatter: function (val) {
+                return fmtBarChart.format(val); // Format angka (misal: 154)
+            },
+            background: { enabled: false },
+            dropShadow: { enabled: false }
+        },
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    // Tampilkan satuan Milyar di tooltip
+                    return "Rp " + fmtBarChart.format(val) + " Milyar";
+                }
+            }
         }
     }).render();
 
+
     // ==========================================================
-    // GLOBAL RESIZE HANDLER FOR ALL CHARTS
-    // Ensures all ApexCharts resize properly when window changes
+    // GLOBAL RESIZE HANDLER
     // ==========================================================
     let globalResizeTimer;
     window.addEventListener('resize', function () {
         clearTimeout(globalResizeTimer);
         globalResizeTimer = setTimeout(function () {
-            // Trigger ApexCharts resize event
             window.dispatchEvent(new Event('resize'));
-
-            // Update all chart widths to match container
             document.querySelectorAll('.apexcharts-canvas').forEach(function (canvas) {
                 if (canvas.parentElement) {
                     canvas.style.width = '100%';
@@ -475,108 +480,113 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }, 150);
     });
+
     // ==========================================================
-    // 6. LOGIKA FILTER BULAN & KALKULASI TOTAL METRICS
+    // 6. LOGIKA FILTER BULAN & KALKULASI TOTAL METRICS (FIXED)
     // ==========================================================
     
     const startSelect = document.getElementById('month-start');
     const endSelect = document.getElementById('month-end');
     
-    // Elemen DOM untuk Volume
+    // Elemen DOM untuk Header (Atas)
     const elVolReal = document.getElementById('metric-vol-real');
     const elVolRkap = document.getElementById('metric-vol-rkap');
     const elVolProg = document.getElementById('metric-vol-progress');
     
-    // Elemen DOM untuk Revenue
     const elRevReal = document.getElementById('metric-rev-real');
     const elRevRkap = document.getElementById('metric-rev-rkap');
     const elRevProg = document.getElementById('metric-rev-progress');
 
+    // Elemen DOM untuk Sidebar (Bawah)
+    const elSidebarVol = document.getElementById('sidebar-vol-real');
+    const elSidebarRev = document.getElementById('sidebar-rev-real');
+
     function calculateMetrics() {
-        // Ambil value bulan (1-12)
-        let startMonth = parseInt(startSelect.value); 
+        let startMonth = parseInt(startSelect.value);
         let endMonth = parseInt(endSelect.value);
 
-        // Validasi: Jika start > end, tukar atau set sama (opsional, disini kita biarkan user tanggung jawab atau force end >= start)
-        if (startMonth > endMonth) {
-            // Opsional: Alert user atau otomatis ubah endMonth
+        if (startMonth > endMonth) { 
             endMonth = startMonth; 
-            endSelect.value = endMonth;
+            endSelect.value = endMonth; 
         }
 
-        // Array index dimulai dari 0 (Januari) s/d 11 (Desember)
-        // Kita kurangi 1 karena value dropdown 1-12
         const startIndex = startMonth - 1; 
-        const endIndex = endMonth; // Slice di JS bersifat exclusive di parameter kedua, jadi tidak perlu dikurangi 1 agar bulan akhir terbawa
+        const endIndex = endMonth; 
 
-        // Fungsi Helper Penjumlahan Array
-        const sumArray = (arr) => {
+        // Fungsi Hitung (Sum data RAW array yang nilainya besar)
+        const sumFiltered = (arr) => {
             if (!arr || arr.length === 0) return 0;
-            // Ambil potongan array dari startIndex sampai endIndex
-            const sliced = arr.slice(startIndex, endIndex); 
-            // Jumlahkan
-            return sliced.reduce((a, b) => a + b, 0);
+            return arr.slice(startIndex, endIndex).reduce((a, b) => a + b, 0);
         };
 
-        // --- 1. HITUNG VOLUME ---
-        // Data diambil dari rekap4['volume_real'] dan rekap4['volume_rkap']
-        const totalVolReal = sumArray(data.volumeReal); 
-        const totalVolRkap = sumArray(data.rkapVol);
+        const sumFullYear = (arr) => {
+            if (!arr || arr.length === 0) return 0;
+            return arr.reduce((a, b) => a + b, 0);
+        };
+
+        // 3. KALKULASI DATA DARI RAW (Data masih KG dan Rupiah Penuh)
+        // --- Data Header (Filtered) ---
+        const headVolReal = sumFiltered(data.volumeReal); 
+        const headVolRkap = sumFiltered(data.rkapVol);
+        const headRevReal = sumFiltered(data.revenueReal);
+        const headRevRkap = sumFiltered(data.rkapRev);
+
+        let progVol = headVolRkap > 0 ? (headVolReal / headVolRkap) * 100 : 0;
+        let progRev = headRevRkap > 0 ? (headRevReal / headRevRkap) * 100 : 0;
+
+        // --- Data Sidebar (Full Year / Jan-Des) ---
+        const sideVolReal = sumFullYear(data.volumeReal);
+        const sideRevReal = sumFullYear(data.revenueReal);
+
+        // ==========================================================
+        // FORMATTER UNTUK TOTAL METRICS
+        // ==========================================================
+        const fmtDec = new Intl.NumberFormat('id-ID', { 
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 3 
+        }); 
+
+        // ==========================================
+        // UPDATE BAGIAN ATAS (SESUAI FILTER)
+        // ==========================================
         
-        // Progress Volume
-        let progVol = 0;
-        if (totalVolRkap > 0) {
-            progVol = (totalVolReal / totalVolRkap) * 100;
+        // Volume Header (Bagi 1000 -> Ton)
+        if (elVolReal) elVolReal.innerText = fmtDec.format(headVolReal / 1000); 
+        if (elVolRkap) elVolRkap.innerText = fmtDec.format(headVolRkap / 1000);
+        
+        if (elVolProg) {
+            elVolProg.innerText = progVol.toFixed(1) + '%';
+            elVolProg.className = 'progress-val ' + (progVol >= 100 ? 'progress-green' : 'progress-red');
         }
 
-        // --- 2. HITUNG REVENUE ---
-        // Data diambil dari rekap4['revenue_real'] dan rekap4['revenue_rkap']
-        const totalRevReal = sumArray(data.revenueReal);
-        const totalRevRkap = sumArray(data.rkapRev);
+        // Revenue Header (Bagi 1 Milyar -> Milyar)
+        if (elRevReal) elRevReal.innerText = 'Rp ' + fmtDec.format(headRevReal / 1000000000); 
+        if (elRevRkap) elRevRkap.innerText = 'Rp ' + fmtDec.format(headRevRkap / 1000000000);
 
-        // Progress Revenue
-        let progRev = 0;
-        if (totalRevRkap > 0) {
-            progRev = (totalRevReal / totalRevRkap) * 100;
+        if (elRevProg) {
+            elRevProg.innerText = progRev.toFixed(1) + '%';
+            elRevProg.className = 'progress-val ' + (progRev >= 100 ? 'progress-green' : 'progress-red');
         }
 
-        // --- 3. UPDATE TAMPILAN (FORMAT ANGKA) ---
-        const fmt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }); // Format ribuan (titik)
-
-        // Update Volume (Dibagi 1000 untuk Ton jika data aslinya Kg, sesuaikan dengan logic backend Anda)
-        // Cek backend Anda: $rekap4 sudah berupa angka murni. 
-        // Di blade lama Anda pakai /1000. Saya asumsikan data di rekap4 perlu dibagi 1000 untuk jadi TON?
-        // Note: Biasanya rekap4 sudah dalam satuan yang pas, tapi mari kita ikuti pola blade lama Anda yang membagi.
-        // TAPI: Di DashboardController, rekap4['volume_real'] sepertinya sudah float. 
-        // Jika di grafik angkanya jutaan, berarti Kg. Jika ribuan, berarti Ton.
-        // Mari asumsikan logic blade Anda sebelumnya: ($top5Buyers... / 1000). 
-        // JIKA data.volumeReal satuannya KG, maka bagi 1000. JIKA sudah TON, hapus pembagiannya.
-        // Amannya kita lihat metric number blade Anda: number_format(X / 1000). Jadi kita bagi 1000.
+        // ==========================================
+        // UPDATE BAGIAN BAWAH (FULL YEAR)
+        // ==========================================
         
-        elVolReal.innerText = fmt.format(totalVolReal); 
-        elVolRkap.innerText = fmt.format(totalVolRkap); // RKAP biasanya juga perlu disesuaikan satuannya
-        
-        elVolProg.innerText = progVol.toFixed(1) + '%';
-        // Update warna progress
-        elVolProg.className = 'progress-val ' + (progVol >= 100 ? 'progress-green' : 'progress-red');
+        // Sidebar Volume (Full Year) - Bagi 1000
+        if (elSidebarVol) {
+            elSidebarVol.innerHTML = fmtDec.format(sideVolReal / 1000) + ' <small>Ton</small>';
+        }
 
-
-        // Update Revenue (Dibagi 1.000.000.000 untuk Milyar)
-        // Di controller Anda: $rekap4['revenue_real'] sepertinya raw number.
-        // Blade lama: number_format($totalRevenue / 1000000000).
-        elRevReal.innerText = 'Rp ' + fmt.format(totalRevReal);
-        elRevRkap.innerText = 'Rp ' + fmt.format(totalRevRkap);
-
-        elRevProg.innerText = progRev.toFixed(1) + '%';
-        elRevProg.className = 'progress-val ' + (progRev >= 100 ? 'progress-green' : 'progress-red');
+        // Sidebar Revenue (Full Year) - Bagi 1 Milyar
+        if (elSidebarRev) {
+            elSidebarRev.innerHTML = 'Rp ' + fmtDec.format(sideRevReal / 1000000000) + ' <small>Milyar</small>';
+        }
     }
 
-    // Event Listeners
     if (startSelect && endSelect) {
         startSelect.addEventListener('change', calculateMetrics);
         endSelect.addEventListener('change', calculateMetrics);
     }
 
-    // Jalankan sekali saat load agar angka muncul (Default Jan-Des)
     calculateMetrics();
 });

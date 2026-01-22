@@ -5,20 +5,20 @@
 @section('content')
 {{-- BLOK PHP: INITIALIZATION DATA --}}
 @php
+    // Inisialisasi Data Top 5 untuk Tampilan Awal (PHP Render)
     $initBuyers = $top5Buyers['TOTAL'] ?? [];
-    $buyersTotalVol = $initBuyers['TOTAL'] ?? 0;
+    $buyersTotalVol = $initBuyers['TOTAL'] ?? 0; // Ini dalam KG
     if(isset($initBuyers['TOTAL'])) unset($initBuyers['TOTAL']); 
     $buyerLabels = array_keys($initBuyers);
 
     $initProducts = $top5Products['TOTAL'] ?? [];
-    $productsTotalVol = $initProducts['TOTAL'] ?? 0;
+    $productsTotalVol = $initProducts['TOTAL'] ?? 0; // Ini dalam KG
     if(isset($initProducts['TOTAL'])) unset($initProducts['TOTAL']);
     $productLabels = array_keys($initProducts);
 
     $hexPalette = ['#134E5E', '#2C7A7B', '#7FB3B8', '#F59E0B', '#FDBA74', '#FED7AA'];
     $chartColors = $hexPalette;
     $prodColors  = $hexPalette;
-    // dd($rekap4);
 @endphp
 
 <link rel="stylesheet" href="{{ asset('css/dashboard-custom.css') }}">
@@ -35,6 +35,7 @@
         filter: drop-shadow(0px 0px 1px rgba(0,0,0,0.2));
     }
 </style>
+
 <div class="dashboard-container">
     
     <div class="dashboard-header">
@@ -45,12 +46,8 @@
                 @php
                     use Carbon\Carbon;
                     $realCurrentYear = Carbon::now()->year;
-                    
-                    // 1. Sanitasi: Pastikan tahun yang diambil adalah angka. 
-                    // Jika isinya 'default' atau kosong, paksa jadi tahun sekarang/terbaru.
                     $checkYear = $sharedCurrentYear; 
 
-                    // Logika Penentuan Tanggal
                     if ($checkYear == $realCurrentYear) {
                         $displayDate = Carbon::now()->subDay();
                     } else {
@@ -66,18 +63,17 @@
                 </span>
             </div>
 
-            {{-- 2. BAGIAN DROPDOWN BULAN (Form Filter) --}}
+            {{-- FORM FILTER BULAN --}}
             <form action="{{ url()->current() }}" method="GET" id="filterForm" style="display: inline-block;">
-                {{-- Simpan parameter tahun agar tidak hilang saat ganti bulan --}}
                 @if(request('year'))
                     <input type="hidden" name="year" value="{{ request('year') }}">
                 @endif
 
-                {{-- Dropdown Awal (Start Month) --}}
+                {{-- DROPDOWN START (DEFAULT: 1 / JANUARI) --}}
                 <select name="start_month" id="month-start" class="dashboard-select" style="min-width: 100px;" onchange="document.getElementById('filterForm').submit()">
-                    <option value="all" {{ request('start_month', 'all') == 'all' ? 'selected' : '' }}>Seluruhnya</option>
+                    {{-- Opsi 'Seluruhnya' DIHAPUS --}}
                     @foreach(range(1,12) as $m)
-                        <option value="{{ $m }}" {{ request('start_month') == $m ? 'selected' : '' }}>
+                        <option value="{{ $m }}" {{ request('start_month', 1) == $m ? 'selected' : '' }}>
                             {{ DateTime::createFromFormat('!m', $m)->format('F') }}
                         </option>
                     @endforeach
@@ -85,11 +81,11 @@
                 
                 <span>-</span>
                 
-                {{-- Dropdown Akhir (End Month) --}}
+                {{-- DROPDOWN END (DEFAULT: 12 / DESEMBER) --}}
                 <select name="end_month" id="month-end" class="dashboard-select" style="min-width: 100px;" onchange="document.getElementById('filterForm').submit()">
-                    <option value="all" {{ request('end_month', 'all') == 'all' ? 'selected' : '' }}>Seluruhnya</option>
+                    {{-- Opsi 'Seluruhnya' DIHAPUS --}}
                     @foreach(range(1,12) as $m)
-                        <option value="{{ $m }}" {{ request('end_month') == $m ? 'selected' : '' }}>
+                        <option value="{{ $m }}" {{ request('end_month', 12) == $m ? 'selected' : '' }}>
                             {{ DateTime::createFromFormat('!m', $m)->format('F') }}
                         </option>
                     @endforeach
@@ -99,6 +95,7 @@
     </div>
 
     {{-- 1. HEADER METRICS (Total Vol & Rev) --}}
+    {{-- CATATAN: Karena Controller mengirim KG dan RUPIAH, di sini kita bagi 1000 (Ton) dan 1M (Milyar) --}}
     <div class="metrics-row">
         {{-- Total Volume --}}
         <div class="card-metric">
@@ -109,8 +106,8 @@
                     </div>
 
                     <div class="metric-value-group">
-                        {{-- FIX: Tampilkan langsung dari PHP --}}
-                        <span class="metric-number" id="metric-vol-real">{{ number_format($totalVolume, 0, ',', '.') }}</span>
+                        {{-- REAL: Kg / 1000 = Ton --}}
+                        <span class="metric-number" id="metric-vol-real">{{ number_format($totalVolume / 1000, 0, ',', '.') }}</span>
                         <span class="metric-unit">Ton</span>
                     </div>
 
@@ -123,8 +120,8 @@
                     <div class="rkap-info">
                         <span class="metric-label1">Total Volume RKAP</span>
                         <div class="metric-value-group right-align">
-                            {{-- FIX: Tampilkan langsung dari PHP --}}
-                            <span class="metric-number-small" id="metric-vol-rkap">{{ number_format($rkapVolume, 0, ',', '.') }}</span>
+                            {{-- RKAP: Kg / 1000 = Ton --}}
+                            <span class="metric-number-small" id="metric-vol-rkap">{{ number_format($rkapVolume / 1000, 0, ',', '.') }}</span>
                             <span class="metric-unit-small">Ton</span>
                         </div>
                     </div>
@@ -144,7 +141,7 @@
                     </div>
 
                     <div class="metric-value-group">
-                        {{-- FIX: Tampilkan langsung dari PHP (Dalam Milyar) --}}
+                        {{-- REAL: Rupiah / 1 Milyar --}}
                         <span class="metric-number" id="metric-rev-real">{{ number_format($totalRevenue / 1000000000, 2, ',', '.') }}</span>
                         <span class="metric-unit">Milyar</span>
                     </div>
@@ -158,7 +155,7 @@
                     <div class="rkap-info">
                         <span class="metric-label1">Total Revenue RKAP</span>
                         <div class="metric-value-group right-align">
-                            {{-- FIX: Tampilkan langsung dari PHP --}}
+                            {{-- RKAP: Rupiah / 1 Milyar --}}
                             <span class="metric-number-small" id="metric-rev-rkap">{{ number_format($rkapRevenue / 1000000000, 2, ',', '.') }}</span>
                             <span class="metric-unit-small">Milyar</span>
                         </div>
@@ -329,310 +326,286 @@
             </div>
         </div>
 
-        
+        {{-- BAGIAN 2 (KANAN) --}}
+        <div class="split-col">
 
-{{-- ================== --}}
-{{-- BAGIAN 2 (KANAN) --}}
-{{-- ================== --}}
-<div class="split-col">
+            {{-- TOP 5 ROW --}}
+            <div class="top5-row">
 
-{{-- ================== --}}
-{{-- TOP 5 ROW --}}
-{{-- ================== --}}
-<div class="top5-row">
-
-    {{-- ================== --}}
-    {{-- Top 5 Buyers --}}
-    {{-- ================== --}}
-    <div class="card-std card-half">
-        <div class="card-header flex-between">
-            <h3>Top 5 Buyers</h3>
-            <select id="buyer-filter" class="dashboard-select">
-                <option value="TOTAL" selected>TOTAL</option>
-                <option value="SIR 20">SIR 20</option>
-                <option value="RSS 1">RSS 1</option>
-                <option value="SIR 3L">SIR 3L</option>
-                <option value="SIR 3WF">SIR 3WF</option>
-            </select>
-        </div>
-
-        <div class="donut-container">
-            <div class="chart-side-wrapper">
-                <div id="chart-buyer" class="chart-donut"></div>
-                <div class="donut-center-label">
-                    <span class="lbl">Total Ton</span>
-                    <span class="num" id="buyer-center-total">
-                        {{ number_format($buyersTotalVol/1000, 0, ',', '.') }}
-                    </span>
-                </div>
-            </div>
-
-            {{-- LEGEND BUYERS --}}
-            <div class="custom-legend" id="buyer-legend-container">
-                @php $i = 0; @endphp
-                @foreach($initBuyers as $buyer => $vol)
-                    @if($buyer === 'TOTAL' || strtoupper(trim($buyer)) === 'LAINNYA')
-                        @continue
-                    @endif
-                    <div class="legend-item">
-                        <span
-                            class="dot"
-                            style="background: {{ $chartColors[$i % count($chartColors)] }}"
-                        ></span>
-                        <span class="name" title="{{ $buyer }}">{{ $buyer }}</span>
+                {{-- Top 5 Buyers --}}
+                <div class="card-std card-half">
+                    <div class="card-header flex-between">
+                        <h3>Top 5 Buyers</h3>
+                        <select id="buyer-filter" class="dashboard-select">
+                            <option value="TOTAL" selected>TOTAL</option>
+                            <option value="SIR 20">SIR 20</option>
+                            <option value="RSS 1">RSS 1</option>
+                            <option value="SIR 3L">SIR 3L</option>
+                            <option value="SIR 3WF">SIR 3WF</option>
+                        </select>
                     </div>
-                    @php $i++; @endphp
-                @endforeach
-            </div>
-        </div>
-    </div>
 
-    {{-- ================== --}}
-    {{-- Top 5 Products --}}
-    {{-- ================== --}}
-    <div class="card-std card-half">
-        <div class="card-header flex-between">
-            <h3>Top 5 Products</h3>
-            <select id="product-filter" class="dashboard-select">
-                <option value="TOTAL" selected>TOTAL</option>
-                <option value="SIR 20">SIR 20</option>
-                <option value="RSS 1">RSS 1</option>
-                <option value="SIR 3L">SIR 3L</option>
-                <option value="SIR 3WF">SIR 3WF</option>
-            </select>
-        </div>
-
-        <div class="donut-container">
-            <div class="chart-side-wrapper">
-                <div id="chart-product" class="chart-donut"></div>
-                <div class="donut-center-label">
-                    <span class="lbl">Total Ton</span>
-                    <span class="num" id="product-center-total">
-                        {{ number_format($productsTotalVol/1000, 0, ',', '.') }}
-                    </span>
-                </div>
-            </div>
-
-            {{-- LEGEND PRODUCTS --}}
-            <div class="custom-legend" id="product-legend-container">
-                @php $i = 0; @endphp
-                @foreach($initProducts as $prod => $vol)
-                    @if($prod === 'TOTAL' || strtoupper(trim($prod)) === 'LAINNYA')
-                        @continue
-                    @endif
-                    <div class="legend-item">
-                        <span
-                            class="dot"
-                            style="background: {{ $prodColors[$i % count($prodColors)] }}"
-                        ></span>
-                        <span class="name">{{ $prod }}</span>
-                    </div>
-                    @php $i++; @endphp
-                @endforeach
-            </div>
-        </div>
-    </div>
-
-</div>
-{{-- ===== END TOP 5 ROW ===== --}}
-
-
-
-{{-- ================== --}}
-{{-- UTILITAS GUDANG --}}
-{{-- ================== --}}
-<div class="warehouse-wrapper">
-    <div class="card-std warehouse-card">
-
-        {{-- HEADER --}}
-        <div class="warehouse-header" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <h3 style="margin: 0; white-space: nowrap;">Utilitas Gudang Produksi Di</h3>
-            
-            {{-- DROPDOWN 1: KATEGORI (UNIT / IPMG) --}}
-            <select class="dashboard-select" id="warehouseGroup" onchange="updateWarehouseTypes()" style="width: auto; min-width: 80px;">
-                <option value="unit">Unit</option>
-                <option value="ipmg">IPMG</option>
-            </select>
-
-            {{-- DROPDOWN 2: TIPE MUTU (Isinya berubah via JS) --}}
-            <select class="dashboard-select" id="warehouseSelector" onchange="changeWarehouseTab(this.value)" style="width: auto;">
-                {{-- Options akan diisi oleh JavaScript --}}
-            </select>
-        </div>
-
-        {{-- CONTENT (LOOPING PHP TETAP SAMA) --}}
-        <div class="warehouse-box">
-            
-            @foreach($utilitasGudang as $key => $items)
-                {{-- ID dibuat slug agar cocok dengan value dropdown (misal: SIR 20 -> sir-20) --}}
-                <div id="warehouse-{{ Str::slug($key) }}" class="warehouse-tab-content" style="display: none;">
-                    
-                    @forelse($items as $item)
-                        <div class="warehouse-row">
-                            <span class="label">{{ $item['name'] }}</span>
-                            <div class="bar-wrapper">
-                                {{-- Bar Stock --}}
-                                <div class="bar stock" style="width: {{ $item['percent'] > 100 ? 100 : $item['percent'] }}%">
-                                    {{ number_format($item['stock'], 0, ',', '.') }}
-                                </div>
-                                {{-- Bar Kapasitas --}}
-                                <div class="bar capacity">
-                                    <span class="cap">{{ number_format($item['capacity'], 0, ',', '.') }}</span>
-                                </div>
+                    <div class="donut-container">
+                        <div class="chart-side-wrapper">
+                            <div id="chart-buyer" class="chart-donut"></div>
+                            <div class="donut-center-label">
+                                <span class="lbl">Total Ton</span>
+                                <span class="num" id="buyer-center-total">
+                                    {{-- Data Buyers dalam KG, dibagi 1000 jadi Ton --}}
+                                    {{ number_format($buyersTotalVol/1000, 0, ',', '.') }}
+                                </span>
                             </div>
-                            <span class="percent">{{ $item['percent'] }}%</span>
                         </div>
-                    @empty
-                        <div class="text-center p-3 text-muted">Tidak ada data</div>
-                    @endforelse
 
+                        {{-- LEGEND BUYERS --}}
+                        <div class="custom-legend" id="buyer-legend-container">
+                            @php $i = 0; @endphp
+                            @foreach($initBuyers as $buyer => $vol)
+                                @if($buyer === 'TOTAL' || strtoupper(trim($buyer)) === 'LAINNYA')
+                                    @continue
+                                @endif
+                                <div class="legend-item">
+                                    <span class="dot" style="background: {{ $chartColors[$i % count($chartColors)] }}"></span>
+                                    <span class="name" title="{{ $buyer }}">{{ $buyer }}</span>
+                                </div>
+                                @php $i++; @endphp
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
-            @endforeach
 
-            {{-- LEGEND --}}
-            <div class="warehouse-legend mt-3">
-                <div class="legend-item"><span class="legend-box stock"></span><span>Stock</span></div>
-                <div class="legend-item"><span class="legend-box capacity"></span><span>Kapasitas</span></div>
-                <div class="legend-item"><span class="legend-box percent"></span><span>Persentase</span></div>
+                {{-- Top 5 Products --}}
+                <div class="card-std card-half">
+                    <div class="card-header flex-between">
+                        <h3>Top 5 Products</h3>
+                        <select id="product-filter" class="dashboard-select">
+                            <option value="TOTAL" selected>TOTAL</option>
+                            <option value="SIR 20">SIR 20</option>
+                            <option value="RSS 1">RSS 1</option>
+                            <option value="SIR 3L">SIR 3L</option>
+                            <option value="SIR 3WF">SIR 3WF</option>
+                        </select>
+                    </div>
+
+                    <div class="donut-container">
+                        <div class="chart-side-wrapper">
+                            <div id="chart-product" class="chart-donut"></div>
+                            <div class="donut-center-label">
+                                <span class="lbl">Total Ton</span>
+                                <span class="num" id="product-center-total">
+                                    {{-- Data Products dalam KG, dibagi 1000 jadi Ton --}}
+                                    {{ number_format($productsTotalVol/1000, 0, ',', '.') }}
+                                </span>
+                            </div>
+                        </div>
+
+                        {{-- LEGEND PRODUCTS --}}
+                        <div class="custom-legend" id="product-legend-container">
+                            @php $i = 0; @endphp
+                            @foreach($initProducts as $prod => $vol)
+                                @if($prod === 'TOTAL' || strtoupper(trim($prod)) === 'LAINNYA')
+                                    @continue
+                                @endif
+                                <div class="legend-item">
+                                    <span class="dot" style="background: {{ $prodColors[$i % count($prodColors)] }}"></span>
+                                    <span class="name">{{ $prod }}</span>
+                                </div>
+                                @php $i++; @endphp
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            {{-- END TOP 5 ROW --}}
+
+            {{-- UTILITAS GUDANG --}}
+            <div class="warehouse-wrapper">
+                <div class="card-std warehouse-card">
+
+                    {{-- HEADER --}}
+                    <div class="warehouse-header" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <h3 style="margin: 0; white-space: nowrap;">Utilitas Gudang Produksi Di</h3>
+                        
+                        {{-- DROPDOWN 1: KATEGORI --}}
+                        <select class="dashboard-select" id="warehouseGroup" onchange="updateWarehouseTypes()" style="width: auto; min-width: 80px;">
+                            <option value="unit">Unit</option>
+                            <option value="ipmg">IPMG</option>
+                        </select>
+
+                        {{-- DROPDOWN 2: TIPE MUTU --}}
+                        <select class="dashboard-select" id="warehouseSelector" onchange="changeWarehouseTab(this.value)" style="width: auto;">
+                            {{-- Options diisi JS --}}
+                        </select>
+                    </div>
+
+                    {{-- CONTENT --}}
+                    <div class="warehouse-box">
+                        
+                        @foreach($utilitasGudang as $key => $items)
+                            <div id="warehouse-{{ Str::slug($key) }}" class="warehouse-tab-content" style="display: none;">
+                                @forelse($items as $item)
+                                    <div class="warehouse-row">
+                                        <span class="label">{{ $item['name'] }}</span>
+                                        <div class="bar-wrapper">
+                                            <div class="bar stock" style="width: {{ $item['percent'] > 100 ? 100 : $item['percent'] }}%">
+                                                {{ number_format($item['stock'], 0, ',', '.') }}
+                                            </div>
+                                            <div class="bar capacity">
+                                                <span class="cap">{{ number_format($item['capacity'], 0, ',', '.') }}</span>
+                                            </div>
+                                        </div>
+                                        <span class="percent">{{ $item['percent'] }}%</span>
+                                    </div>
+                                @empty
+                                    <div class="text-center p-3 text-muted">Tidak ada data</div>
+                                @endforelse
+                            </div>
+                        @endforeach
+
+                        {{-- LEGEND --}}
+                        <div class="warehouse-legend mt-3">
+                            <div class="legend-item"><span class="legend-box stock"></span><span>Stock</span></div>
+                            <div class="legend-item"><span class="legend-box capacity"></span><span>Kapasitas</span></div>
+                            <div class="legend-item"><span class="legend-box percent"></span><span>Persentase</span></div>
+                        </div>
+
+                    </div>
+                </div>
             </div>
 
-        </div>
-    </div>
-</div>
+            {{-- HARGA RATA-RATA --}}
+            <div class="card-std avg-price-card">
+                <div class="card-header">
+                    <h3>Harga Rata-Rata</h3>
+                </div>
+                <div class="avg-table-box">
+                    <table class="avg-table">
+                        <thead>
+                            <tr>
+                                <th>Uraian</th>
+                                <th>SIR 20</th>
+                                <th>RSS</th>
+                                <th>SIR 3L</th>
+                                <th>SIR 3WF</th>
+                                <th>Rata-Rata</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{-- PENYERAHAN --}}
+                            <tr>
+                                <td>1. Penyerahan</td>
+                                <td>{{ number_format($hargaRataRata['penyerahan']['sir20'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['penyerahan']['rss'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['penyerahan']['sir3l'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['penyerahan']['sir3wf'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['penyerahan']['average'], 0, ',', '.') }}</td>
+                            </tr>
+                            {{-- OUTSTANDING CONTRACT --}}
+                            <tr class="section-row">
+                                <td colspan="6">Outstanding Contract</td>
+                            </tr>
+                            {{-- SUDAH BAYAR --}}
+                            <tr>
+                                <td class="indent">Sudah Bayar</td>
+                                <td>{{ number_format($hargaRataRata['sudah_bayar']['sir20'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['sudah_bayar']['rss'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['sudah_bayar']['sir3l'], 0, ',', '.') }}</td>
+                                <td>@if($hargaRataRata['sudah_bayar']['sir3wf'] == 0) - @else {{ number_format($hargaRataRata['sudah_bayar']['sir3wf'], 0, ',', '.') }} @endif</td>
+                                <td>{{ number_format($hargaRataRata['sudah_bayar']['average'], 0, ',', '.') }}</td>
+                            </tr>
+                            {{-- BELUM BAYAR --}}
+                            <tr>
+                                <td class="indent">Belum Bayar</td>
+                                <td>{{ number_format($hargaRataRata['belum_bayar']['sir20'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['belum_bayar']['rss'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['belum_bayar']['sir3l'], 0, ',', '.') }}</td>
+                                <td>@if($hargaRataRata['belum_bayar']['sir3wf'] == 0) - @else {{ number_format($hargaRataRata['belum_bayar']['sir3wf'], 0, ',', '.') }} @endif</td>
+                                <td>{{ number_format($hargaRataRata['belum_bayar']['average'], 0, ',', '.') }}</td>
+                            </tr>
+                            {{-- TOTAL RATA-RATA --}}
+                            <tr class="avg-row">
+                                <td>Rata-Rata</td>
+                                <td>{{ number_format($hargaRataRata['total']['sir20'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['total']['rss'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['total']['sir3l'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['total']['sir3wf'], 0, ',', '.') }}</td>
+                                <td>{{ number_format($hargaRataRata['total']['average'], 0, ',', '.') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
+        </div> {{-- END KOLOM KANAN --}}
+    </div> {{-- END MAIN SPLIT CONTAINER --}}
 
-
-{{-- ================== --}}
-{{-- HARGA RATA-RATA --}}
-{{-- ================== --}}
-<div class="card-std avg-price-card">
-
-    <div class="card-header">
-        <h3>Harga Rata-Rata</h3>
-    </div>
-
-    <div class="avg-table-box">
-        <table class="avg-table">
-            <thead>
-                <tr>
-                    <th>Uraian</th>
-                    <th>SIR 20</th>
-                    <th>RSS</th>
-                    <th>SIR 3L</th>
-                    <th>SIR 3WF</th>
-                    <th>Rata-Rata</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{-- BARIS 1: PENYERAHAN --}}
-                <tr>
-                    <td>1. Penyerahan</td>
-                    <td>{{ number_format($hargaRataRata['penyerahan']['sir20'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['penyerahan']['rss'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['penyerahan']['sir3l'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['penyerahan']['sir3wf'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['penyerahan']['average'], 0, ',', '.') }}</td>
-                </tr>
-
-                {{-- SECTION HEADER --}}
-                <tr class="section-row">
-                    <td colspan="6">Outstanding Contract</td>
-                </tr>
-
-                {{-- BARIS: SUDAH BAYAR --}}
-                <tr>
-                    <td class="indent">Sudah Bayar</td>
-                    <td>{{ number_format($hargaRataRata['sudah_bayar']['sir20'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['sudah_bayar']['rss'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['sudah_bayar']['sir3l'], 0, ',', '.') }}</td>
-                    <td>
-                        {{-- Logika: Jika 0 tampilkan strip (-), jika ada isi tampilkan angka --}}
-                        @if($hargaRataRata['sudah_bayar']['sir3wf'] == 0) - 
-                        @else {{ number_format($hargaRataRata['sudah_bayar']['sir3wf'], 0, ',', '.') }} 
-                        @endif
-                    </td>
-                    <td>{{ number_format($hargaRataRata['sudah_bayar']['average'], 0, ',', '.') }}</td>
-                </tr>
-
-                {{-- BARIS: BELUM BAYAR --}}
-                <tr>
-                    <td class="indent">Belum Bayar</td>
-                    <td>{{ number_format($hargaRataRata['belum_bayar']['sir20'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['belum_bayar']['rss'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['belum_bayar']['sir3l'], 0, ',', '.') }}</td>
-                    <td>
-                        @if($hargaRataRata['belum_bayar']['sir3wf'] == 0) - 
-                        @else {{ number_format($hargaRataRata['belum_bayar']['sir3wf'], 0, ',', '.') }} 
-                        @endif
-                    </td>
-                    <td>{{ number_format($hargaRataRata['belum_bayar']['average'], 0, ',', '.') }}</td>
-                </tr>
-
-                {{-- BARIS: TOTAL RATA-RATA --}}
-                <tr class="avg-row">
-                    <td>Rata-Rata</td>
-                    <td>{{ number_format($hargaRataRata['total']['sir20'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['total']['rss'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['total']['sir3l'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['total']['sir3wf'], 0, ',', '.') }}</td>
-                    <td>{{ number_format($hargaRataRata['total']['average'], 0, ',', '.') }}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-
-{{-- ========== END SPLIT-COL KANAN ========== --}}
-    </div>
     {{-- 3. MONTHLY CHARTS (BAWAH) --}}
+    
+    {{-- A. BAGIAN MONTHLY VOLUME --}}
     <div class="card-std p-0 full-row-card">
-        {{-- UBAH LAYOUT JADI FLEX 2 KOLOM --}}
         <div class="layout-split-chart" style="display: flex; flex-wrap: wrap;">
             
-            {{-- KOLOM KIRI: CHART (Lebar lebih besar, misal 75%) --}}
+            {{-- KOLOM KIRI: CHART --}}
             <div class="col-chart-main" style="flex: 3; min-width: 600px; border-right: 1px solid #eee;">
                 <div class="chart-header-padded"><h3>Monthly Volume</h3></div>
-                {{-- WRAPPER SCROLL UNTUK CHART --}}
                 <div class="chart-scroll-container">
                     <div id="chart-monthly-vol"></div>
                 </div>
             </div>
 
-            {{-- KOLOM KANAN: SIDEBAR (Lebar lebih kecil, misal 25%) --}}
+            {{-- KOLOM KANAN: SIDEBAR --}}
             <div class="col-sidebar-right bg-light" style="flex: 1; min-width: 250px; display: flex; flex-direction: column;">
                 
-                {{-- BAGIAN BAWAH: RINCIAN --}}
+                {{-- RINCIAN MUTU --}}
                 <div class="sidebar-section" style="padding: 1.5rem; flex-grow: 1;">
                     <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Rincian</p>
                     <div class="mutu-list">
                         @foreach($mutu['label'] as $index => $label)
                             @if(strtoupper(trim($label)) === 'TOTAL') @continue @endif
-                            @php $vol = $mutu['volume'][$index] ?? 0; $pct = $totalVolume > 0 ? round(($vol/($totalVolume/1000))*100, 1) : 0; @endphp
+                            @php 
+                                // Volume sudah dalam KG, dibagi 1000 jadi Ton
+                                $vol = $mutu['volume'][$index] ?? 0; 
+                                $pct = $totalVolume > 0 ? round(($vol/$totalVolume)*100, 1) : 0; 
+                            @endphp
                             <div class="mutu-item">
                                 <div class="mutu-info"><span class="mutu-name">{{ $label }}</span><span class="mutu-pct">{{ $pct }}%</span></div>
                                 <div class="progress-bar-bg"><div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div></div>
-                                <span class="mutu-val">{{ number_format($vol, 0, ',', '.') }} Ton</span>
+                                <span class="mutu-val">{{ number_format($vol / 1000, 0, ',', '.') }} Ton</span>
                             </div>
                         @endforeach
                     </div>
                 </div>
 
-                {{-- BAGIAN ATAS: TOTAL --}}
+                {{-- TOTAL (SIDEBAR BAWAH) --}}
                 <div class="sidebar-section border-bottom" style="padding: 1.5rem;">
                     <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Total</p>
                     <div class="stats-container2">
-                        <div class="summary-item"><span class="sum-label">Real</span><span class="sum-val orange">{{ number_format($totalVolume / 1000, 0, ',', '.') }} <small>Ton</small></span></div>
-                        <div class="summary-item"><span class="sum-label">RKAP</span><span class="sum-val dark">{{ number_format($rkapVolume, 0, ',', '.') }} <small>Ton</small></span></div>
-                        <div class="summary-item"><span class="sum-label">Percentage</span><span class="sum-val huge">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%</span></div>
+                        <div class="summary-item">
+                            <span class="sum-label">Real (Jan-Dec)</span>
+                            {{-- ID DITAMBAHKAN: sidebar-vol-real --}}
+                            {{-- PHP Render: KG / 1000 = TON --}}
+                            <span class="sum-val orange" id="sidebar-vol-real">
+                                {{ number_format($totalVolume / 1000, 0, ',', '.') }} <small>Ton</small>
+                            </span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="sum-label">RKAP</span>
+                            {{-- PHP Render: KG / 1000 = TON --}}
+                            <span class="sum-val dark">{{ number_format($rkapVolume / 1000, 0, ',', '.') }} <small>Ton</small></span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="sum-label">Percentage</span>
+                            <span class="sum-val huge">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%</span>
+                        </div>
                     </div>
                 </div>
 
             </div>
-
         </div>
     </div>
 
+    {{-- B. BAGIAN MONTHLY REVENUE --}}
     <div class="card-std p-0 full-row-card">
         <div class="layout-split-chart" style="display: flex; flex-wrap: wrap;">
 
@@ -647,16 +620,16 @@
             {{-- KOLOM KANAN: SIDEBAR --}}
             <div class="col-sidebar-right bg-light" style="flex: 1; min-width: 250px; display: flex; flex-direction: column;">
 
-                {{-- RINCIAN --}}
+                {{-- RINCIAN MUTU --}}
                 <div class="sidebar-section" style="padding: 1.5rem; flex-grow: 1;">
                     <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Rincian</p>
                     <div class="mutu-list">
                         @foreach($mutu['label'] as $index => $label)
                             @if(strtoupper(trim($label)) === 'TOTAL') @continue @endif
                             @php
+                                // Revenue sudah Rupiah Penuh
                                 $rev = $mutu['revenue'][$index] ?? 0;
-                                $totalR = $totalRevenue / 1000000000;
-                                $pct = $totalR > 0 ? round(($rev/$totalR)*100, 1) : 0;
+                                $pct = $totalRevenue > 0 ? round(($rev/$totalRevenue)*100, 1) : 0;
                             @endphp
                             <div class="mutu-item">
                                 <div class="mutu-info">
@@ -666,24 +639,27 @@
                                 <div class="progress-bar-bg">
                                     <div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div>
                                 </div>
-                                <span class="mutu-val">Rp {{ number_format($rev, 0, ',', '.') }} M</span>
+                                <span class="mutu-val">Rp {{ number_format($rev / 1000000000, 0, ',', '.') }} M</span>
                             </div>
                         @endforeach
                     </div>
                 </div>
 
-                {{-- TOTAL --}}
+                {{-- TOTAL (SIDEBAR BAWAH) --}}
                 <div class="sidebar-section border-bottom" style="padding: 1.5rem;">
                     <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Total</p>
                     <div class="stats-container2">
                         <div class="summary-item">
-                            <span class="sum-label">Real</span>
-                            <span class="sum-val orange">
+                            <span class="sum-label">Real (Jan-Dec)</span>
+                            {{-- ID DITAMBAHKAN: sidebar-rev-real --}}
+                            {{-- PHP Render: Rupiah / 1 Milyar = Milyar --}}
+                            <span class="sum-val orange" id="sidebar-rev-real">
                                 Rp {{ number_format($totalRevenue/1000000000, 0, ',', '.') }} <small>Milyar</small>
                             </span>
                         </div>
                         <div class="summary-item">
                             <span class="sum-label">RKAP</span>
+                            {{-- PHP Render: Rupiah / 1 Milyar = Milyar --}}
                             <span class="sum-val dark">
                                 Rp {{ number_format($rkapRevenue/1000000000, 0, ',', '.') }} <small>Milyar</small>
                             </span>
@@ -699,7 +675,6 @@
 
             </div>
         </div>
-
     </div>
 
 </div>
@@ -707,9 +682,12 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script>
+    // DATA DIKIRIM KE JS SUDAH NORMAL (KG dan RUPIAH PENUH)
+    // JS akan menghandle pembagiannya (Bagi 1000 / 1Milyar)
     window.dashboardData = {
         priceDaily: @json($trendPriceDaily),
-        rawTopBuyers: @json($top5Buyers), rawTopProducts: @json($top5Products),
+        rawTopBuyers: @json($top5Buyers), 
+        rawTopProducts: @json($top5Products),
         topBuyers: @json(array_values($initBuyers)), topBuyersLabels: @json($buyerLabels), 
         topProducts: @json(array_values($initProducts)), topProductsLabels: @json($productLabels),
         volumeReal: @json($rekap4['volume_real']), rkapVol: @json($rekap4['volume_rkap']),
@@ -718,11 +696,11 @@
         chartColors: @json($chartColors), prodColors: @json($prodColors)
     };
 
-        const warehouseData = {
+    const warehouseData = {
         'unit': [
             { id: 'sir-20',  label: 'SIR 20' },
             { id: 'rss-1',   label: 'RSS 1' },   
-            { id: 'sir-3wl', label: 'SIR 3WF' } // Sesuaikan dengan key controller kamu
+            { id: 'sir-3wl', label: 'SIR 3WF' } 
         ],
         'ipmg': [
             { id: 'ipmg-sir', label: 'IPMG SIR' },
@@ -730,19 +708,14 @@
         ]
     };
 
-    // 2. FUNGSI UPDATE DROPDOWN KEDUA
     function updateWarehouseTypes() {
         const groupSelect = document.getElementById('warehouseGroup');
         const typeSelect = document.getElementById('warehouseSelector');
         const selectedGroup = groupSelect.value;
         
-        // Kosongkan dropdown kedua
         typeSelect.innerHTML = '';
-
-        // Ambil data array berdasarkan grup yg dipilih
         const options = warehouseData[selectedGroup];
 
-        // Loop untuk membuat <option> baru
         if (options) {
             options.forEach(opt => {
                 const newOption = document.createElement('option');
@@ -751,33 +724,25 @@
                 typeSelect.appendChild(newOption);
             });
         }
-
-        // Otomatis trigger perubahan tab untuk opsi pertama
         if (typeSelect.options.length > 0) {
             changeWarehouseTab(typeSelect.value);
         }
     }
 
-    // 3. FUNGSI GANTI TAMPILAN KONTEN (LOGIC SEBELUMNYA)
     function changeWarehouseTab(selectedId) {
-        // Sembunyikan semua tab content
         const allTabs = document.querySelectorAll('.warehouse-tab-content');
         allTabs.forEach(tab => {
             tab.style.display = 'none';
         });
-
-        // Tampilkan tab yang sesuai ID
         const activeTab = document.getElementById('warehouse-' + selectedId);
         if (activeTab) {
             activeTab.style.display = 'block';
         }
     }
 
-    // 4. INISIALISASI SAAT HALAMAN DIMUAT
     document.addEventListener('DOMContentLoaded', function() {
-        updateWarehouseTypes(); // Load default (Unit)
+        updateWarehouseTypes(); 
     });
-
 </script>
 <script src="{{ asset('js/dashboard-script.js') }}"></script>
 @endsection
