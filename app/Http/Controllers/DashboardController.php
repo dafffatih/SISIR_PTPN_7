@@ -65,6 +65,7 @@ class DashboardController extends Controller
             "SC Sudah Bayar!AV4:AV6000",   // Penyerahan 5 kg
             "SC Sudah Bayar!AW4:AW6000",   // Penyerahan 6 tanggal
             "SC Sudah Bayar!AX4:AX6000",   // Penyerahan 6 kg
+            "SC Sudah Bayar!J4:J6000",
             
             // --- DATA LAINNYA (STOK, PRICE TREND, DLL) ---
             "Katalog!B4:B23", "Katalog!C4:C23", "Katalog!L4:L15", "Katalog!M4:M15",
@@ -173,6 +174,7 @@ class DashboardController extends Controller
         $rawProducts = $rawBatch["SC Sudah Bayar!Q4:Q6000"] ?? [];
         $rawMutu     = $rawBatch["SC Sudah Bayar!R4:R6000"] ?? [];
         $rawPrices   = $rawBatch["SC Sudah Bayar!M4:M6000"] ?? [];
+        $rawCompanyNames = $rawBatch["SC Sudah Bayar!J4:J6000"] ?? [];
 
         // Data Penyerahan (Pasangan Tanggal & Volume)
         $deliveriesRaw = [
@@ -224,7 +226,24 @@ class DashboardController extends Controller
         $rowCount = count($rawBuyers);
         
         for ($i = 0; $i < $rowCount; $i++) {
-            $buyer = isset($rawBuyers[$i][0]) ? strtoupper(trim($rawBuyers[$i][0])) : '';
+
+            $rawCode = isset($rawBuyers[$i][0]) ? trim($rawBuyers[$i][0]) : '';     
+            $rawName = isset($rawCompanyNames[$i][0]) ? trim($rawCompanyNames[$i][0]) : '';
+            $code = strtoupper($rawCode);
+            $fullName = ucwords(strtolower($rawName));
+            $buyerLabel = '';
+
+            if (!empty($code) && !empty($fullName)) {
+                $buyerLabel = "$code ($fullName)";
+            } elseif (!empty($code) && empty($fullName)) {
+                $buyerLabel = $code;
+            } elseif (empty($code) && !empty($fullName)) {
+                $buyerLabel = $fullName;
+            } else {
+                continue;
+            }
+
+            $buyer = $buyerLabel;
             $prod  = isset($rawProducts[$i][0]) ? strtoupper(trim($rawProducts[$i][0])) : '';
             $mutuName = isset($rawMutu[$i][0]) ? strtoupper(trim($rawMutu[$i][0])) : '';
             
