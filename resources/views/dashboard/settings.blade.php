@@ -172,6 +172,92 @@
   .alert-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
   .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 
+  /* ===== MODAL STYLES ===== */
+  .modal-backdrop {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.6); /* Gelap transparan */
+    z-index: 9999;
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-content {
+    background: #fff;
+    width: 100%;
+    max-width: 400px;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    text-align: center;
+    animation: modalPop 0.2s ease-out;
+  }
+
+  @keyframes modalPop {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .modal-icon {
+    width: 50px; height: 50px;
+    background: #fee2e2;
+    color: #ef4444;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 16px;
+  }
+
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 8px;
+  }
+
+  .modal-text {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .btn-modal {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: .2s;
+    width: 100%;
+  }
+
+  .btn-cancel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+  }
+  .btn-cancel:hover { background: #f9fafb; }
+
+  .btn-delete {
+    background: #ef4444;
+    color: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .btn-delete:hover { background: #dc2626; }
+
   /* responsive */
   @media (max-width: 640px){
     .set-container{ padding: 18px 14px 28px; }
@@ -259,14 +345,11 @@
                 
                 {{-- Tombol Hapus --}}
                 <td style="text-align:center">
-                    <form action="{{ route('settings.destroy', $set->id) }}" method="POST"
-                          onsubmit="return confirm('Apakah Anda yakin ingin menghapus konfigurasi {{ $set->key }}?');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" style="border:none; background:none; cursor:pointer; padding:5px;">
-                            <i class="fas fa-trash" style="color: #ef4444;" title="Hapus"></i>
-                        </button>
-                    </form>
+                    <button type="button" 
+                            onclick="openDeleteModal('{{ route('settings.destroy', $set->id) }}', '{{ $set->key }}')"
+                            style="border:none; background:none; cursor:pointer; padding:5px;">
+                        <i class="fas fa-trash" style="color: #ef4444; font-size: 16px;" title="Hapus"></i>
+                    </button>
                 </td>
               </tr>
             @empty
@@ -284,4 +367,62 @@
 
   </div>
 </div>
+{{-- POPUP MODAL HAPUS --}}
+<div id="deleteModal" class="modal-backdrop">
+  <div class="modal-content">
+    
+    <div class="modal-icon">
+      <i class="fas fa-exclamation-triangle"></i>
+    </div>
+
+    <div class="modal-title">Hapus Konfigurasi?</div>
+    <div class="modal-text">
+      Anda yakin ingin menghapus <strong id="modalTargetName"></strong>? <br>
+      Tindakan ini tidak dapat dibatalkan.
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn-modal btn-cancel" onclick="closeDeleteModal()">
+        Batal
+      </button>
+
+      <form id="deleteForm" method="POST" action="">
+        @csrf
+        @method('DELETE')
+        <button type="submit" class="btn-modal btn-delete">
+          Ya, Hapus
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+{{-- SCRIPT PENGENDALI MODAL --}}
+<script>
+  // Fungsi Buka Modal
+  function openDeleteModal(actionUrl, keyName) {
+    // 1. Set URL action pada form
+    document.getElementById('deleteForm').action = actionUrl;
+    
+    // 2. Tampilkan nama key di teks pesan
+    document.getElementById('modalTargetName').textContent = keyName;
+    
+    // 3. Munculkan modal
+    document.getElementById('deleteModal').style.display = 'flex';
+  }
+
+  // Fungsi Tutup Modal
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+  }
+
+  // Tutup jika user klik di area gelap (luar box)
+  window.onclick = function(event) {
+    const modal = document.getElementById('deleteModal');
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  }
+</script>
 @endsection

@@ -52,19 +52,26 @@
     }
     .btn-add-user:hover { background: #ea580c; transform: translateY(-1px); }
 
-    /* ===== Table container (INI YANG SCROLL) ===== */
-    .users-table-container{
-      background:#fff;
-      border-radius:14px;
-      border:1px solid #e2e8f0;
+    .users-table-container {
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
 
-      overflow-x:auto;         /* ✅ hanya tabel yg geser */
-      overflow-y:hidden;
-      -webkit-overflow-scrolling:touch;
+      /* 1. Hapus padding dalam agar background tabel full */
+      padding: 0;
 
-      width:100%;
-      padding: 24px;
-      max-width:100%;
+      /* 2. TAMBAHKAN MARGIN agar posisi kotaknya sejajar dengan teks Header */
+      margin-left: 24px;
+      margin-right: 24px;
+
+      /* 3. PENTING: Ubah width jadi auto agar tidak melebar keluar layar karena margin */
+      width: auto; 
+      
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     /* Optional hint */
@@ -96,7 +103,9 @@
     }
 
     .users-table th {
-      padding: 14px 16px;
+      /* ✅ Ubah angka kedua (kiri-kanan) jadi 24px */
+      padding: 14px 24px; 
+      
       text-align: left;
       font-size: 11px;
       font-weight: 700;
@@ -107,7 +116,9 @@
     }
 
     .users-table td {
-      padding: 14px 16px;
+      /* ✅ Ubah angka kedua (kiri-kanan) jadi 24px */
+      padding: 14px 24px;
+      
       border-bottom: 1px solid #f1f5f9;
       font-size: 14px;
       color: #334155;
@@ -294,6 +305,16 @@
       }
       .user-info { min-width: 220px; }
       .avatar { width: 32px; height: 32px; font-size: 12px; }
+    }
+    @media (max-width: 768px) {
+      .page-header {
+         padding: 16px; /* Samakan padding header mobile */
+      }
+      .users-table-container {
+         /* Samakan margin tabel dengan padding header di mobile */
+         margin-left: 16px;
+         margin-right: 16px;
+      }
     }
 
     @media (max-width: 480px) {
