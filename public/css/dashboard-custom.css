@@ -535,6 +535,35 @@
 }
 
 /* --- TABLE STOK STYLE --- */
+
+
+
+.row-highlight-final td.stok-center {
+    text-align: center !important;
+    padding-left: 0 !important;
+}
+
+
+.stok-center {
+    text-align: center;     /* teks ke tengah kolom */
+    padding-left: 0;        /* hilangkan efek mepet kiri */
+    font-weight: 700;
+}
+
+
+.chart-title {
+    margin: 0;
+    font-weight: 500;      /* lebih ringan */
+    color: #1f2937;
+}
+
+.chart-subtitle {
+    margin-top: 4px;
+    font-size: 18px;
+    font-weight: 700;      /* LEBIH TEBAL */
+    color: #111827;
+}
+
 .dashboard-container .card-table-compact {
     padding: 20px;
 }
@@ -861,6 +890,7 @@
     display: flex;
     gap: 18px;
     font-size: 12px;
+    justify-content: center; 
     margin-top: 12px;
 }
 
@@ -896,6 +926,19 @@
     width: 100%;
     overflow-x: auto;
 }
+
+/* SECTION HEADER - Outstanding Contract */
+/* Outstanding Contract - samakan dengan Penyerahan */
+.avg-table .section-row.section-main td {
+    font-size: 12px;          /* sama dengan Penyerahan */
+    font-weight: 600;         /* sama */
+    color: #0F172A;           /* sama */
+    font-style: normal;
+    padding-top: 12px;
+    padding-bottom: 6px;
+}
+
+
 
 /* Table utama */
 .avg-table {
