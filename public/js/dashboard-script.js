@@ -492,11 +492,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const elSidebarVol = document.getElementById('sidebar-vol-real');
     const elSidebarVolRkap = document.getElementById('sidebar-vol-rkap');
-    const elSidebarVolPct = document.getElementById('sidebar-vol-pct');
+    const elSidebarVolPct = document.getElementById('sidebar-vol-pct'); // Target Volume %
 
     const elSidebarRev = document.getElementById('sidebar-rev-real');
     const elSidebarRevRkap = document.getElementById('sidebar-rev-rkap');
-    const elSidebarRevPct = document.getElementById('sidebar-rev-pct');
+    const elSidebarRevPct = document.getElementById('sidebar-rev-pct'); // Target Revenue %
 
     function calculateMetrics() {
         let startMonth = parseInt(startSelect.value);
@@ -536,6 +536,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const sideVolRkap = sumFullYear(data.rkapVol);
         const sideRevRkap = sumFullYear(data.rkapRev);
 
+        // Hitung persentase sidebar
         let sideVolPct = sideVolRkap > 0 ? (sideVolReal / sideVolRkap) * 100 : 0;
         let sideRevPct = sideRevRkap > 0 ? (sideRevReal / sideRevRkap) * 100 : 0;
 
@@ -546,7 +547,9 @@ document.addEventListener("DOMContentLoaded", function () {
             minimumFractionDigits: 0,
             maximumFractionDigits: 3 
         });
-        const fmtInt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+        
+        // HAPUS atau TIDAK PERLU fmtInt untuk persentase sidebar
+        // const fmtInt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }); 
 
         // ==========================================
         // UPDATE HEADER (DINAMIS)
@@ -576,8 +579,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (elSidebarVolRkap) {
             elSidebarVolRkap.innerHTML = fmtDec.format(sideVolRkap / 1000) + ' <small>Ton</small>';
         }
+        
+        // --- PERBAIKAN DI SINI (Volume %) ---
         if (elSidebarVolPct) {
-            elSidebarVolPct.innerText = fmtInt.format(sideVolPct) + '%';
+            // Gunakan .toFixed(1) agar muncul 1 angka belakang koma (3.7%)
+            elSidebarVolPct.innerText = sideVolPct.toFixed(1) + '%';
         }
 
         // --- REVENUE SIDEBAR ---
@@ -587,8 +593,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (elSidebarRevRkap) {
             elSidebarRevRkap.innerHTML = 'Rp ' + fmtDec.format(sideRevRkap / 1000000000) + ' <small>Milyar</small>';
         }
+
+        // --- PERBAIKAN DI SINI (Revenue %) ---
         if (elSidebarRevPct) {
-            elSidebarRevPct.innerText = fmtInt.format(sideRevPct) + '%';
+            // Gunakan .toFixed(1) agar muncul 1 angka belakang koma (3.7%)
+            elSidebarRevPct.innerText = sideRevPct.toFixed(1) + '%';
         }
     }
 
@@ -597,5 +606,6 @@ document.addEventListener("DOMContentLoaded", function () {
         endSelect.addEventListener('change', calculateMetrics);
     }
 
+    // Jalankan kalkulasi awal
     calculateMetrics();
 });
