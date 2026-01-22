@@ -608,7 +608,7 @@
                     <div class="mutu-list">
                         @foreach($mutu['label'] as $index => $label)
                             @if(strtoupper(trim($label)) === 'TOTAL') @continue @endif
-                            @php $vol = $mutu['volume'][$index] ?? 0; $pct = $totalVolume > 0 ? round(($vol/$totalVolume)*100, 1) : 0; @endphp
+                            @php $vol = $mutu['volume'][$index] ?? 0; $pct = $totalVolume > 0 ? round(($vol/($totalVolume/1000))*100, 1) : 0; @endphp
                             <div class="mutu-item">
                                 <div class="mutu-info"><span class="mutu-name">{{ $label }}</span><span class="mutu-pct">{{ $pct }}%</span></div>
                                 <div class="progress-bar-bg"><div class="progress-bar-fill orange" style="width: {{ $pct }}%"></div></div>
@@ -622,7 +622,7 @@
                 <div class="sidebar-section border-bottom" style="padding: 1.5rem;">
                     <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Total</p>
                     <div class="stats-container2">
-                        <div class="summary-item"><span class="sum-label">Real</span><span class="sum-val orange">{{ number_format($totalVolume, 0, ',', '.') }} <small>Ton</small></span></div>
+                        <div class="summary-item"><span class="sum-label">Real</span><span class="sum-val orange">{{ number_format($totalVolume / 1000, 0, ',', '.') }} <small>Ton</small></span></div>
                         <div class="summary-item"><span class="sum-label">RKAP</span><span class="sum-val dark">{{ number_format($rkapVolume, 0, ',', '.') }} <small>Ton</small></span></div>
                         <div class="summary-item"><span class="sum-label">Percentage</span><span class="sum-val huge">{{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%</span></div>
                     </div>

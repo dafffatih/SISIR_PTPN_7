@@ -29,14 +29,14 @@ class DashboardController extends Controller
     {
         // 1. Ambil Data Batch
         $ranges = [
-            // --- DATA GRAFIK BULANAN (TETAP) ---
+            // --- DATA GRAFIK BULANAN (DARI SHEET REKAP) ---
             "Rekap4!F77:F88", // Label Bulan
             "Rekap4!Z77:Z88", // Vol Real Monthly
             "Rekap4!I190:I201", // Vol RKAP Monthly
             "Rekap4!Z94:Z105", // Rev Real Monthly (Grafik)
             "Rekap4!K190:K201", // Rev RKAP Monthly (Grafik)
 
-            // --- DATA TOTAL (TETAP) ---
+            // --- DATA TOTAL RKAP ---
             "Rekap4!E27:E27", "Rekap4!H27:H27", 
             "Rekap4!E48:E51", "Rekap4!H48:H51",
 
@@ -46,15 +46,27 @@ class DashboardController extends Controller
             // --- DATA LAST TENDER PRICE ---
             "Katalog!T2:Y2", 
 
-            // --- DATA UTAMA: SC SUDAH BAYAR (DIPERPANJANG KE 6000 AGAR AMAN) ---
-            "SC Sudah Bayar!K4:K6000",   // Tanggal Kontrak (Untuk Filter Bulan)
-            "SC Sudah Bayar!N4:N6000",   // Nilai (Revenue)
-            "SC Sudah Bayar!AD4:AD6000", // Pembeli
+            // --- DATA UTAMA: SC SUDAH BAYAR (UNTUK TOP 5 & TOTAL REAL) ---
+            "SC Sudah Bayar!AD4:AD6000", // Pembeli (Buyer)
             "SC Sudah Bayar!Q4:Q6000",   // Produk
-            "SC Sudah Bayar!AA4:AA6000", // Volume
             "SC Sudah Bayar!R4:R6000",   // Mutu
+            "SC Sudah Bayar!M4:M6000",   // Harga Satuan per kg
 
-            // --- DATA LAINNYA ---
+            // --- 6 KOLOM PENYERAHAN (TANGGAL & VOLUME) ---
+            "SC Sudah Bayar!AM4:AM6000",   // Penyerahan 1 tanggal
+            "SC Sudah Bayar!AN4:AN6000",   // Penyerahan 1 kg
+            "SC Sudah Bayar!AO4:AO6000",   // Penyerahan 2 tanggal
+            "SC Sudah Bayar!AP4:AP6000",   // Penyerahan 2 kg
+            "SC Sudah Bayar!AQ4:AQ6000",   // Penyerahan 3 tanggal
+            "SC Sudah Bayar!AR4:AR6000",   // Penyerahan 3 kg
+            "SC Sudah Bayar!AS4:AS6000",   // Penyerahan 4 tanggal
+            "SC Sudah Bayar!AT4:AT6000",   // Penyerahan 4 kg
+            "SC Sudah Bayar!AU4:AU6000",   // Penyerahan 5 tanggal
+            "SC Sudah Bayar!AV4:AV6000",   // Penyerahan 5 kg
+            "SC Sudah Bayar!AW4:AW6000",   // Penyerahan 6 tanggal
+            "SC Sudah Bayar!AX4:AX6000",   // Penyerahan 6 kg
+            
+            // --- DATA LAINNYA (STOK, PRICE TREND, DLL) ---
             "Katalog!B4:B23", "Katalog!C4:C23", "Katalog!L4:L15", "Katalog!M4:M15",
             "Katalog!T3:U500", "Katalog!V3:W500", "Katalog!X3:Y500", 
             "Rekap3!I10:I10", "Rekap3!I38:I38", "Rekap3!D62:E62",
@@ -94,7 +106,7 @@ class DashboardController extends Controller
             'sir3l' => ['date' => $tenderRow[4] ?? '-', 'price' => isset($tenderRow[5]) ? $cleanTenderPrice($tenderRow[5]) : 0],
         ];
 
-        // --- DATA REKAP 4 (Chart Bulanan) ---
+        // --- DATA CHART BULANAN (TETAP DARI REKAP4) ---
         $rekap4 = [
             'labels'       => array_column($rawBatch["Rekap4!F77:F88"] ?? [], 0) ?: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             'volume_real'  => array_map(fn($v) => $cleanNum($v), $rawBatch["Rekap4!Z77:Z88"] ?? []),
@@ -112,7 +124,7 @@ class DashboardController extends Controller
         ];
 
         // =========================================================================
-        // LOGIKA UTAMA: FILTER & AGREGASI (PERBAIKAN DATA KOSONG)
+        // LOGIKA FILTER & AGREGASI BARU (BERDASARKAN PENYERAHAN 1-6)
         // =========================================================================
 
         // 1. Ambil Parameter Filter
@@ -121,45 +133,77 @@ class DashboardController extends Controller
         
         $startMonth = ($reqStart === 'all') ? 1 : (int)$reqStart;
         $endMonth   = ($reqEnd === 'all') ? 12 : (int)$reqEnd;
+        $isAllMonths = ($reqStart === 'all' && $reqEnd === 'all');
 
         // Validasi Swap Bulan
         if ($startMonth > $endMonth) { 
             $temp = $startMonth; $startMonth = $endMonth; $endMonth = $temp; 
         }
 
-        // --- PENTING: Flag untuk menandai apakah user memilih "Seluruhnya" ---
-        $isAllMonths = ($reqStart === 'all' && $reqEnd === 'all');
-
-        // 2. HITUNG TOTAL RKAP (Looping Array RKAP dari Sheet Rekap4)
+        // 2. HITUNG TOTAL RKAP
         $rkapVolTotal = 0;
         $rkapRevTotal = 0;
         for ($m = $startMonth; $m <= $endMonth; $m++) {
-            $idx = $m - 1; // Array index mulai dari 0
+            $idx = $m - 1; 
             $rkapVolTotal += $rekap4['volume_rkap'][$idx] ?? 0;
             $rkapRevTotal += $rekap4['revenue_rkap'][$idx] ?? 0;
         }
         $rkapVolume  = $rkapVolTotal; 
         $rkapRevenue = $rkapRevTotal * 1000000000;
 
-        // 3. Ambil Data Mentah SC Sudah Bayar (Range Extended 6000)
-        $rawDates    = $rawBatch["SC Sudah Bayar!K4:K6000"] ?? [];
-        $rawValues   = $rawBatch["SC Sudah Bayar!N4:N6000"] ?? [];
+        // 3. AMBIL DATA RAW DARI SHEET
+        // Identitas & Harga
         $rawBuyers   = $rawBatch["SC Sudah Bayar!AD4:AD6000"] ?? [];
         $rawProducts = $rawBatch["SC Sudah Bayar!Q4:Q6000"] ?? [];
-        $rawVolumes  = $rawBatch["SC Sudah Bayar!AA4:AA6000"] ?? [];
         $rawMutu     = $rawBatch["SC Sudah Bayar!R4:R6000"] ?? [];
+        $rawPrices   = $rawBatch["SC Sudah Bayar!M4:M6000"] ?? [];
 
-        // Helper Parsing Tanggal (Handling penulisan manual/typo)
+        // Data Penyerahan (Pasangan Tanggal & Volume)
+        $deliveriesRaw = [
+            ['date' => $rawBatch["SC Sudah Bayar!AM4:AM6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AN4:AN6000"] ?? []], // Penyerahan 1
+            ['date' => $rawBatch["SC Sudah Bayar!AO4:AO6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AP4:AP6000"] ?? []], // Penyerahan 2
+            ['date' => $rawBatch["SC Sudah Bayar!AQ4:AQ6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AR4:AR6000"] ?? []], // Penyerahan 3
+            ['date' => $rawBatch["SC Sudah Bayar!AS4:AS6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AT4:AT6000"] ?? []], // Penyerahan 4
+            ['date' => $rawBatch["SC Sudah Bayar!AU4:AU6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AV4:AV6000"] ?? []], // Penyerahan 5
+            ['date' => $rawBatch["SC Sudah Bayar!AW4:AW6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AX4:AX6000"] ?? []], // Penyerahan 6
+        ];
+
+        // --- HELPER PARSING TANGGAL YANG DIPERBAIKI (FORCE d/m/Y & SANITASI) ---
         $getMonthFromRow = function($val) {
-            if (empty($val)) return 0; // Return 0 jika kosong
+            if (empty($val)) return 0;
             $val = trim($val);
+
+            // 1. Blokir tanggal sampah dari Excel (30/12/99 atau 1899)
+            if ($val === '30/12/99' || $val === '30/12/1899') return 0;
+
+            // 2. Handle Numeric (Excel Serial Date)
+            if (is_numeric($val)) {
+                try {
+                     return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($val)->format('n');
+                } catch (\Exception $e) { return 0; }
+            }
+
+            // 3. Handle Text (Indonesia/Inggris)
             $map = [
                 'Jan' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Apr', 'Mei' => 'May', 'Jun' => 'Jun',
                 'Jul' => 'Jul', 'Agt' => 'Aug', 'Agu' => 'Aug', 'Sep' => 'Sep', 'Okt' => 'Oct', 'Nov' => 'Nov', 'Des' => 'Dec',
                 'Agustus' => 'Aug', 'September' => 'Sep', 'Oktober' => 'Oct', 'Desember' => 'Dec'
             ];
-            $val = str_ireplace(array_keys($map), array_values($map), $val);
-            try { return Carbon::parse($val)->month; } catch (\Exception $e) { return 0; }
+            $valClean = str_ireplace(array_keys($map), array_values($map), $val);
+
+            // 4. COBA PARSE FORMAT INDONESIA (d/m/Y) DULUAN!
+            // Ini kunci agar 10/01 tidak terbaca Oktober (10), tapi Januari (01)
+            $formats = ['d/m/Y', 'd-m-Y', 'd/m/y', 'd-m-y'];
+            foreach ($formats as $fmt) {
+                try {
+                    $d = Carbon::createFromFormat($fmt, $valClean);
+                    // Validasi tahun agar tidak baca tahun 99 sebagai valid jika itu error
+                    if ($d && $d->year > 1900) return $d->month; 
+                } catch (\Exception $e) { continue; }
+            }
+
+            // Fallback ke auto-parse jika format aneh
+            try { return Carbon::parse($valClean)->month; } catch (\Exception $e) { return 0; }
         };
 
         // 4. Variables Agregasi
@@ -168,61 +212,74 @@ class DashboardController extends Controller
         $buyersAgg    = [];
         $productsAgg  = [];
 
-        // 5. Looping Utama
+        // 5. LOOPING UTAMA (Iterasi Baris Kontrak)
         $rowCount = count($rawBuyers);
+        
         for ($i = 0; $i < $rowCount; $i++) {
-            // Normalisasi
+            // Ambil Data Identitas
             $buyer = isset($rawBuyers[$i][0]) ? strtoupper(trim($rawBuyers[$i][0])) : '';
             $prod  = isset($rawProducts[$i][0]) ? strtoupper(trim($rawProducts[$i][0])) : '';
             $mutuName = isset($rawMutu[$i][0]) ? strtoupper(trim($rawMutu[$i][0])) : '';
             
-            $volStr = $rawVolumes[$i][0] ?? '0';
-            $revStr = $rawValues[$i][0] ?? '0';
-            $vol    = (float) str_replace(['.', ','], ['', '.'], $volStr);
-            $rev    = (float) str_replace(['.', ','], ['', '.'], $revStr);
+            // Ambil Harga Satuan (Rp/Kg)
+            $priceStr = $rawPrices[$i][0] ?? '0';
+            $unitPrice = (float) str_replace(['.', ','], ['', '.'], $priceStr);
 
-            // Filter data tidak valid (tanpa volume/buyer)
-            if ($vol <= 0 || empty($buyer) || empty($mutuName)) continue;
+            // Validasi Data Minimal: Harus ada Buyer dan Mutu
+            if (empty($buyer) || empty($mutuName)) continue;
 
-            // --- PERBAIKAN LOGIKA FILTER TANGGAL ---
-            $tglStr = $rawDates[$i][0] ?? '';
-            $month  = $getMonthFromRow($tglStr);
+            // --- LOOPING 6 DATA PENYERAHAN ---
+            foreach ($deliveriesRaw as $del) {
+                
+                // Gunakan Null Coalescing (??) agar aman jika array penyerahan lebih pendek dari array buyer
+                $tglRaw = $del['date'][$i][0] ?? '';
+                $volRaw = $del['vol'][$i][0] ?? '0';
+                
+                $volItem = (float) str_replace(['.', ','], ['', '.'], $volRaw);
 
-            // Jika User TIDAK memilih "Seluruhnya" (artinya pilih range spesifik),
-            // maka kita harus membuang data yang bulannya 0 (tanggal error/kosong).
-            if (!$isAllMonths) {
-                // Jika bulan < start ATAU bulan > end ATAU bulan == 0 (invalid), skip.
-                if ($month < $startMonth || $month > $endMonth || $month === 0) continue;
-            } 
-            // Jika User memilih "Seluruhnya" ($isAllMonths = true), 
-            // kita TERIMA SEMUA data (termasuk yang tanggalnya kosong/month 0),
-            // asalkan Volume dan Buyer-nya ada.
+                // LOGIKA UTAMA: Hanya hitung jika volume > 0
+                if ($volItem <= 0) continue;
 
-            // --- AGREGASI ---
-            $calcTotalVol += $vol;
-            $calcTotalRev += $rev;
+                // Cek Tanggal
+                $month = $getMonthFromRow($tglRaw);
 
-            // Buyer Grouping
-            if (!isset($buyersAgg[$mutuName][$buyer])) $buyersAgg[$mutuName][$buyer] = 0;
-            $buyersAgg[$mutuName][$buyer] += $vol;
-            if (!isset($buyersAgg['TOTAL'][$buyer])) $buyersAgg['TOTAL'][$buyer] = 0;
-            $buyersAgg['TOTAL'][$buyer] += $vol;
+                // Filter Bulan
+                if (!$isAllMonths) {
+                    if ($month < $startMonth || $month > $endMonth || $month === 0) continue;
+                }
 
-            // Product Grouping
-            if (!isset($productsAgg[$mutuName][$prod])) $productsAgg[$mutuName][$prod] = 0;
-            $productsAgg[$mutuName][$prod] += $vol;
-            if (!isset($productsAgg['TOTAL'][$prod])) $productsAgg['TOTAL'][$prod] = 0;
-            $productsAgg['TOTAL'][$prod] += $vol;
+                // --- HITUNG REVENUE ITEM ---
+                $revItem = $volItem * $unitPrice;
+
+                // --- AGREGASI ---
+                $calcTotalVol += $volItem;
+                $calcTotalRev += $revItem;
+
+                // Grouping Buyer
+                if (!isset($buyersAgg[$mutuName][$buyer])) $buyersAgg[$mutuName][$buyer] = 0;
+                $buyersAgg[$mutuName][$buyer] += $volItem;
+                
+                if (!isset($buyersAgg['TOTAL'][$buyer])) $buyersAgg['TOTAL'][$buyer] = 0;
+                $buyersAgg['TOTAL'][$buyer] += $volItem;
+
+                // Grouping Product
+                if (!isset($productsAgg[$mutuName][$prod])) $productsAgg[$mutuName][$prod] = 0;
+                $productsAgg[$mutuName][$prod] += $volItem;
+
+                if (!isset($productsAgg['TOTAL'][$prod])) $productsAgg['TOTAL'][$prod] = 0;
+                $productsAgg['TOTAL'][$prod] += $volItem;
+            }
         }
 
-        // Set Total
+        // Set Total Akhir
         $totalVolume  = $calcTotalVol;
         $totalRevenue = $calcTotalRev;
 
-        // 6. Top 5 Buyers
+        // 6. PROSES TOP 5 BUYERS
         $top5Buyers = [];
         $loopKeys = array_keys($buyersAgg);
         if(empty($loopKeys)) $loopKeys = ['TOTAL', 'SIR 20', 'RSS 1', 'SIR 3L', 'SIR 3WF'];
+        
         foreach ($loopKeys as $kategori) {
             $data = $buyersAgg[$kategori] ?? [];
             if (empty($data)) { $top5Buyers[$kategori] = ['TOTAL' => 0]; continue; }
@@ -239,10 +296,11 @@ class DashboardController extends Controller
         }
         $topBuyers = $buyersAgg;
 
-        // 7. Top 5 Products
+        // 7. PROSES TOP 5 PRODUCTS
         $top5Products = [];
         $loopKeysProd = array_keys($productsAgg);
         if(empty($loopKeysProd)) $loopKeysProd = ['TOTAL', 'SIR 20', 'RSS 1', 'SIR 3L', 'SIR 3WF'];
+        
         foreach ($loopKeysProd as $kategori) {
             $data = $productsAgg[$kategori] ?? [];
             if (empty($data)) { $top5Products[$kategori] = ['TOTAL' => 0]; continue; }
@@ -259,7 +317,7 @@ class DashboardController extends Controller
         }
         $topProducts = $productsAgg;
 
-        // --- FUNGSI BAWAAN LAINNYA (TIDAK BERUBAH) ---
+        // --- FUNGSI BAWAAN LAINNYA ---
         $processDaily = function($rows) {
             $points = [];
             foreach ($rows as $row) {
