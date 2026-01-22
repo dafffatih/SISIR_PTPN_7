@@ -130,36 +130,42 @@ class DashboardController extends Controller
         ];
 
         // =========================================================================
-        // LOGIKA FILTER (DIPERBARUI UNTUK DEFAULT JAN-DES)
+        // LOGIKA FILTER (DIPERBAIKI: RANGE JAN-DES & FIX SWAP ISSUE)
         // =========================================================================
 
-        // 1. Ambil Parameter Filter (Default 1 untuk Start, 12 untuk End)
+        // 1. Ambil Parameter Filter (Default 1 - 12)
         $reqStart = $request->input('start_month', 1);
         $reqEnd   = $request->input('end_month', 12);
         
-        // Pastikan Integer
         $startMonth = (int)$reqStart;
         $endMonth   = (int)$reqEnd;
-        
-        // Logika "Seluruh Bulan" adalah jika user memilih 1 s/d 12
-        $isAllMonths = ($startMonth === 1 && $endMonth === 12);
 
-        // Validasi Swap Bulan (Jika Start > End)
+        // Validasi Range: 
+        // JANGAN DISWAP (Tukar Posisi). Tapi jika Start > End, maka End mengikuti Start.
+        // Contoh: Start diganti Feb (2), End masih Jan (1). 
+        // Logika Lama (Salah): Start=1, End=2 (Jan-Feb).
+        // Logika Baru (Benar): Start=2, End=2 (Feb Only).
         if ($startMonth > $endMonth) { 
-            $temp = $startMonth; $startMonth = $endMonth; $endMonth = $temp; 
+            $endMonth = $startMonth; 
+            
+            // Update request object agar View (Blade) menampilkan opsi yang benar
+            // tanpa perlu menunggu JS
+            $request->merge(['end_month' => $endMonth]);
         }
+        
+        // Logika "Seluruh Bulan" (1-12)
+        $isAllMonths = ($startMonth === 1 && $endMonth === 12);
 
         // 2. HITUNG TOTAL RKAP
         $rkapVolTotal = 0;
         $rkapRevTotal = 0;
         for ($m = $startMonth; $m <= $endMonth; $m++) {
             $idx = $m - 1; 
-            // Karena $rekap4 sudah dikali 1000/1M, penjumlahan ini hasilnya sudah Kg dan Rupiah
             $rkapVolTotal += $rekap4['volume_rkap'][$idx] ?? 0;
             $rkapRevTotal += $rekap4['revenue_rkap'][$idx] ?? 0;
         }
         $rkapVolume  = $rkapVolTotal; 
-        $rkapRevenue = $rkapRevTotal; // Tidak perlu dikali 1M lagi karena array sudah dikali di atas
+        $rkapRevenue = $rkapRevTotal; 
 
         // 3. AMBIL DATA RAW DARI SHEET
         // Identitas & Harga
@@ -182,18 +188,14 @@ class DashboardController extends Controller
         $getMonthFromRow = function($val) {
             if (empty($val)) return 0;
             $val = trim($val);
-
-            // 1. Blokir tanggal sampah dari Excel
             if ($val === '30/12/99' || $val === '30/12/1899') return 0;
 
-            // 2. Handle Numeric (Excel Serial Date)
             if (is_numeric($val)) {
                 try {
                      return \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($val)->format('n');
                 } catch (\Exception $e) { return 0; }
             }
 
-            // 3. Handle Text (Indonesia/Inggris)
             $map = [
                 'Jan' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Apr', 'Mei' => 'May', 'Jun' => 'Jun',
                 'Jul' => 'Jul', 'Agt' => 'Aug', 'Agu' => 'Aug', 'Sep' => 'Sep', 'Okt' => 'Oct', 'Nov' => 'Nov', 'Des' => 'Dec',
@@ -201,7 +203,6 @@ class DashboardController extends Controller
             ];
             $valClean = str_ireplace(array_keys($map), array_values($map), $val);
 
-            // 4. COBA PARSE FORMAT INDONESIA (d/m/Y) DULUAN!
             $formats = ['d/m/Y', 'd-m-Y', 'd/m/y', 'd-m-y'];
             foreach ($formats as $fmt) {
                 try {
@@ -210,7 +211,6 @@ class DashboardController extends Controller
                 } catch (\Exception $e) { continue; }
             }
 
-            // Fallback ke auto-parse
             try { return Carbon::parse($valClean)->month; } catch (\Exception $e) { return 0; }
         };
 
@@ -224,16 +224,13 @@ class DashboardController extends Controller
         $rowCount = count($rawBuyers);
         
         for ($i = 0; $i < $rowCount; $i++) {
-            // Ambil Data Identitas
             $buyer = isset($rawBuyers[$i][0]) ? strtoupper(trim($rawBuyers[$i][0])) : '';
             $prod  = isset($rawProducts[$i][0]) ? strtoupper(trim($rawProducts[$i][0])) : '';
             $mutuName = isset($rawMutu[$i][0]) ? strtoupper(trim($rawMutu[$i][0])) : '';
             
-            // Ambil Harga Satuan (Rp/Kg)
             $priceStr = $rawPrices[$i][0] ?? '0';
             $unitPrice = (float) str_replace(['.', ','], ['', '.'], $priceStr);
 
-            // Validasi Data Minimal
             if (empty($buyer) || empty($mutuName)) continue;
 
             // --- LOOPING 6 DATA PENYERAHAN ---
@@ -241,30 +238,21 @@ class DashboardController extends Controller
                 $tglRaw = $del['date'][$i][0] ?? '';
                 $volRaw = $del['vol'][$i][0] ?? '0';
                 
-                // Volume dalam Kg
                 $volItem = (float) str_replace(['.', ','], ['', '.'], $volRaw);
 
-                // LOGIKA UTAMA: Hanya hitung jika volume > 0
                 if ($volItem <= 0) continue;
 
-                // Cek Tanggal
                 $month = $getMonthFromRow($tglRaw);
 
-                // Filter Bulan (Jika tidak ALL, maka cek range)
-                // Jika isAllMonths = true (Jan-Des), maka semua bulan (1-12) akan masuk kondisi di bawah
-                // Namun untuk keamanan, kita tetap cek range start-end.
+                // Filter Bulan
                 if (!$isAllMonths) {
                     if ($month < $startMonth || $month > $endMonth || $month === 0) continue;
                 } else {
-                    // Jika All Months, pastikan bulan valid (1-12)
                     if ($month < 1 || $month > 12) continue;
                 }
 
-                // --- HITUNG REVENUE ITEM ---
-                // Volume (Kg) * Harga (Rp/Kg) = Total Rupiah
                 $revItem = $volItem * $unitPrice;
 
-                // --- AGREGASI ---
                 $calcTotalVol += $volItem;
                 $calcTotalRev += $revItem;
 
@@ -284,7 +272,6 @@ class DashboardController extends Controller
             }
         }
 
-        // Set Total Akhir (Sudah dalam KG dan RUPIAH)
         $totalVolume  = $calcTotalVol;
         $totalRevenue = $calcTotalRev;
 
