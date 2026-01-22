@@ -521,7 +521,7 @@
                                     <td>{{ number_format($hargaRataRata['belum_bayar']['average'], 0, ',', '.') }}</td>
                                 </tr>
                                 {{-- TOTAL RATA-RATA --}}
-                                <tr class="avg-row">
+                                <tr class="avg-row avg-highlight">
                                     <td>Rata-Rata</td>
                                     <td>{{ number_format($hargaRataRata['total']['sir20'], 0, ',', '.') }}</td>
                                     <td>{{ number_format($hargaRataRata['total']['rss'], 0, ',', '.') }}</td>

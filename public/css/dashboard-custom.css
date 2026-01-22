@@ -909,6 +909,25 @@
 /* TABEL HARGA RATA-RATA (SAMAKAN DENGAN STOK BEBAS) */
 /* ================================================= */
 
+/* ===== RATA-RATA HIGHLIGHT (HIJAU SEPERTI STOK BEBAS) ===== */
+.avg-table .avg-row.avg-highlight td {
+    background: var(--stok-teal);
+    color: #ffffff;
+    font-weight: 800;
+    border-top: none;
+}
+
+/* Rounded ujung kiri & kanan (opsional, tapi cakep) */
+.avg-table .avg-row.avg-highlight td:first-child {
+    border-top-left-radius: 1px;
+    border-bottom-left-radius: 1px;
+}
+
+.avg-table .avg-row.avg-highlight td:last-child {
+    border-top-right-radius: 1px;
+    border-bottom-right-radius: 1px;
+}
+
 .avg-price-wrapper {
     margin-top: 24px;
 }
@@ -1550,4 +1569,9 @@
     }
 
     
+}
+
+/* ===== RATA-RATA: JANGAN MEPET KIRI ===== */
+.avg-table .avg-row.avg-highlight td:first-child {
+    padding-left: 12px;   /* bisa 10–16px sesuai selera */
 }
