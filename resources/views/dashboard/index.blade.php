@@ -582,13 +582,13 @@
                     <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Total</p>
                     <div class="stats-container2">
                         <div class="summary-item">
-                            <span class="sum-label">Real (Jan-Dec)</span>
+                            <span class="sum-label">Real</span>
                             <span class="sum-val orange" id="sidebar-vol-real">
                                 {{ number_format($totalVolume / 1000, 0, ',', '.') }} <small>Ton</small>
                             </span>
                         </div>
                         <div class="summary-item">
-                            <span class="sum-label">RKAP (Jan-Dec)</span>
+                            <span class="sum-label">RKAP</span>
                             {{-- TAMBAHKAN ID: sidebar-vol-rkap --}}
                             <span class="sum-val dark" id="sidebar-vol-rkap">
                                 {{ number_format($rkapVolume / 1000, 0, ',', '.') }} <small>Ton</small>
@@ -653,13 +653,13 @@
                     <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Total</p>
                     <div class="stats-container2">
                         <div class="summary-item">
-                            <span class="sum-label">Real (Jan-Dec)</span>
+                            <span class="sum-label">Real</span>
                             <span class="sum-val orange" id="sidebar-rev-real">
                                 Rp {{ number_format($totalRevenue/1000000000, 0, ',', '.') }} <small>Milyar</small>
                             </span>
                         </div>
                         <div class="summary-item">
-                            <span class="sum-label">RKAP (Jan-Dec)</span>
+                            <span class="sum-label">RKAP</span>
                             {{-- TAMBAHKAN ID: sidebar-rev-rkap --}}
                             <span class="sum-val dark" id="sidebar-rev-rkap">
                                 Rp {{ number_format($rkapRevenue/1000000000, 0, ',', '.') }} <small>Milyar</small>
