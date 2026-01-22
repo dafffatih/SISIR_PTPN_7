@@ -578,6 +578,8 @@
                         </div>
                     </div>
 
+                    <hr style="margin: 0; border: 0; border-top: 1px solid #e2e8f0;">
+
                     {{-- TOTAL (SIDEBAR BAWAH) --}}
                     <div class="sidebar-section border-bottom" style="padding: 1.5rem;">
                         <p class="sidebar-title" style="margin-bottom: 1rem; font-weight: 600; color: #666;">Total</p>
@@ -652,6 +654,8 @@
                             @endforeach
                         </div>
                     </div>
+
+                    <hr style="margin: 0; border: 0; border-top: 1px solid #e2e8f0;">
 
                     {{-- TOTAL (SIDEBAR BAWAH) --}}
                     <div class="sidebar-section border-bottom" style="padding: 1.5rem;">
