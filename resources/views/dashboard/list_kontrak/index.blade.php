@@ -5,58 +5,43 @@
 
 @section('content')
 <style>
-    /* Styling Reuse dari index lama */
     .k-container { padding: 20px; font-family: 'Inter', sans-serif; }
     .k-header { margin-bottom: 24px; }
     .k-title {
-    font-size: 24px;              /* sama */
-    font-weight: 700;             /* ⬅️ ini kuncinya */
+    font-size: 24px;             
+    font-weight: 700;            
     font-family: 'Inter', sans-serif;
     color: #0F172A;
     line-height: 1.2;
     margin: 0;
     }
-
     .k-subtitle {
     font-size: 14px;
-    color: #64748B;   /* sama dengan dashboard */
+    color: #64748B; 
     margin-top: 4px;
     }
-
     .k-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden; }
-    
-    /* Toolbar Filter */
     .k-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #ffffff; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap; gap: 12px; }
     .k-search-box { display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; width: 100%; max-width: 300px; flex:1; }
     .k-search-box input { border: none; background: transparent; outline: none; margin-left: 8px; font-size: 14px; width: 100%; color: #1e293b; }
-    
     .k-date-input { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; font-size: 14px; color: #1e293b; outline: none; }
     .k-select-limit { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; font-size: 14px; color: #1e293b; outline: none; cursor: pointer; }
-
-    /* Table */
     .k-table-responsive { width: 100%; overflow-x: auto; }
     .k-table { width: 100%; border-collapse: collapse; min-width: 1400px; }
     .k-table thead { background: #f8fafc; }
     .k-table th { text-align: left; padding: 12px 16px; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
     .k-table td { padding: 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; vertical-align: middle; }
     .k-table tr:hover { background-color: #fcfcff; }
-    
-    /* Badge & Button */
     .k-badge { padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 11px; }
     .k-badge-blue { background: #dbeafe; color: #1e40af; }
     .k-badge-purple { background: #f3e8ff; color: #7e22ce; }
-    
     .k-btn-icon { width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: 8px; border: 1px solid #e2e8f0; background: white; cursor: pointer; transition: 0.2s; color: #64748b; }
     .k-btn-icon:hover { background: #f8fafc; color: #7c3aed; border-color: #7c3aed; }
-
-    /* Footer */
     .k-footer { padding: 16px; display: flex; justify-content: space-between; align-items: center; background: white; color: #64748b; font-size: 13px; }
     .k-pagination { display: flex; gap: 5px; }
     .k-page-link { padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 6px; text-decoration: none; color: #1e293b; font-weight: 600; }
     .k-page-link.active { background: #7c3aed; color: white; border-color: #7c3aed; }
     .k-page-link.disabled { color: #cbd5e1; pointer-events: none; }
-
-    /* Tab Navigasi */
     .nav-tabs { display: flex; gap: 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px; }
     .nav-item { padding: 12px 4px; font-weight: 600; font-size: 14px; color: #64748b; text-decoration: none; border-bottom: 2px solid transparent; cursor: pointer; }
     .nav-item:hover { color: #7c3aed; }
@@ -203,10 +188,7 @@
 {{-- SCRIPT KHUSUS LIST KONTRAK --}}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Override / Add listener for modalDetailList
     const openModal = (id) => document.getElementById(id)?.classList.add('show');
-    
-    // Handler khusus untuk tombol modal di halaman ini
     document.querySelectorAll('[data-open="modalDetailList"]').forEach(btn => {
       btn.addEventListener('click', () => {
         const modalId = 'modalDetailList';
@@ -214,8 +196,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (rawData) {
           const data = JSON.parse(rawData);
-          
-          // Mapping Data ke ID di modal-detail.blade.php
           const map = {
             'list_header_title': data.no_kontrak || '-',
             'list_no_kontrak': data.no_kontrak || '-',

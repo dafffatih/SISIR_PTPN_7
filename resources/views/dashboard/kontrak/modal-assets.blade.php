@@ -1,5 +1,4 @@
 <style>
-  /* ===== Modal System (Match desain gambar) ===== */
   .m-overlay{
     position: fixed; inset: 0;
     background: rgba(15,23,42,.55);
@@ -10,7 +9,6 @@
     z-index: 9999;
   }
   .m-overlay.show{ display:flex; }
-
   .m-dialog{
     width: 100%;
     max-width: 1050px;
@@ -19,7 +17,6 @@
     overflow:hidden;
     box-shadow: 0 18px 60px rgba(2,6,23,.35);
   }
-
   .m-header{
     padding: 16px 20px;
     background: linear-gradient(90deg, #ef4444, #f97316);
@@ -28,7 +25,6 @@
   }
   .m-title{ margin:0; font-size: 18px; font-weight: 800; }
   .m-subtitle{ margin:4px 0 0; font-size: 12px; opacity:.9; }
-
   .m-close{
     position:absolute; right: 14px; top: 12px;
     width: 36px; height: 36px;
@@ -39,14 +35,12 @@
     cursor:pointer;
   }
   .m-close:hover{ background: rgba(255,255,255,.14); }
-
   .m-body{
     padding: 18px 20px 10px;
     max-height: calc(100vh - 170px);
     overflow:auto;
     background:#fff;
   }
-
   .m-section{
     background:#f8fafc;
     border: 1px solid #eef2f7;
@@ -54,7 +48,6 @@
     padding: 14px;
     margin-bottom: 14px;
   }
-
   .m-section-head{
     display:flex;
     align-items:center;
@@ -71,13 +64,11 @@
     display:grid; place-items:center;
     border: 1px solid #e9d5ff;
   }
-
   .m-grid{
     display:grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
   }
-
   .m-field label{
     display:block;
     font-size: 12px;
@@ -86,7 +77,6 @@
     margin-bottom: 6px;
   }
   .m-field .req{ color:#ef4444; font-weight:900; margin-left:4px; }
-
   .m-input{
     width:100%;
     padding: 11px 12px;
@@ -101,7 +91,6 @@
     border-color:#a78bfa;
     box-shadow: 0 0 0 3px rgba(167,139,250,.18);
   }
-
   .m-date-wrap{ position:relative; }
   .m-date-ico{
     position:absolute; right: 10px; top: 50%;
@@ -109,7 +98,6 @@
     pointer-events:none;
     opacity:.7;
   }
-
   .m-footer{
     display:flex;
     justify-content:flex-end;
@@ -118,7 +106,6 @@
     border-top: 1px solid #eef2f7;
     background:#fff;
   }
-
   .m-btn{
     border-radius: 10px;
     padding: 10px 16px;
@@ -130,7 +117,6 @@
     color:#0f172a;
   }
   .m-btn:hover{ background:#f8fafc; }
-
   .m-btn-primary{
     border-color: transparent;
     background:#16a34a;
@@ -141,15 +127,12 @@
     box-shadow: 0 8px 18px rgba(22,163,74,.18);
   }
   .m-btn-primary:hover{ filter: brightness(.98); }
-
   .m-btn-purple{
     border-color: transparent;
     background:#7c3aed;
     color:#fff;
     box-shadow: 0 8px 18px rgba(124,58,237,.18);
   }
-
-  /* Detail modal */
   .m-two-col{
     display:grid;
     grid-template-columns: 1.15fr .85fr;
@@ -186,10 +169,9 @@
   }
   .m-kv tr:last-child td{ border-bottom:none; }
 
-  /* Geser kolom VALUE (kanan) sedikit ke kanan */
-.m-kv td:nth-child(2){
-  padding-left: 20px; /* bisa 12–24px */
-}
+  .m-kv td:nth-child(2){
+    padding-left: 20px; 
+  }
 
 
   @media (max-width: 980px){
@@ -206,7 +188,6 @@
     const openModal = (id) => document.getElementById(id)?.classList.add('show');
     const closeModal = (id) => document.getElementById(id)?.classList.remove('show');
 
-    // Klik tombol dengan data-open (Detail & Edit)
     document.querySelectorAll('[data-open]').forEach(btn => {
       btn.addEventListener('click', () => {
         const modalId = btn.getAttribute('data-open');
@@ -220,8 +201,6 @@
         openModal(modalId);
       });
     });
-
-    // Fungsi untuk mengisi data ke modal (MENGGUNAKAN VARIABEL HURUF)
     function fillModalData(modalId, data) {
       if (modalId === 'modalDetail') {
         const modal = document.getElementById('modalDetail');
@@ -229,15 +208,15 @@
         // Set nomor kontrak di subtitle
         document.getElementById('detail_nomor_kontrak').innerText = data.I || '-';
 
-        // Populate fields - data already formatted from controller
+        // Populate fields 
         const map = {
           'detail_H': data.H || '-',
           'detail_I': data.I || '-',
           'detail_J': data.J || '-',
           'detail_K': data.K || '-',
-          'detail_L': data.L ? (data.L + ' Kg') : '-',        // Volume + unit
-          'detail_M': data.M ? ('Rp ' + data.M) : '-',        // Currency prefix
-          'detail_N': data.N ? ('Rp ' + data.N) : '-',        // Currency prefix
+          'detail_L': data.L ? (data.L + ' Kg') : '-',        
+          'detail_M': data.M ? ('Rp ' + data.M) : '-',        
+          'detail_N': data.N ? ('Rp ' + data.N) : '-',        
           'detail_O': data.O ? ('Rp ' + (typeof data.O === 'number' ? number_format(data.O, 0, ',', '.') : data.O)) : '-',  // Inc PPN + Rp
           'detail_P': data.P || '-',
           'detail_Q': data.Q || '-',
@@ -249,9 +228,9 @@
           'detail_W': data.W || '-',
           'detail_X': data.X || '-',
           'detail_Y': data.Y || '-',
-          'detail_Z': data.Z ? (data.Z + ' Kg') : '-',        // Sisa awal + unit
-          'detail_AA': data.AA ? (data.AA + ' Kg') : '-',     // Total + unit
-          'detail_AB': data.AB ? (data.AB + ' Kg') : '-',     // Sisa akhir + unit
+          'detail_Z': data.Z ? (data.Z + ' Kg') : '-',       
+          'detail_AA': data.AA ? (data.AA + ' Kg') : '-',    
+          'detail_AB': data.AB ? (data.AB + ' Kg') : '-',     
           'detail_BA': data.BA || '-',
         };
 
@@ -261,18 +240,16 @@
         });
       }
 
-      // Fill Edit Modal
+      // Edit Modal
       if (modalId === 'modalEdit') {
           const form = document.getElementById('modalEdit').querySelector('form');
 
-          // Set row_index (nomor baris di Google Sheets) bukan ID database
           form.querySelector('[name="row_index"]').value = data.row || data.id;
 
-          // Fill Manual Fields (raw strings)
+          // Fill Manual Fields
           form.querySelector('[name="loex"]').value = data.H || '';
           form.querySelector('[name="nomor_kontrak"]').value = data.I || '';
           form.querySelector('[name="nama_pembeli"]').value = data.J || '';
-          // Use raw ISO date for date inputs to be compatible with <input type="date">
           form.querySelector('[name="tgl_kontrak"]').value = data.K_raw || data.K || '';
           form.querySelector('[name="volume"]').value = data.L || '';
           form.querySelector('[name="harga"]').value = data.M || '';
@@ -290,7 +267,7 @@
           form.querySelector('[name="jatuh_tempo"]').value = data.BA_raw || data.BA || '';
       }
 
-      // Helper function for number formatting in JS if needed
+      // Helper function for number formatting 
       function number_format(number, decimals, decPoint, thousandsSep) {
           number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
           var n = !isFinite(+number) ? 0 : +number,
@@ -314,7 +291,7 @@
       }
     }
 
-    // Tombol Tambah (Membersihkan form)
+    // Tombol Tambah 
     const btnTambah = document.getElementById('btnOpenTambah');
     if (btnTambah) {
         btnTambah.addEventListener('click', () => {

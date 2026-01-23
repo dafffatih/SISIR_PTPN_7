@@ -11,40 +11,34 @@
 <body class="min-h-screen">
   <div class="min-h-screen relative overflow-hidden">
 
-    {{-- Background image (NO inline CSS) --}}
+    {{-- Background image --}}
     <img
       src="{{ asset('images/login-bg.jpg') }}"
       alt=""
       class="absolute inset-0 w-full h-full object-cover object-center select-none pointer-events-none"
       draggable="false"
     />
-
-    {{-- Overlay putih tipis biar tidak silau --}}
     <div class="absolute inset-0 bg-white/20"></div>
 
-    {{-- CONTENT --}}
+
     <div class="relative min-h-screen flex items-center justify-center px-6">
       <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
         {{-- KIRI: BRANDING --}}
         <div class="hidden lg:flex items-center justify-center">
           <div class="flex flex-col items-center text-center">
-
-            {{-- LOGO (BESAR) --}}
             <img
               src="{{ asset('images/SisirWordmark.png') }}"
               alt="Logo SISIR"
               class="w-[420px] h-auto object-contain"
               draggable="false"
             >
-
-          <p class="mt-3 text-[#0F766E] text-lg font-semibold leading-snug">
-            Sales and Inventories Statistic of Rubber
-          </p>
-          <p class="mt-0.5 text-[#0F766E] text-base tracking-wide">
-            PTPN 1 Regional 7
-          </p>
-
+            <p class="mt-3 text-[#0F766E] text-lg font-semibold leading-snug">
+              Sales and Inventories Statistic of Rubber
+            </p>
+            <p class="mt-0.5 text-[#0F766E] text-base tracking-wide">
+              PTPN 1 Regional 7
+            </p>
           </div>
         </div>
 
@@ -62,7 +56,6 @@
 
             <form class="mt-6 space-y-4" method="POST" action="/login">
               @csrf
-
               <div>
                 <label class="text-sm font-medium text-slate-700">Username</label>
                 <input
@@ -95,7 +88,6 @@
                   class="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-semibold transition">
                   Sign In to Dashboard
               </button>
-
             </form>
 
             <p class="text-center text-xs text-slate-400 mt-6">
@@ -111,6 +103,19 @@
       </div>
     </div>
 
-  </div>
+    {{-- CREDIT SECTION --}}
+    <div class="absolute bottom-6 right-6 z-20 pointer-events-none">
+        <div class="px-4 py-2 rounded-xl bg-black/10 backdrop-blur-sm border border-white/5 shadow-md text-right">
+            <p class="text-xs font-medium text-slate-200/70">
+                Develop By
+            </p>
+            <p class="text-sm font-bold text-orange-200/70 tracking-wide">
+                Wahyu SAP, DMF, Zaky t 
+            </p> <!-- JIKA KALIAN MELANJUTKAN PROJEK INI, SILAHKAN TAMBAHKAN NAMA KALIAN DI SINI, NAMA KAMI JANGAN DIHAPUS. -->
+        </div>
+    </div>
+
+
+  </div> 
 </body>
 </html>

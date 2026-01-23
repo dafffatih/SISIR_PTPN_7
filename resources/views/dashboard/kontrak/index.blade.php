@@ -5,12 +5,11 @@
 
 @section('content')
 <style>
-    /* Container & Wrapper */
     .k-container { padding: 22px; font-family: 'Inter', sans-serif; }
     .k-header { margin-bottom: 24px; }
     .k-title {
-    font-size: 24px;              /* sama */
-    font-weight: 700;             /* ⬅️ ini kuncinya */
+    font-size: 24px;             
+    font-weight: 700;            
     font-family: 'Inter', sans-serif;
     color: #0F172A;
     line-height: 1.2;
@@ -19,17 +18,14 @@
 
     .k-subtitle {
     font-size: 14px;
-    color: #64748B;   /* sama dengan dashboard */
+    color: #64748B;   
     margin-top: 4px;
    }
 
-    /* --- TAB NAVIGASI --- */
     .nav-tabs { display: flex; gap: 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px; }
     .nav-item { padding: 12px 4px; font-weight: 600; font-size: 14px; color: #64748b; text-decoration: none; border-bottom: 2px solid transparent; cursor: pointer; }
     .nav-item:hover { color: #7c3aed; }
     .nav-item.active { color: #7c3aed; border-bottom-color: #7c3aed; }
-
-    /* Card Style */
     .k-card {
         background: #ffffff;
         border: 1px solid #e2e8f0;
@@ -37,8 +33,6 @@
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         overflow: hidden;
     }
-
-    /* Toolbar Section */
     .k-toolbar {
         display: flex;
         justify-content: space-between;
@@ -49,8 +43,6 @@
         flex-wrap: wrap;
         gap: 12px;
     }
-
-    /* Search Input */
     .k-search-box {
         display: flex;
         align-items: center;
@@ -72,8 +64,6 @@
         width: 100%;
         color: #1e293b;
     }
-
-    /* Primary Button */
     .k-btn-add {
         background: #10b981;
         color: white;
@@ -89,8 +79,6 @@
         transition: 0.2s;
     }
     .k-btn-add:hover { background: #059669; transform: translateY(-1px); }
-
-    /* Table Style */
     .k-table-responsive { width: 100%; overflow-x: auto; }
     .k-table { width: 100%; border-collapse: collapse; min-width: 1000px; }
     .k-table thead { background: #f8fafc; }
@@ -105,13 +93,9 @@
     }
     .k-table td { padding: 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; vertical-align: middle; }
     .k-table tr:hover { background-color: #fcfcff; }
-
-    /* Badge Styles */
     .k-badge { padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 11px; }
     .k-badge-green { background: #dcfce7; color: #16a34a; }
     .k-badge-orange { background: #ffedd5; color: #ea580c; }
-
-    /* Action Buttons */
     .k-btn-icon {
         width: 32px;
         height: 32px;
@@ -126,8 +110,6 @@
     }
     .k-btn-icon:hover { background: #f8fafc; color: #7c3aed; border-color: #7c3aed; }
     .k-btn-delete:hover { color: #ef4444; border-color: #fca5a5; background: #fee2e2; }
-
-    /* Footer & Pagination */
     .k-footer { padding: 16px; display: flex; justify-content: space-between; align-items: center; background: white; color: #64748b; font-size: 13px; }
     .k-pagination { display: flex; gap: 5px; }
     .k-page-link {
@@ -151,8 +133,6 @@
         cursor: pointer;
     }
     .k-select-limit:focus { border-color: #7c3aed; background: #fff; }
-
-    /* Secondary Button */
     .k-btn-sync {
         background: #3b82f6;
         color: white;
@@ -169,8 +149,6 @@
     }
     .k-btn-sync:hover { background: #2563eb; transform: translateY(-1px); }
     .k-btn-sync:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
-
-    /* Date filter inputs */
     .k-date-input {
         padding: 8px 12px;
         border: 1px solid #e2e8f0;

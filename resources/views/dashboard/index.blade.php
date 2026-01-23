@@ -693,8 +693,6 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <script>
-        // DATA DIKIRIM KE JS SUDAH NORMAL (KG dan RUPIAH PENUH)
-        // JS akan menghandle pembagiannya (Bagi 1000 / 1Milyar)
         window.dashboardData = {
             priceDaily: @json($trendPriceDaily),
             rawTopBuyers: @json($top5Buyers), 

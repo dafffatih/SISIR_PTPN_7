@@ -608,4 +608,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Jalankan kalkulasi awal
     calculateMetrics();
+
+    
 });
