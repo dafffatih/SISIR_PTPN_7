@@ -236,4 +236,36 @@ class GoogleSheetService
             'name' => $f->getName()
         ])->toArray();
     }
+
+    
+    public function batchUpdate(array $data)
+    {
+        try {
+            if (!$this->spreadsheetId) {
+                throw new \Exception('Spreadsheet ID missing.');
+            }
+
+            $dataToUpdate = [];
+            foreach ($data as $range => $value) {
+                $dataToUpdate[] = new Google_Service_Sheets_ValueRange([
+                    'range' => $range,
+                    'values' => [[$value]] // Google API butuh array of array
+                ]);
+            }
+
+            $body = new Google_Service_Sheets_BatchUpdateValuesRequest([
+                'valueInputOption' => 'USER_ENTERED',
+                'data' => $dataToUpdate
+            ]);
+
+            return $this->sheetsService->spreadsheets_values->batchUpdate(
+                $this->spreadsheetId, 
+                $body
+            );
+
+        } catch (\Exception $e) {
+            \Log::error('Batch update failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
 }
