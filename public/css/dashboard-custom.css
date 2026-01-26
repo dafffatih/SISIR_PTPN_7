@@ -866,6 +866,8 @@
     background: #134f5c;
     color: #fff;
     z-index: 2;
+    -webkit-text-stroke: 3px #134f5c; /* Ketebalan dan warna outline */
+    paint-order: stroke fill;
 }
 
 .bar.capacity {
@@ -879,6 +881,8 @@
     right: 8px;
     color: #555;
     font-weight: 600;
+    -webkit-text-stroke: 3px #ffffff; /* Ketebalan dan warna outline */
+    paint-order: stroke fill;
 }
 
 .percent {
@@ -1574,4 +1578,67 @@
 /* ===== RATA-RATA: JANGAN MEPET KIRI ===== */
 .avg-table .avg-row.avg-highlight td:first-child {
     padding-left: 12px;   /* bisa 10–16px sesuai selera */
+}
+
+.layout-split-chart {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    border-bottom: 1px solid #eee; /* Opsional: garis bawah container */
+}
+
+.col-chart-main {
+    flex: 3;
+    min-width: 0; /* Mencegah overflow flex item */
+    border-right: 1px solid #eee; /* Garis kanan default */
+    border-bottom: none;
+}
+
+.col-sidebar-right {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    border-left: none;
+}
+
+/* 2. Breakpoint Trigger (Layar < 1200px) 
+   Saat layar mulai sempit, ubah jadi tumpuk ke bawah */
+@media (max-width: 1100px) {
+    .layout-split-chart {
+        flex-direction: column; /* Ubah arah jadi vertikal */
+    }
+
+    .col-chart-main {
+        flex: none; /* Matikan rasio flex */
+        width: 100%; /* Paksa lebar penuh */
+        border-right: none !important; /* Hilangkan garis samping */
+        border-bottom: 1px solid #eee !important; /* Ganti jadi garis bawah */
+        padding-bottom: 20px;
+    }
+
+    .col-sidebar-right {
+        flex: none;
+        width: 100%; /* Paksa lebar penuh */
+        min-width: 0;
+        border-top: none;
+    }
+    
+    /* Atur ulang padding sidebar agar lebih rapi saat mode tumpuk */
+    .sidebar-section {
+        padding: 1.5rem 2rem !important; 
+    }
+    
+    /* Opsional: Jika ingin statistik total di sidebar berjejer horizontal saat mobile */
+    .stats-container2 {
+        grid-template-columns: repeat(3, 1fr); /* 3 kolom */
+    }
+}
+
+/* 3. Mobile Adjustment (< 600px) */
+@media (max-width: 600px) {
+    /* Kembalikan stats sidebar jadi 2 kolom atau 1 kolom jika layar HP sangat kecil */
+    .stats-container2 {
+        grid-template-columns: 1fr 1fr; 
+    }
 }
