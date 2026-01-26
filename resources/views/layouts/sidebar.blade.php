@@ -41,7 +41,7 @@ $menus = [
         'label' => 'Settings',          
         'route' => 'settings',       
         'icon'  => 'fas fa-cog',              
-        'roles' => ['admin','staff']
+        'roles' => ['admin']
     ],
 ];
 @endphp
