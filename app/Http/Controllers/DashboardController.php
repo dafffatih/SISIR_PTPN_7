@@ -343,16 +343,25 @@ class DashboardController extends Controller
             $labels = $rawBatch[$rLabel] ?? [];
             $stocks = $rawBatch[$rStock] ?? [];
             $caps   = $rawBatch[$rCap] ?? [];
-            $pcts   = $rawBatch[$rPct] ?? [];
+
             $result = [];
             foreach ($labels as $i => $row) {
                 $name = $row[0] ?? '-';
                 $stock = isset($stocks[$i]) ? $cleanNum($stocks[$i]) : 0;
                 $cap   = isset($caps[$i]) ? $cleanNum($caps[$i]) : 0;
-                $rawPct = isset($pcts[$i]) ? $pcts[$i][0] : 0;
-                $pctVal = $cleanNum([$rawPct]);
-                if ($pctVal <= 1 && $pctVal > 0) { $pctVal = $pctVal * 100; }
-                $result[] = ['name' => $name, 'stock' => $stock, 'capacity' => $cap, 'percent' => round($pctVal, 1)];
+                
+                if ($cap > 0) {
+                    $pctVal = ($stock / $cap) * 100;
+                } else {
+                    $pctVal = 0;
+                }
+
+                $result[] = [
+                    'name' => $name, 
+                    'stock' => $stock, 
+                    'capacity' => $cap, 
+                    'percent' => round($pctVal, 1)
+                ];
             }
             return $result;
         };
