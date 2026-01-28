@@ -17,7 +17,7 @@
       alt=""
       class="absolute inset-0 w-full h-full object-cover object-center
          select-none pointer-events-none
-         blur-sm scale-100"
+         blur-[1px] scale-100"
       draggable="false"
     />
 
