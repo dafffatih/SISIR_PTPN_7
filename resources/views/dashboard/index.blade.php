@@ -499,7 +499,12 @@
                                 </tr>
                                 {{-- OUTSTANDING CONTRACT --}}
                                 <tr class="section-row section-main">
-                                    <td colspan="6">Outstanding Contract</td>
+                                    <td>Outstanding Contract</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
                                 </tr>
 
                                 {{-- SUDAH BAYAR --}}
@@ -541,10 +546,10 @@
         
         {{-- A. BAGIAN MONTHLY VOLUME --}}
         <div class="card-std p-0 full-row-card">
-            <div class="layout-split-chart" style="display: flex; flex-wrap: wrap;">
+            <div class="layout-split-chart">
                 
                 {{-- KOLOM KIRI: CHART --}}
-                <div class="col-chart-main" style="flex: 3; min-width: 0; border-right: 1px solid #eee;">
+                <div class="col-chart-main">
                     <div class="chart-header-padded">
                         <h3 class="chart-title">Pencapaian Bulanan</h3>
                         <div class="chart-subtitle">Volume (Ton)</div>
@@ -556,7 +561,7 @@
                 </div>
 
                 {{-- KOLOM KANAN: SIDEBAR --}}
-                <div class="col-sidebar-right bg-light" style="flex: 1; min-width: 250px; display: flex; flex-direction: column;">
+                <div class="col-sidebar-right">
                     
                     {{-- RINCIAN MUTU --}}
                     <div class="sidebar-section" style="padding: 1.5rem; flex-grow: 1;">
@@ -592,14 +597,12 @@
                             </div>
                             <div class="summary-item">
                                 <span class="sum-label">RKAP</span>
-                                {{-- TAMBAHKAN ID: sidebar-vol-rkap --}}
                                 <span class="sum-val dark" id="sidebar-vol-rkap">
                                     {{ number_format($rkapVolume / 1000, 0, ',', '.') }} <small>Ton</small>
                                 </span>
                             </div>
                             <div class="summary-item">
                                 <span class="sum-label">Percentage</span>
-                                {{-- TAMBAHKAN ID: sidebar-vol-pct --}}
                                 <span class="sum-val huge" id="sidebar-vol-pct">
                                     {{ $rkapVolume > 0 ? round(($totalVolume/$rkapVolume)*100, 0) : 0 }}%
                                 </span>
@@ -613,10 +616,10 @@
 
         {{-- B. BAGIAN MONTHLY REVENUE --}}
         <div class="card-std p-0 full-row-card">
-            <div class="layout-split-chart" style="display: flex; flex-wrap: wrap;">
+            <div class="layout-split-chart">
 
                 {{-- KOLOM KIRI: CHART --}}
-                <div class="col-chart-main" style="flex: 3; min-width: 0; border-right: 1px solid #eee;">
+                <div class="col-chart-main">
                     <div class="chart-header-padded">
                         <h3 class="chart-title">Pencapaian Bulanan</h3>
                         <div class="chart-subtitle">Pendapatan (Milyar)</div>
@@ -628,7 +631,7 @@
                 </div>
 
                 {{-- KOLOM KANAN: SIDEBAR --}}
-                <div class="col-sidebar-right bg-light" style="flex: 1; min-width: 250px; display: flex; flex-direction: column;">
+                <div class="col-sidebar-right">
 
                     {{-- RINCIAN MUTU --}}
                     <div class="sidebar-section" style="padding: 1.5rem; flex-grow: 1;">
@@ -669,14 +672,12 @@
                             </div>
                             <div class="summary-item">
                                 <span class="sum-label">RKAP</span>
-                                {{-- TAMBAHKAN ID: sidebar-rev-rkap --}}
                                 <span class="sum-val dark" id="sidebar-rev-rkap">
                                     Rp {{ number_format($rkapRevenue/1000000000, 0, ',', '.') }} <small>Milyar</small>
                                 </span>
                             </div>
                             <div class="summary-item">
                                 <span class="sum-label">Percentage</span>
-                                {{-- TAMBAHKAN ID: sidebar-rev-pct --}}
                                 <span class="sum-val huge" id="sidebar-rev-pct">
                                     {{ $rkapRevenue > 0 ? round(($totalRevenue/$rkapRevenue)*100, 0) : 0 }}%
                                 </span>
@@ -687,7 +688,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>

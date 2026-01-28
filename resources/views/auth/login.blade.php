@@ -15,10 +15,18 @@
     <img
       src="{{ asset('images/login-bg.jpg') }}"
       alt=""
-      class="absolute inset-0 w-full h-full object-cover object-center select-none pointer-events-none"
+      class="absolute inset-0 w-full h-full object-cover object-center
+         select-none pointer-events-none
+         blur-sm scale-100"
       draggable="false"
     />
-    <div class="absolute inset-0 bg-white/20"></div>
+
+
+    {{-- Overlay putih tipis biar tidak silau --}}
+    <div class="absolute inset-0 bg-black/40"></div>
+
+    
+
 
 
     <div class="relative min-h-screen flex items-center justify-center px-6">
@@ -33,12 +41,16 @@
               class="w-[420px] h-auto object-contain"
               draggable="false"
             >
-            <p class="mt-3 text-[#0F766E] text-lg font-semibold leading-snug">
-              Sales and Inventories Statistic of Rubber
-            </p>
-            <p class="mt-0.5 text-[#0F766E] text-base tracking-wide">
-              PTPN 1 Regional 7
-            </p>
+
+
+          <p class="mt-3 text-white text-lg font-semibold leading-snug">
+            Sales and Inventories Statistic of Rubber
+          </p>
+          <p class="mt-0.5 text-white/90 text-base tracking-wide">
+            PTPN 1 Regional 7
+          </p>
+
+
           </div>
         </div>
 

@@ -4,12 +4,12 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\SheetController;       // Controller lama (manajemen kontrak via sheet)
+use App\Http\Controllers\SheetController;     
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SettingController;
-use App\Http\Controllers\ListKontrakController; // Controller list kontrak
-use App\Http\Controllers\ExportController;      // ✅ CONTROLLER EXPORT BARU (PENTING)
+use App\Http\Controllers\ListKontrakController;
+use App\Http\Controllers\ExportController;   
 
 /*
 |--------------------------------------------------------------------------
@@ -122,4 +122,18 @@ Route::middleware(['auth', 'active'])->group(function () {
     // ====================================================
     Route::get('/set-year/{year}', [DashboardController::class, 'setYear'])
         ->name('set.year');
+
+    Route::prefix('list-kontrak')->name('list-kontrak.')->group(function () {
+        // Halaman Utama
+        Route::get('/', [ListKontrakController::class, 'index'])->name('index');
+        
+        // Fitur Tambah Data (Ini yang menyebabkan error tadi)
+        Route::post('/store', [ListKontrakController::class, 'store'])->name('store');
+        
+        // Fitur Edit Data
+        Route::put('/update', [ListKontrakController::class, 'update'])->name('update');
+        
+        // Fitur Hapus Data
+        Route::delete('/{row}', [ListKontrakController::class, 'destroy'])->name('destroy');
+    });
 });
