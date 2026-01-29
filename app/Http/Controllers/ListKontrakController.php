@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Cache; // [BARU] Import Cache
+use Illuminate\Support\Facades\Cache;
 
 class ListKontrakController extends Controller
 {
@@ -18,7 +18,6 @@ class ListKontrakController extends Controller
         $this->googleSheetService = $googleSheetService;
     }
 
-    // --- [BARU] HELPER CACHE ---
     // Fungsi untuk mendapatkan nama key cache yang unik per tahun sheet
     private function getCacheKey()
     {
@@ -63,13 +62,13 @@ class ListKontrakController extends Controller
         $sheetName = $this->getSheetName();
         $cacheKey = $this->getCacheKey();
 
-        // [BARU] FITUR PAKSA REFRESH
+        // FITUR PAKSA REFRESH
         if ($request->has('refresh')) {
             $this->clearRelatedCaches();
             return redirect()->route('list-kontrak.index')->with('success', 'Data berhasil di-refresh dari Server Google.');
         }
         
-        // [BARU] LOGIKA CACHING (30 MENIT)
+        // LOGIKA CACHING (30 MENIT)
         // Data disimpan di RAM/Database Cache agar loading super cepat
         $allData = Cache::remember($cacheKey, 1800, function () use ($sheetName) {
             try {
@@ -259,7 +258,7 @@ class ListKontrakController extends Controller
 
             $this->googleSheetService->batchUpdate($updates);
 
-            // [BARU] 🔥 HAPUS CACHE AGAR REALTIME UPDATE
+            // HAPUS CACHE AGAR REALTIME UPDATE
             $this->clearRelatedCaches();
 
             return back()->with('success', "Data berhasil ditambahkan di baris {$targetRow}");
@@ -303,7 +302,7 @@ class ListKontrakController extends Controller
 
             $this->googleSheetService->batchUpdate($updates);
 
-            // [BARU] 🔥 HAPUS CACHE AGAR REALTIME UPDATE
+            // HAPUS CACHE AGAR REALTIME UPDATE
             $this->clearRelatedCaches();
 
             return back()->with('success', 'Data berhasil diperbarui.');
@@ -322,7 +321,7 @@ class ListKontrakController extends Controller
         try {
             $this->googleSheetService->deleteData($row, $sheetName);
 
-            // [BARU] 🔥 HAPUS CACHE AGAR REALTIME UPDATE
+            // HAPUS CACHE AGAR REALTIME UPDATE
             $this->clearRelatedCaches();
 
             return back()->with('success', 'Data berhasil dihapus.');

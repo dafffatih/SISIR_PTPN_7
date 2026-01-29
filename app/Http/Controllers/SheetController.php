@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ArrayExport;
-use Illuminate\Support\Facades\Cache; // [BARU] Import Cache
-use Illuminate\Support\Facades\Artisan; // [BARU] Untuk Sync
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Artisan;
 
 class SheetController extends Controller
 {
@@ -22,7 +22,7 @@ class SheetController extends Controller
         $this->googleSheetService = $googleSheetService;
     }
 
-    // --- [BARU] HELPER UNTUK MENGHAPUS CACHE AGAR REAL-TIME ---
+    // --- HELPER UNTUK MENGHAPUS CACHE AGAR REAL-TIME ---
     private function clearRelatedCaches()
     {
         // 1. Hapus Cache Tabel Kontrak ini
@@ -57,13 +57,13 @@ class SheetController extends Controller
         $startDate  = $request->input('start_date');
         $endDate    = $request->input('end_date');
 
-        // [BARU] FITUR PAKSA REFRESH
+        // TUR PAKSA REFRESH
         if ($request->has('refresh')) {
             $this->clearRelatedCaches();
             return redirect()->route('kontrak')->with('success', 'Data berhasil disinkronisasi dari Google Sheet.');
         }
 
-        // [BARU] SMART CACHING (30 MENIT)
+        // ART CACHING (30 MENIT)
         // Jika belum ada di cache, ambil dari Google. Jika ada, ambil dari RAM (Cepat).
         $allData = Cache::remember('sheet_kontrak_data_main', 1800, function () use ($sheetService) {
             try {
@@ -290,7 +290,7 @@ class SheetController extends Controller
             // Kirim ke Google Sheet
             $sheetService->batchUpdate($updates);
 
-            // [BARU] 🔥 HAPUS CACHE AGAR DATA BARU LANGSUNG MUNCUL
+            // HAPUS CACHE AGAR DATA BARU LANGSUNG MUNCUL
             $this->clearRelatedCaches();
 
             return back()->with('success', 'Data Berhasil Ditambahkan di Baris ' . $targetRow);
@@ -340,7 +340,7 @@ class SheetController extends Controller
 
             $sheetService->batchUpdate($updates);
 
-            // [BARU] 🔥 HAPUS CACHE
+            // HAPUS CACHE
             $this->clearRelatedCaches();
 
             return back()->with('success', 'Data Berhasil Diperbarui');
@@ -357,7 +357,7 @@ class SheetController extends Controller
         try {
             $sheetService->deleteData($row);
             
-            // [BARU] 🔥 HAPUS CACHE
+            // HAPUS CACHE
             $this->clearRelatedCaches();
 
             return back()->with('success', 'Data Berhasil Dihapus');

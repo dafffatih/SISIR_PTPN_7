@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\GoogleSheetService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache; // WAJIB: Tambahkan ini untuk fitur caching
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
