@@ -83,7 +83,9 @@
                   @endforeach
               </select> 
           </form>
-          <button class="k-btn-add" id="btnOpenTambah"><span>＋</span> Tambah Data</button>
+            @if(auth()->user()->role !== 'viewer')
+                <button class="k-btn-add" id="btnOpenTambah"><span>＋</span> Tambah Data</button>
+            @endif
       </div>
 
         <div class="k-table-responsive">
@@ -119,18 +121,22 @@
                           <td style="color:#64748b;">-</td>
                           <td style="text-align:center;">
                               <div class="k-actions" style="justify-content:center; display:flex; gap:8px;">
-                                  <button class="k-btn-icon" title="Lihat" data-open="modalDetail" data-json="{{ json_encode($r) }}">
-                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                  </button>
-                                  <button class="k-btn-icon" title="Edit" data-open="modalEdit" data-json="{{ json_encode($r) }}">
-                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                  </button>
-                                  {{-- BUTTON HAPUS (Panggil openDeleteModal) --}}
-                                  <button class="k-btn-icon k-btn-delete" title="Hapus" 
-                                          onclick="openDeleteModal('{{ $r['id'] }}', '{{ $r['I'] }}')">
-                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h16zM10 11v6M14 11v6"></path></svg>
-                                  </button>
-                              </div>
+                                <button class="k-btn-icon" title="Lihat" data-open="modalDetail" data-json="{{ json_encode($r) }}">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                </button>
+
+                                @if(auth()->user()->role !== 'viewer')
+                                    {{-- Tombol Edit --}}
+                                    <button class="k-btn-icon" title="Edit" data-open="modalEdit" data-json="{{ json_encode($r) }}">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                    {{-- Tombol Hapus --}}
+                                    <button class="k-btn-icon k-btn-delete" title="Hapus" 
+                                            onclick="openDeleteModal('{{ $r['id'] }}', '{{ $r['I'] }}')">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h16zM10 11v6M14 11v6"></path></svg>
+                                    </button>
+                                @endif
+                            </div>
                           </td>
                       </tr>
                   @empty
@@ -155,11 +161,12 @@
 
 {{-- Includes modal --}}
 @include('dashboard.kontrak.modal-assets')
-@include('dashboard.kontrak.modal-tambah')
-@include('dashboard.kontrak.modal-edit')
 @include('dashboard.kontrak.modal-detail')
-@include('dashboard.kontrak.modal-delete') {{-- INCLUDE MODAL DELETE BARU --}}
-
+@if(auth()->user()->role !== 'viewer')
+    @include('dashboard.kontrak.modal-tambah')
+    @include('dashboard.kontrak.modal-edit')
+    @include('dashboard.kontrak.modal-delete')
+@endif
 <script>
     // 1. Fungsi Buka Modal Delete
     function openDeleteModal(rowId, nomorKontrak) {

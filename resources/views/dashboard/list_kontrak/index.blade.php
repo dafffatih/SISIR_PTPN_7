@@ -49,6 +49,7 @@
         <p class="k-subtitle">Kelola data list kontrak tahunan</p>
     </div>
 
+    {{-- FIX: Mengubah route('kontrak.index') menjadi route('kontrak') agar sesuai web.php --}}
     <div class="nav-tabs">
         <a href="{{ route('kontrak') }}" class="nav-item">List DO</a>
         <a href="{{ route('list-kontrak.index') }}" class="nav-item active">List Kontrak</a>
@@ -83,7 +84,11 @@
                 </select>
                 <button type="submit" style="display:none"></button>
             </form>
-            <button class="k-btn-add" id="btnOpenTambahList"><span>＋</span> Tambah Data</button>
+
+            {{-- SECURITY UI: Tombol Tambah HANYA jika bukan Viewer --}}
+            @if(auth()->user()->role !== 'viewer')
+                <button class="k-btn-add" id="btnOpenTambahList"><span>＋</span> Tambah Data</button>
+            @endif
         </div>
 
         <div class="k-table-responsive">
@@ -102,7 +107,12 @@
                         <th>Nilai Total</th>
                         <th>No SAP</th>
                         <th>Status</th>
-                        <th style="width:120px; text-align:center;">Aksi</th> 
+                        {{-- Sembunyikan Header Aksi untuk Viewer --}}
+                        @if(auth()->user()->role !== 'viewer')
+                            <th style="width:120px; text-align:center;">Aksi</th> 
+                        @else
+                            <th style="width:50px; text-align:center;">Detail</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -137,20 +147,22 @@
                             </td>
                             <td style="text-align:center;">
                                 <div style="display:flex; gap:6px; justify-content:center;">
+                                    {{-- Tombol Lihat Detail (SEMUA ROLE) --}}
                                     <button class="k-btn-icon" title="Lihat Detail" data-open="modalDetailList" data-json="{{ json_encode($r) }}">
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                     </button>
                                     
-                                    {{-- BUTTON EDIT (ID: modalEditList) --}}
-                                    <button class="k-btn-icon" title="Edit Data" data-open="modalEditList" data-json="{{ json_encode($r) }}">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                    </button>
+                                    {{-- SECURITY UI: Tombol Edit & Hapus HANYA Admin/Staff --}}
+                                    @if(auth()->user()->role !== 'viewer')
+                                        <button class="k-btn-icon" title="Edit Data" data-open="modalEditList" data-json="{{ json_encode($r) }}">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                        </button>
 
-                                    {{-- BUTTON DELETE (Panggil openDeleteModalList) --}}
-                                    <button class="k-btn-icon k-btn-delete" title="Hapus Data"
-                                            onclick="openDeleteModalList('{{ $r['row'] }}', '{{ $r['no_kontrak'] }}')">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h16zM10 11v6M14 11v6"></path></svg>
-                                    </button>
+                                        <button class="k-btn-icon k-btn-delete" title="Hapus Data"
+                                                onclick="openDeleteModalList('{{ $r['row'] }}', '{{ $r['no_kontrak'] }}')">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h16zM10 11v6M14 11v6"></path></svg>
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -174,11 +186,15 @@
     </div>
 </div>
 
-{{-- INCLUDE SEMUA MODAL KHUSUS LIST KONTRAK --}}
+{{-- SECURITY INCLUDE: Modal Detail untuk Semua --}}
 @include('dashboard.list_kontrak.modal-detail')
-@include('dashboard.list_kontrak.modal-tambah')
-@include('dashboard.list_kontrak.modal-edit')   {{-- Pastikan ini file baru (ID: modalEditList) --}}
-@include('dashboard.list_kontrak.modal-delete') {{-- Pastikan ini file baru (ID: deleteModalList) --}}
+
+{{-- SECURITY INCLUDE: Modal Manipulasi HANYA untuk Admin/Staff --}}
+@if(auth()->user()->role !== 'viewer')
+    @include('dashboard.list_kontrak.modal-tambah')
+    @include('dashboard.list_kontrak.modal-edit')
+    @include('dashboard.list_kontrak.modal-delete')
+@endif
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -242,13 +258,13 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           // === POPULATE MODAL EDIT ===
-          if (modalId === 'modalEditList') {
+          // Cek apakah elemen ada (karena mungkin tidak dirender untuk Viewer)
+          if (modalId === 'modalEditList' && document.getElementById('edit_list_row_index')) {
               document.getElementById('edit_list_row_index').value = data.row;
               document.getElementById('edit_no_kontrak').value = data.no_kontrak || '';
               document.getElementById('edit_no_sap').value = data.no_sap || '';
               document.getElementById('edit_pembeli').value = data.pembeli || '';
               
-              // PERBAIKAN: Gunakan 'tgl_input' (format Y-m-d) agar terbaca input date
               document.getElementById('edit_tgl_kontrak').value = data.tgl_input || '';
               
               document.getElementById('edit_kategori').value = data.kategori || '';
@@ -264,10 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
               document.getElementById('edit_eudr').value = data.eudr || '';
               document.getElementById('edit_penetapan').value = data.penetapan || '';
               
-              // PERBAIKAN: Gunakan 'jatuh_tempo_in' (format Y-m-d)
               document.getElementById('edit_jatuh_tempo').value = data.jatuh_tempo_in || '';
 
-              // Clean Number
               const clean = (val) => (val + '').replace(/[^\d.,]/g, '').replace(/\./g, '').replace(',', '.');
               document.getElementById('edit_kurs').value = clean(data.kurs);
               document.getElementById('edit_harga_usd').value = clean(data.harga_usd);

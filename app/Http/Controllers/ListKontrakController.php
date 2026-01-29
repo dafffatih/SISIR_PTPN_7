@@ -16,6 +16,16 @@ class ListKontrakController extends Controller
         $this->googleSheetService = $googleSheetService;
     }
 
+    private function sanitizeInput($value)
+    {
+        if (is_string($value)) {
+            if (preg_match('/^[\=\+\-\@]/', $value)) {
+                return "'" . $value;
+            }
+        }
+        return $value;
+    }
+
     private function getSheetName()
     {
         $year = session('year') ?? session('current_year') ?? session('selected_year') ?? date('Y');
@@ -45,27 +55,16 @@ class ListKontrakController extends Controller
         $startFilter = $startDate ? Carbon::parse($startDate)->startOfDay() : null;
         $endFilter   = $endDate   ? Carbon::parse($endDate)->endOfDay() : null;
 
-        // --- HELPER PARSING TANGGAL LEBIH KUAT ---
+        // --- HELPER PARSING TANGGAL ---
         $parseDate = function($val) {
             if(empty($val)) return null;
             $val = trim($val);
-            
-            // 1. Translate Bulan Indo -> Eng
             $map = ['Jan'=>'Jan','Feb'=>'Feb','Mar'=>'Mar','Apr'=>'Apr','Mei'=>'May','Jun'=>'Jun','Jul'=>'Jul','Agt'=>'Aug','Agu'=>'Aug','Sep'=>'Sep','Okt'=>'Oct','Nov'=>'Nov','Des'=>'Dec'];
             $valEnglish = str_ireplace(array_keys($map), array_values($map), $val);
-            
-            // 2. Coba berbagai format
             $formats = ['d-M-Y', 'd M Y', 'Y-m-d', 'd/m/Y'];
-            
             foreach ($formats as $fmt) {
-                try {
-                    return Carbon::createFromFormat($fmt, $valEnglish)->startOfDay();
-                } catch (\Exception $e) {
-                    continue;
-                }
+                try { return Carbon::createFromFormat($fmt, $valEnglish)->startOfDay(); } catch (\Exception $e) { continue; }
             }
-            
-            // 3. Fallback terakhir: Carbon parse otomatis
             try { return Carbon::parse($valEnglish)->startOfDay(); } catch (\Exception $e) { return null; }
         };
 
@@ -86,13 +85,8 @@ class ListKontrakController extends Controller
                 'row'           => $index + 1,
                 'id'            => $index + 1,
                 'no'            => $row[1] ?? '',  
-                
-                // DATA TANGGAL (PENTING!)
-                // 1. Untuk Tampilan Tabel (Manusia): "12 Jan 2026"
                 'tgl_kontrak'   => $tglKontrakObj ? $tglKontrakObj->format('d M Y') : $tglKontrakRaw,
-                // 2. Untuk Form Edit (Mesin): "2026-01-12" (WAJIB FORMAT INI)
                 'tgl_input'     => $tglKontrakObj ? $tglKontrakObj->format('Y-m-d') : '',
-                
                 'tgl_obj'       => $tglKontrakObj,
                 'pembeli'       => $row[6] ?? '',  
                 'kategori'      => $row[7] ?? '',  
@@ -110,11 +104,8 @@ class ListKontrakController extends Controller
                 'no_kontrak'    => $row[23] ?? '', 
                 'no_sap'        => $row[24] ?? '', 
                 'lokal_ekspor'  => $row[30] ?? '', 
-                
-                // JATUH TEMPO JUGA SAMA
                 'jatuh_tempo'   => $jatuhTempoObj ? $jatuhTempoObj->format('d M Y') : $jatuhTempoRaw,
                 'jatuh_tempo_in'=> $jatuhTempoObj ? $jatuhTempoObj->format('Y-m-d') : '',
-                
                 'eudr'          => $row[34] ?? '', 
             ];
 
@@ -129,6 +120,7 @@ class ListKontrakController extends Controller
             $filteredData[] = $item;
         }
 
+        // Sorting Logic
         usort($filteredData, function($a, $b) use ($sort, $direction) {
             $valA = $a[$sort] ?? null;
             $valB = $b[$sort] ?? null;
@@ -163,19 +155,30 @@ class ListKontrakController extends Controller
     private function formatDateForSheet($dateString) {
         if (!$dateString) return '';
         try {
-            // Ubah format input (Y-m-d) ke format tampilan sheet (d M Y)
             return Carbon::parse($dateString)->format('d M Y');
         } catch (\Exception $e) {
             return $dateString;
         }
     }
 
+    // ==========================================================
+    // STORE (TAMBAH DATA) - SUDAH DIAMANKAN
+    // ==========================================================
     public function store(Request $request)
     {
-        $request->validate(['no_kontrak' => 'required']);
+        // 1. VALIDASI DATA
+        $request->validate([
+            'no_kontrak' => 'required|string|max:100',
+            'pembeli'    => 'required|string|max:255',
+            'kuantum'    => 'nullable|numeric', 
+            'harga_usd'  => 'nullable|numeric',
+            'harga_rp'   => 'nullable|numeric',
+        ]);
+
         $sheetName = $this->getSheetName();
 
         try {
+            // Cari Baris Kosong di Kolom X (Nomor Kontrak)
             $colData = $this->googleSheetService->getData(null, $sheetName, 'X:X');
             
             $targetRow = null;
@@ -192,6 +195,7 @@ class ListKontrakController extends Controller
                 if ($targetRow < 5) $targetRow = 5;
             }
 
+            // 2. MAPPING & SANITASI INPUT
             $inputs = [
                 'F'  => $this->formatDateForSheet($request->tgl_kontrak),
                 'G'  => $request->pembeli,
@@ -216,7 +220,11 @@ class ListKontrakController extends Controller
 
             $updates = [];
             foreach ($inputs as $col => $val) {
-                if ($val !== null) $updates["'{$sheetName}'!{$col}{$targetRow}"] = $val;
+                if ($val !== null) {
+                    // Terapkan Sanitasi
+                    $cleanVal = $this->sanitizeInput($val);
+                    $updates["'{$sheetName}'!{$col}{$targetRow}"] = $cleanVal;
+                }
             }
 
             $this->googleSheetService->batchUpdate($updates);
@@ -227,10 +235,17 @@ class ListKontrakController extends Controller
         }
     }
 
+    // ==========================================================
+    // UPDATE (EDIT DATA) - SUDAH DIAMANKAN
+    // ==========================================================
     public function update(Request $request)
     {
         $row = $request->input('row_index');
         if (!$row) return back()->with('error', 'Row index hilang.');
+        
+        // Validasi
+        $request->validate(['no_kontrak' => 'required|string']);
+
         $sheetName = $this->getSheetName();
 
         try {
@@ -261,11 +276,15 @@ class ListKontrakController extends Controller
             foreach ($map as $reqKey => $col) {
                 if ($request->has($reqKey)) {
                     $val = $request->input($reqKey);
+                    
                     // Format khusus tanggal sebelum disimpan
                     if (($reqKey == 'tgl_kontrak' || $reqKey == 'jatuh_tempo') && $val) {
                         $val = $this->formatDateForSheet($val);
                     }
-                    $updates["'{$sheetName}'!{$col}{$row}"] = $val ?? '';
+
+                    // Terapkan Sanitasi
+                    $cleanVal = $this->sanitizeInput($val ?? '');
+                    $updates["'{$sheetName}'!{$col}{$row}"] = $cleanVal;
                 }
             }
 

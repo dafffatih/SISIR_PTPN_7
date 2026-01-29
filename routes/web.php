@@ -13,7 +13,7 @@ use App\Http\Controllers\ExportController;
 
 /*
 |--------------------------------------------------------------------------
-| WEB ROUTES
+| WEB ROUTES (STABIL & AMAN)
 |--------------------------------------------------------------------------
 */
 
@@ -30,50 +30,61 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ===============================
-// PROTECTED ROUTES
+// PROTECTED ROUTES (Login Wajib)
 // ===============================
 Route::middleware(['auth', 'active'])->group(function () {
 
-    // ====================================================
-    // DASHBOARD
-    // ====================================================
+    // 1. DASHBOARD (Semua Role: Admin, Staff, Viewer)
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])
-        ->name('dashboard')
-        ->middleware('role:admin,staff,viewer');
+        ->name('dashboard');
+        // Middleware role tidak perlu ditulis ulang karena logic di controller/middleware sudah handle login
 
-    // ====================================================
-    // TAB 1: MANAJEMEN KONTRAK (SheetController)
-    // ====================================================
-    Route::get('/kontrak', [SheetController::class, 'index'])
-        ->name('kontrak')
-        ->middleware('role:admin,staff');
+    // 2. SET YEAR (Semua Role)
+    Route::get('/set-year/{year}', [DashboardController::class, 'setYear'])
+        ->name('set.year');
 
-    Route::post('/kontrak/store', [SheetController::class, 'store'])
-        ->name('kontrak.store')
-        ->middleware('role:admin,staff');
 
-    Route::put('/kontrak/update', [SheetController::class, 'update'])
-        ->name('kontrak.update')
-        ->middleware('role:admin,staff');
+    // =================================================================
+    // ZONA KHUSUS ADMIN & STAFF (VIEWER DILARANG MASUK SINI)
+    // =================================================================
+    Route::middleware(['role:admin,staff'])->group(function () {
+        
+        // --- MANAJEMEN KONTRAK (SheetController) ---
+        Route::get('/kontrak', [SheetController::class, 'index'])->name('kontrak');
+        Route::post('/kontrak/store', [SheetController::class, 'store'])->name('kontrak.store');
+        Route::put('/kontrak/update', [SheetController::class, 'update'])->name('kontrak.update');
+        Route::delete('/kontrak/delete/{row}', [SheetController::class, 'destroy'])->name('kontrak.destroy');
+        Route::post('/kontrak/sync', [SheetController::class, 'syncManual'])->name('kontrak.sync');
 
-    Route::delete('/kontrak/delete/{row}', [SheetController::class, 'destroy'])
-        ->name('kontrak.destroy')
-        ->middleware('role:admin,staff');
+        // --- LIST KONTRAK (ListKontrakController) ---
+        // PENTING: Saya menaruh blok ini DI SINI agar Viewer tidak bisa akses
+        Route::get('/list-kontrak', [ListKontrakController::class, 'index'])->name('list-kontrak.index');
+        
+        // Group CRUD List Kontrak (Prefix tetap dipertahankan agar tidak error)
+        Route::prefix('list-kontrak')->name('list-kontrak.')->group(function () {
+            // Index dihapus dari sini karena sudah didefinisikan di baris atas (line 60)
+            Route::post('/store', [ListKontrakController::class, 'store'])->name('store');
+            Route::put('/update', [ListKontrakController::class, 'update'])->name('update');
+            Route::delete('/{row}', [ListKontrakController::class, 'destroy'])->name('destroy');
+        });
 
-    Route::post('/kontrak/sync', [SheetController::class, 'syncManual'])
-        ->name('kontrak.sync')
-        ->middleware('role:admin,staff');
+        // --- UPLOAD & EXPORT ---
+        Route::get('/upload-export', function () {
+            return view('exports.upload_export');
+        })->name('upload.export');
 
-    // ====================================================
-    // TAB 2: LIST KONTRAK
-    // ====================================================
-    Route::get('/list-kontrak', [ListKontrakController::class, 'index'])
-        ->name('list-kontrak.index')
-        ->middleware('role:admin,staff,viewer');
+        Route::post('/upload-export/kontrak-detail', [ExportController::class, 'export'])
+            ->name('upload.export.kontrak.detail');
 
-    // ====================================================
-    // USER MANAGEMENT (ADMIN ONLY)
-    // ====================================================
+        // --- SETTINGS ---
+        Route::get('/settings', [SettingController::class, 'index'])->name('settings');
+        Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
+        Route::delete('/settings/{id}', [SettingController::class, 'destroy'])->name('settings.destroy');
+    });
+
+    // =================================================================
+    // ZONA SUPER ADMIN (Hanya Admin)
+    // =================================================================
     Route::middleware('role:admin')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
@@ -81,59 +92,4 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
-    // ====================================================
-    // UPLOAD & EXPORT
-    // ====================================================
-    Route::get('/upload-export', function () {
-        return view('exports.upload_export');
-    })
-    ->name('upload.export')
-    ->middleware('role:admin,staff');
-
-    /**
-     * 🔥 ROUTE EXPORT DETAIL KONTRAK (SUDAH DIPERBAIKI)
-     * 🔥 SEKARANG MENGGUNAKAN ExportController
-     * 🔥 CSV & EXCEL DENGAN KOLOM PENYERAHAN AKAN MUNCUL
-     */
-    Route::post(
-        '/upload-export/kontrak-detail',
-        [ExportController::class, 'export']
-    )
-    ->name('upload.export.kontrak.detail')
-    ->middleware('role:admin,staff');
-
-    // ====================================================
-    // SETTINGS
-    // ====================================================
-    Route::get('/settings', [SettingController::class, 'index'])
-        ->name('settings')
-        ->middleware('role:admin,staff');
-
-    Route::post('/settings', [SettingController::class, 'update'])
-        ->name('settings.update')
-        ->middleware('role:admin,staff');
-
-    Route::delete('/settings/{id}', [SettingController::class, 'destroy'])
-        ->name('settings.destroy')
-        ->middleware('role:admin,staff');
-
-    // ====================================================
-    // SET YEAR
-    // ====================================================
-    Route::get('/set-year/{year}', [DashboardController::class, 'setYear'])
-        ->name('set.year');
-
-    Route::prefix('list-kontrak')->name('list-kontrak.')->group(function () {
-        // Halaman Utama
-        Route::get('/', [ListKontrakController::class, 'index'])->name('index');
-        
-        // Fitur Tambah Data (Ini yang menyebabkan error tadi)
-        Route::post('/store', [ListKontrakController::class, 'store'])->name('store');
-        
-        // Fitur Edit Data
-        Route::put('/update', [ListKontrakController::class, 'update'])->name('update');
-        
-        // Fitur Hapus Data
-        Route::delete('/{row}', [ListKontrakController::class, 'destroy'])->name('destroy');
-    });
 });

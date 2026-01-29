@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Services\GoogleSheetService;
-use App\Models\Kontrak;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Artisan;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ArrayExport;
 
@@ -20,7 +19,19 @@ class SheetController extends Controller
     {
         $this->googleSheetService = $googleSheetService;
     }
+    private function sanitizeInput($value)
+    {
+        if (is_string($value)) {
+            if (preg_match('/^[\=\+\-\@]/', $value)) {
+                return "'" . $value;
+            }
+        }
+        return $value;
+    }
 
+    // ========================================================================
+    // 1. INDEX (MENAMPILKAN DATA)
+    // ========================================================================
     public function index(Request $request, GoogleSheetService $sheetService)
     {
         $search     = $request->input('search');
@@ -30,9 +41,11 @@ class SheetController extends Controller
         $startDate  = $request->input('start_date');
         $endDate    = $request->input('end_date');
 
+        // Ambil Data Mentah dari Google Sheet
         $allData = $sheetService->getData();
         $filteredData = [];
 
+        // Helper untuk parsing tanggal format Indonesia (Jan, Mei, Agt, dll)
         $translateMonth = function ($dateStr) {
             $map = [
                 'Jan' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Apr',
@@ -64,27 +77,26 @@ class SheetController extends Controller
             return number_format((float)$cleaned, 0, ',', '.');
         };
 
+        // Looping Data
         foreach ($allData as $index => $row) {
-            $realRowIndex = $index + 4;
-            $nomorKontrak = $row[8] ?? '';
+            $realRowIndex = $index + 4; // Data dimulai dari baris ke-4 (karena header)
+            
+            // Kolom I (Nomor Kontrak) adalah kunci utama
+            $nomorKontrak = $row[8] ?? ''; 
 
             if (empty($nomorKontrak)) continue;
 
             $rawTgl = $row[10] ?? '';
             $tglKontrakObj = $parseDate($rawTgl);
 
+            // Filter Berdasarkan Tanggal
             if ($startDate || $endDate) {
                 if (!$tglKontrakObj) continue;
-                if ($startDate) {
-                    $startFilter = Carbon::parse($startDate)->startOfDay();
-                    if ($tglKontrakObj->lt($startFilter)) continue;
-                }
-                if ($endDate) {
-                    $endFilter = Carbon::parse($endDate)->endOfDay();
-                    if ($tglKontrakObj->gt($endFilter)) continue;
-                }
+                if ($startDate && $tglKontrakObj->lt(Carbon::parse($startDate)->startOfDay())) continue;
+                if ($endDate && $tglKontrakObj->gt(Carbon::parse($endDate)->endOfDay())) continue;
             }
 
+            // Mapping Data Sheet ke Array PHP
             $item = [
                 'row' => $realRowIndex,
                 'id'  => $realRowIndex,
@@ -100,7 +112,7 @@ class SheetController extends Controller
                 'P'   => $row[15] ?? '',
                 'Q'   => $row[16] ?? '',
                 'R'   => $row[17] ?? '',
-                'S'   => $row[18] ?? '',
+                'S'   => $row[18] ?? '', // DO/SI
                 'T'   => $row[19] ?? '',
                 'U'   => $row[20] ?? '',
                 'V'   => $row[21] ?? '',
@@ -113,14 +125,14 @@ class SheetController extends Controller
                 'BA'  => $row[52] ?? '',
             ];
 
+            // Filter Search (Pencarian Teks)
             if ($search) {
                 $searchLower = strtolower($search);
                 if (
                     !str_contains(strtolower($item['I']), $searchLower) &&
                     !str_contains(strtolower($item['J']), $searchLower) &&
                     !str_contains(strtolower($item['S']), $searchLower) &&
-                    !str_contains(strtolower($item['V']), $searchLower) &&
-                    !str_contains(strtolower($item['X']), $searchLower)
+                    !str_contains(strtolower($item['V']), $searchLower)
                 ) {
                     continue;
                 }
@@ -129,13 +141,11 @@ class SheetController extends Controller
             $filteredData[] = $item;
         }
 
+        // Logic Sorting (Pengurutan)
         usort($filteredData, function ($a, $b) use ($sort, $direction) {
             if ($sort === 'tgl_kontrak' || $sort === 'K_date') {
-                $valA = $a['K_date'];
-                $valB = $b['K_date'];
-                $nullA = is_null($valA);
-                $nullB = is_null($valB);
-
+                $valA = $a['K_date']; $valB = $b['K_date'];
+                $nullA = is_null($valA); $nullB = is_null($valB);
                 if ($nullA && $nullB) return 0;
                 if ($nullA) return ($direction === 'asc') ? -1 : 1;
                 if ($nullB) return ($direction === 'asc') ? 1 : -1;
@@ -143,7 +153,8 @@ class SheetController extends Controller
                 $comparison = $valA->lt($valB) ? -1 : 1;
                 return ($direction === 'asc') ? $comparison : -$comparison;
             } elseif ($sort === 'nomor_dosi') {
-                $parseDoSi = function ($doSi) {
+                 // Logic parsing DO/SI (misal: 10/DO/2026)
+                 $parseDoSi = function ($doSi) {
                     if (!$doSi) return [0, 0];
                     $parts = explode('/', $doSi);
                     $number = (int) ($parts[0] ?? 0);
@@ -167,6 +178,7 @@ class SheetController extends Controller
             }
         });
 
+        // Pagination Manual
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $itemCollection = collect($filteredData);
         $currentPageItems = $itemCollection->slice(($currentPage - 1) * $perPage, $perPage)->all();
@@ -179,118 +191,104 @@ class SheetController extends Controller
         return view('dashboard.kontrak.index', compact('data'));
     }
 
-    /**
-     * Fitur CRUD: Simpan Data Baru
-     * SOLUSI: Mengisi HANYA kolom input (H-X, BC) pada baris yang kosong.
-     * Tidak menyentuh kolom rumus (A-G, Y-BB) agar rumus di sheet tidak rusak.
-     */
+    // ========================================================================
+    // 2. STORE (SIMPAN DATA BARU) - AMAN DARI SERANGAN
+    // ========================================================================
     public function store(Request $request, GoogleSheetService $sheetService)
     {
-        $manualInputs = $request->except(['_token']);
-        if (empty(array_filter($manualInputs))) {
-            return back()->with('error', 'Minimal harus mengisi satu data.');
-        }
+        // 1. VALIDASI: Pastikan data wajib terisi
+        $request->validate([
+            'nomor_kontrak' => 'required|string|max:100',
+            'nama_pembeli'  => 'required|string|max:255',
+            'tgl_kontrak'   => 'required', 
+        ]);
 
         try {
-            // 1. CARI BARIS KOSONG (Looping Kolom I)
-            // Ambil hanya kolom I untuk efisiensi dan mencari slot kosong
+            // Cari baris kosong di kolom I (mulai baris 5)
             $colData = $sheetService->getData(null, 'SC Sudah Bayar', 'I:I');
-            $startRow = 5; // Data dimulai dari baris 5
+            $startRow = 5; 
             $targetRow = null;
 
-            // Loop array. $index 0 = Baris 1
             foreach ($colData as $index => $row) {
-                // Skip header (Baris 1-4)
-                if ($index < 4) continue;
-
+                if ($index < 4) continue; // Skip header
                 $val = $row[0] ?? '';
-                // Jika kolom I kosong, ini target kita (mengisi slot kosong di tengah)
                 if (trim($val) === '') {
-                    $targetRow = $index + 1; // Konversi Index ke Row Number
+                    $targetRow = $index + 1;
                     break;
                 }
             }
 
-            // Jika tidak ada baris bolong, target adalah baris setelah data terakhir
             if ($targetRow === null) {
                 $targetRow = count($colData) + 1;
                 if ($targetRow < 5) $targetRow = 5;
             }
 
-            \Log::info("Menyimpan data (Tanpa Rumus) di baris: " . $targetRow);
+            Log::info("Menyimpan data di baris: " . $targetRow);
 
-            // 2. SIAPKAN DATA INPUT (MAPPING KOLOM KE NILAI)
-            // Kita gunakan batchUpdate untuk mengisi sel spesifik satu per satu.
-            // Ini mencegah kita menimpa kolom A-G yang berisi rumus.
-            
-            $updates = [];
+            // 2. MAPPING & SANITASI INPUT
+            // Kita petakan input dari form ke kolom Excel secara manual
             $sheetName = 'SC Sudah Bayar';
+            $updates = [];
 
-            // Mapping Kolom Input (H sampai X)
+            // Daftar input sesuai name="" di modal-tambah.blade.php
             $map = [
-                'H' => $request->loex ?? "",
-                'I' => $request->nomor_kontrak ?? "",
-                'J' => $request->nama_pembeli ?? "",
-                'K' => $request->tgl_kontrak ?? "",
-                'L' => $request->volume ?? "",
-                'M' => $request->harga ?? "",
-                'N' => $request->nilai ?? "",
-                'O' => $request->inc_ppn ?? "",
-                'P' => $request->tgl_bayar ?? "",
-                'Q' => $request->unit ?? "",
-                'R' => $request->mutu ?? "",
-                'S' => $request->nomor_dosi ?? "",
-                'T' => $request->tgl_dosi ?? "",
-                'U' => $request->port ?? "",
-                'V' => $request->kontrak_sap ?? "",
-                'W' => $request->dp_sap ?? "",
-                'X' => $request->so_sap ?? "",
+                'H' => $request->loex,
+                'I' => $request->nomor_kontrak,
+                'J' => $request->nama_pembeli,
+                'K' => $request->tgl_kontrak,
+                'L' => $request->volume,
+                'M' => $request->harga,
+                'N' => $request->nilai,
+                'O' => $request->inc_ppn,
+                'P' => $request->tgl_bayar,
+                'Q' => $request->unit,
+                'R' => $request->mutu,
+                'S' => $request->nomor_dosi,
+                'T' => $request->tgl_dosi,
+                'U' => $request->port,
+                'V' => $request->kontrak_sap,
+                'W' => $request->dp_sap,
+                'X' => $request->so_sap,
+                'BC'=> $request->jatuh_tempo,
             ];
 
-            // Masukkan data H-X ke array updates
             foreach ($map as $col => $val) {
-                $updates["'{$sheetName}'!{$col}{$targetRow}"] = $val;
+                // Terapkan fungsi sanitizeInput() agar rumus tidak rusak
+                $cleanVal = $this->sanitizeInput($val ?? ""); 
+                $updates["'{$sheetName}'!{$col}{$targetRow}"] = $cleanVal;
             }
 
-            // Tambahan: Kolom BC (Jatuh Tempo)
-            if ($request->has('jatuh_tempo')) {
-                $updates["'{$sheetName}'!BC{$targetRow}"] = $request->jatuh_tempo;
-            }
-
-            // 3. EKSEKUSI PENYIMPANAN
-            // batchUpdate akan mengisi H107, I107, J107... dst tanpa merusak A107, B107 (rumus)
+            // Kirim ke Google Sheet
             $sheetService->batchUpdate($updates);
 
             return back()->with('success', 'Data Berhasil Ditambahkan di Baris ' . $targetRow);
 
         } catch (\Exception $e) {
-            \Log::error("Error store data: " . $e->getMessage());
+            Log::error("Error store data: " . $e->getMessage());
             return back()->with('error', 'Gagal menambah data: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Fitur CRUD: Update Data
-     */
+    // ========================================================================
+    // 3. UPDATE (EDIT DATA) - AMAN DARI SERANGAN
+    // ========================================================================
     public function update(Request $request, GoogleSheetService $sheetService)
     {
         try {
             $row = $request->input('row_index');
             if (!$row) return back()->with('error', 'Row index tidak ditemukan');
 
-            $inputKeys = [
-                'loex', 'nomor_kontrak', 'nama_pembeli', 'tgl_kontrak',
-                'volume', 'harga', 'nilai', 'inc_ppn', 'tgl_bayar',
-                'unit', 'mutu', 'nomor_dosi', 'tgl_dosi', 'port',
-                'kontrak_sap', 'dp_sap', 'so_sap', 'jatuh_tempo'
-            ];
-            
-            $manualInputs = $request->only($inputKeys);
-            if (empty(array_filter($manualInputs))) return back()->with('error', 'Minimal harus mengisi satu data.');
+            // 1. Validasi
+            $request->validate([
+                'nomor_kontrak' => 'required|string|max:100',
+            ]);
 
-            $updates = [];
             $sheetName = 'SC Sudah Bayar';
+            $updates = [];
 
+            // 2. Mapping Input ke Kolom Excel
+            // Key sebelah kiri = name="" di modal-edit.blade.php
+            // Value sebelah kanan = Kolom Excel
             $columnMap = [
                 'loex'          => 'H', 'nomor_kontrak' => 'I', 'nama_pembeli'  => 'J',
                 'tgl_kontrak'   => 'K', 'volume'        => 'L', 'harga'         => 'M',
@@ -300,9 +298,11 @@ class SheetController extends Controller
                 'dp_sap'        => 'W', 'so_sap'        => 'X', 'jatuh_tempo'   => 'BC',
             ];
 
-            foreach ($columnMap as $input => $col) {
-                if ($request->has($input)) {
-                    $updates["'{$sheetName}'!{$col}{$row}"] = $request->input($input, '');
+            foreach ($columnMap as $inputName => $colExcel) {
+                if ($request->has($inputName)) {
+                    $rawValue = $request->input($inputName, '');
+                    // Terapkan sanitasi
+                    $updates["'{$sheetName}'!{$colExcel}{$row}"] = $this->sanitizeInput($rawValue);
                 }
             }
 
@@ -316,6 +316,9 @@ class SheetController extends Controller
         }
     }
 
+    // ========================================================================
+    // 4. DESTROY (HAPUS DATA)
+    // ========================================================================
     public function destroy($row, GoogleSheetService $sheetService)
     {
         try {
@@ -326,10 +329,13 @@ class SheetController extends Controller
         }
     }
 
+    // ========================================================================
+    // 5. SYNC MANUAL
+    // ========================================================================
     public function syncManual(Request $request)
     {
         try {
-            \Log::info('Starting manual sync');
+            Log::info('Starting manual sync');
             $exitCode = Artisan::call('sync:drive-folder');
             if ($exitCode === 0) return back()->with('success', 'Sinkronisasi berhasil');
             return back()->with('error', 'Sinkronisasi peringatan');
@@ -338,6 +344,9 @@ class SheetController extends Controller
         }
     }
 
+    // ========================================================================
+    // 6. EXPORT DATA
+    // ========================================================================
     public function exportDetailKontrak(Request $request, GoogleSheetService $sheetService)
     {
         $request->validate([
@@ -345,7 +354,7 @@ class SheetController extends Controller
             'start_date' => 'required',
             'end_date'   => 'required',
         ]);
-
+        
         $start = Carbon::createFromFormat('m/d/Y', $request->start_date)->startOfDay();
         $end   = Carbon::createFromFormat('m/d/Y', $request->end_date)->endOfDay();
 
@@ -383,7 +392,7 @@ class SheetController extends Controller
             ];
         }
 
-        if (empty($exportData)) return back()->with('error', 'Tidak ada data');
+        if (empty($exportData)) return back()->with('error', 'Tidak ada data pada periode ini');
 
         if ($request->format === 'csv') {
             return response()->streamDownload(function () use ($exportData) {
