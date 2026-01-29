@@ -5,40 +5,58 @@ namespace App\Http\Controllers;
 use App\Services\GoogleSheetService;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache; // WAJIB: Tambahkan ini untuk fitur caching
 
 class DashboardController extends Controller
 {
+    // Helper untuk membuat kunci cache unik berdasarkan tahun yang dipilih
+    private function getCacheKey()
+    {
+        $year = session('selected_year', 'default');
+        return 'dashboard_raw_data_' . $year;
+    }
+
     public function setYear($year)
     {
-        // Validate year format
+        // Validasi format tahun (4 digit angka)
         if (preg_match('/^\d{4}$/', $year)) {
             session(['selected_year' => $year]);
-            return back()->with('success', "Data switched to Year $year");
+            
+            // Hapus cache saat ganti tahun agar data tahun baru langsung termuat bersih
+            Cache::forget('dashboard_raw_data_' . $year);
+            
+            return back()->with('success', "Data beralih ke Tahun $year");
         }
         
-        // Reset to Default
+        // Reset ke Default
         if ($year === 'default') {
             session()->forget('selected_year');
-            return back()->with('success', "Data switched to Default");
+            Cache::forget('dashboard_raw_data_default');
+            return back()->with('success', "Data beralih ke Default");
         }
 
-        return back()->with('error', 'Invalid Year');
+        return back()->with('error', 'Tahun tidak valid');
     }
 
     public function dashboard(Request $request, GoogleSheetService $sheetService)
     {
-        // 1. Ambil Data Batch
+        $cacheKey = $this->getCacheKey();
+
+        // 1. FITUR PAKSA REFRESH (Tombol Sync)
+        // Jika user klik tombol refresh, hapus ingatan cache dan ambil ulang dari Google
+        if ($request->has('refresh')) {
+            Cache::forget($cacheKey);
+            return redirect()->route('dashboard')->with('success', 'Data Dashboard berhasil diperbarui langsung dari Server Google.');
+        }
+
+        // 2. DEFINISI RANGE DATA (Sama seperti kode lama)
         $ranges = [
             // DATA GRAFIK BULANAN
-            "Rekap4!F77:F88",
-            "Rekap4!Z77:Z88", 
-            "Rekap4!I190:I201",
-            "Rekap4!Z94:Z105",
-            "Rekap4!K190:K201",
+            "Rekap4!F77:F88", "Rekap4!Z77:Z88", "Rekap4!I190:I201",
+            "Rekap4!Z94:Z105", "Rekap4!K190:K201",
 
             // DATA TOTAL RKAP
-            "Rekap4!E27:E27", "Rekap4!H27:H27", 
-            "Rekap4!E48:E51", "Rekap4!H48:H51",
+            "Rekap4!E27:E27", "Rekap4!H27:H27", "Rekap4!E48:E51", "Rekap4!H48:H51",
 
             // DATA RINCIAN MUTU
             "Rekap4!B23:B27", "Rekap4!E23:E27", "Rekap4!E48:E52",
@@ -46,25 +64,17 @@ class DashboardController extends Controller
             // DATA LAST TENDER PRICE
             "Katalog!T2:Y2", 
 
-            // SC SUDAH BAYAR
-            "SC Sudah Bayar!AD4:AD6000", 
-            "SC Sudah Bayar!Q4:Q6000", 
-            "SC Sudah Bayar!R4:R6000",  
-            "SC Sudah Bayar!M4:M6000",   
+            // SC SUDAH BAYAR (Identitas & Harga) - Range Besar
+            "SC Sudah Bayar!AD4:AD6000", "SC Sudah Bayar!Q4:Q6000", 
+            "SC Sudah Bayar!R4:R6000", "SC Sudah Bayar!M4:M6000",   
 
             // KOLOM PENYERAHAN 
-            "SC Sudah Bayar!AM4:AM6000",   
-            "SC Sudah Bayar!AN4:AN6000",  
-            "SC Sudah Bayar!AO4:AO6000",   
-            "SC Sudah Bayar!AP4:AP6000",   
-            "SC Sudah Bayar!AQ4:AQ6000",   
-            "SC Sudah Bayar!AR4:AR6000",   
-            "SC Sudah Bayar!AS4:AS6000",   
-            "SC Sudah Bayar!AT4:AT6000",   
-            "SC Sudah Bayar!AU4:AU6000",   
-            "SC Sudah Bayar!AV4:AV6000",  
-            "SC Sudah Bayar!AW4:AW6000",   
-            "SC Sudah Bayar!AX4:AX6000",   
+            "SC Sudah Bayar!AM4:AM6000", "SC Sudah Bayar!AN4:AN6000",  
+            "SC Sudah Bayar!AO4:AO6000", "SC Sudah Bayar!AP4:AP6000",   
+            "SC Sudah Bayar!AQ4:AQ6000", "SC Sudah Bayar!AR4:AR6000",   
+            "SC Sudah Bayar!AS4:AS6000", "SC Sudah Bayar!AT4:AT6000",   
+            "SC Sudah Bayar!AU4:AU6000", "SC Sudah Bayar!AV4:AV6000",  
+            "SC Sudah Bayar!AW4:AW6000", "SC Sudah Bayar!AX4:AX6000",   
             "SC Sudah Bayar!J4:J6000",
             
             // DATA LAINNYA (STOK, PRICE TREND, DLL)
@@ -82,15 +92,34 @@ class DashboardController extends Controller
             "Rekap1!E36:I36", "Rekap1!E38:I38", "Rekap1!E39:I39", "Rekap1!E40:I40",
         ];
 
-        $rawBatch = [];
         $useDbFallback = false;
-        try {
-            $rawBatch = $sheetService->getBatchData($ranges);
-            if (empty($rawBatch)) $useDbFallback = true;
-        } catch (\Exception $e) {
-            \Log::warning('Batch fetch failed: ' . $e->getMessage());
-            $useDbFallback = true;
-        }
+
+        // 3. LOGIKA SMART CACHING (JANTUNGNYA)
+        // Kita simpan data mentah ini selama 60 menit (3600 detik).
+        // Jadi, server tidak perlu menghubungi Google setiap kali halaman direfresh.
+        $rawBatch = Cache::remember($cacheKey, 3600, function () use ($sheetService, $ranges, &$useDbFallback) {
+            try {
+                $data = $sheetService->getBatchData($ranges);
+                
+                // Validasi: Jika data kosong, jangan disimpan di cache (biar retry next time)
+                if (empty($data)) {
+                    return []; 
+                }
+                return $data;
+            } catch (\Exception $e) {
+                // Jika koneksi Google error, catat log dan return array kosong
+                \Log::warning('Dashboard batch fetch failed: ' . $e->getMessage());
+                $useDbFallback = true;
+                return [];
+            }
+        });
+
+        if (empty($rawBatch)) $useDbFallback = true;
+
+        // =================================================================
+        // DARI SINI KE BAWAH ADALAH LOGIKA PERHITUNGAN (DATA PROCESSING)
+        // Logika ini tetap berjalan di server kita (sangat cepat karena datanya sudah di RAM/Cache)
+        // =================================================================
 
         $cleanNum = fn($v) => (float) str_replace(['.', ',', '-'], ['', '.', '0'], $v[0] ?? '0');
 
@@ -107,7 +136,7 @@ class DashboardController extends Controller
             'sir3l' => ['date' => $tenderRow[4] ?? '-', 'price' => isset($tenderRow[5]) ? $cleanTenderPrice($tenderRow[5]) : 0],
         ];
 
-        // NORMALISASI DATA EXCEL (TON -> KG, MILYAR -> RUPIAH)
+        // REKAP 4
         $rekap4 = [
             'labels'       => array_column($rawBatch["Rekap4!F77:F88"] ?? [], 0) ?: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             'volume_real'  => array_map(fn($v) => $cleanNum($v) * 1000, $rawBatch["Rekap4!Z77:Z88"] ?? []),
@@ -125,7 +154,7 @@ class DashboardController extends Controller
             'revenue' => (!empty($rawBatch["Rekap4!E48:E52"])) ? array_values(array_map(fn($v) => $cleanNum($v) * 1000000000, $rawBatch["Rekap4!E48:E52"])) : [0,0,0,0,0],
         ];
 
-        // LOGIKA FILTER
+        // FILTER BULAN
         $reqStart = $request->input('start_month', 1);
         $reqEnd   = $request->input('end_month', 12);
         
@@ -135,8 +164,6 @@ class DashboardController extends Controller
             $endMonth = $startMonth; 
             $request->merge(['end_month' => $endMonth]);
         }
-        
-        // Logika 
         $isAllMonths = ($startMonth === 1 && $endMonth === 12);
 
         // HITUNG TOTAL RKAP
@@ -150,25 +177,23 @@ class DashboardController extends Controller
         $rkapVolume  = $rkapVolTotal; 
         $rkapRevenue = $rkapRevTotal; 
 
-        // AMBIL DATA RAW
-        // Identitas & Harga
+        // AMBIL DATA RAW UNTUK PERHITUNGAN
         $rawBuyers   = $rawBatch["SC Sudah Bayar!AD4:AD6000"] ?? [];
         $rawProducts = $rawBatch["SC Sudah Bayar!Q4:Q6000"] ?? [];
         $rawMutu     = $rawBatch["SC Sudah Bayar!R4:R6000"] ?? [];
         $rawPrices   = $rawBatch["SC Sudah Bayar!M4:M6000"] ?? [];
         $rawCompanyNames = $rawBatch["SC Sudah Bayar!J4:J6000"] ?? [];
 
-        // Data Penyerahan 
         $deliveriesRaw = [
-            ['date' => $rawBatch["SC Sudah Bayar!AM4:AM6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AN4:AN6000"] ?? []], // Penyerahan 1
-            ['date' => $rawBatch["SC Sudah Bayar!AO4:AO6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AP4:AP6000"] ?? []], // Penyerahan 2
-            ['date' => $rawBatch["SC Sudah Bayar!AQ4:AQ6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AR4:AR6000"] ?? []], // Penyerahan 3
-            ['date' => $rawBatch["SC Sudah Bayar!AS4:AS6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AT4:AT6000"] ?? []], // Penyerahan 4
-            ['date' => $rawBatch["SC Sudah Bayar!AU4:AU6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AV4:AV6000"] ?? []], // Penyerahan 5
-            ['date' => $rawBatch["SC Sudah Bayar!AW4:AW6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AX4:AX6000"] ?? []], // Penyerahan 6
+            ['date' => $rawBatch["SC Sudah Bayar!AM4:AM6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AN4:AN6000"] ?? []], 
+            ['date' => $rawBatch["SC Sudah Bayar!AO4:AO6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AP4:AP6000"] ?? []],
+            ['date' => $rawBatch["SC Sudah Bayar!AQ4:AQ6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AR4:AR6000"] ?? []], 
+            ['date' => $rawBatch["SC Sudah Bayar!AS4:AS6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AT4:AT6000"] ?? []], 
+            ['date' => $rawBatch["SC Sudah Bayar!AU4:AU6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AV4:AV6000"] ?? []], 
+            ['date' => $rawBatch["SC Sudah Bayar!AW4:AW6000"] ?? [], 'vol' => $rawBatch["SC Sudah Bayar!AX4:AX6000"] ?? []], 
         ];
 
-        // PARSING TANGGAL
+        // PARSING TANGGAL HELPER
         $getMonthFromRow = function($val) {
             if (empty($val)) return 0;
             $val = trim($val);
@@ -198,6 +223,7 @@ class DashboardController extends Controller
             try { return Carbon::parse($valClean)->month; } catch (\Exception $e) { return 0; }
         };
 
+        // LOOPING CALCULATION
         $calcTotalVol = 0;
         $calcTotalRev = 0;
         $buyersAgg    = [];
@@ -205,7 +231,6 @@ class DashboardController extends Controller
         $rowCount = count($rawBuyers);
         
         for ($i = 0; $i < $rowCount; $i++) {
-
             $rawCode = isset($rawBuyers[$i][0]) ? trim($rawBuyers[$i][0]) : '';     
             $rawName = isset($rawCompanyNames[$i][0]) ? trim($rawCompanyNames[$i][0]) : '';
             $code = strtoupper($rawCode);
@@ -230,6 +255,7 @@ class DashboardController extends Controller
             $unitPrice = (float) str_replace(['.', ','], ['', '.'], $priceStr);
 
             if (empty($buyer) || empty($mutuName)) continue;
+            
             foreach ($deliveriesRaw as $del) {
                 $tglRaw = $del['date'][$i][0] ?? '';
                 $volRaw = $del['vol'][$i][0] ?? '0';
@@ -252,14 +278,13 @@ class DashboardController extends Controller
                 $calcTotalVol += $volItem;
                 $calcTotalRev += $revItem;
 
-                // Grouping Buyer
+                // Grouping
                 if (!isset($buyersAgg[$mutuName][$buyer])) $buyersAgg[$mutuName][$buyer] = 0;
                 $buyersAgg[$mutuName][$buyer] += $volItem;
                 
                 if (!isset($buyersAgg['TOTAL'][$buyer])) $buyersAgg['TOTAL'][$buyer] = 0;
                 $buyersAgg['TOTAL'][$buyer] += $volItem;
 
-                // Grouping Product
                 if (!isset($productsAgg[$mutuName][$prod])) $productsAgg[$mutuName][$prod] = 0;
                 $productsAgg[$mutuName][$prod] += $volItem;
 
@@ -271,7 +296,7 @@ class DashboardController extends Controller
         $totalVolume  = $calcTotalVol;
         $totalRevenue = $calcTotalRev;
 
-        // PROSES TOP 5 BUYERS
+        // TOP 5 BUYERS
         $top5Buyers = [];
         $loopKeys = array_keys($buyersAgg);
         if(empty($loopKeys)) $loopKeys = ['TOTAL', 'SIR 20', 'RSS 1', 'SIR 3L', 'SIR 3WF'];
@@ -292,7 +317,7 @@ class DashboardController extends Controller
         }
         $topBuyers = $buyersAgg;
 
-        // PROSES TOP 5 PRODUCTS
+        // TOP 5 PRODUCTS
         $top5Products = [];
         $loopKeysProd = array_keys($productsAgg);
         if(empty($loopKeysProd)) $loopKeysProd = ['TOTAL', 'SIR 20', 'RSS 1', 'SIR 3L', 'SIR 3WF'];
@@ -312,6 +337,8 @@ class DashboardController extends Controller
             $top5Products[$kategori] = $top5;
         }
         $topProducts = $productsAgg;
+
+        // TREND PRICE DAILY
         $processDaily = function($rows) {
             $points = [];
             foreach ($rows as $row) {
@@ -332,6 +359,7 @@ class DashboardController extends Controller
         ];
         if (empty($trendPriceDaily[0]['data'])) { $trendPriceDaily = [['name'=>'SIR 20', 'data'=>[]], ['name'=>'RSS', 'data'=>[]], ['name'=>'SIR 3L', 'data'=>[]]]; }
 
+        // DATA STOK
         $stokData = [
             'produksi'    => [ 'sir20' => $cleanNum([$rawBatch["Rekap3!I10:I10"][0][0] ?? 0] ?? []) ?: 0, 'rss' => $cleanNum([$rawBatch["Rekap3!I38:I38"][0][0] ?? 0] ?? []) ?: 0, 'sir3l' => $cleanNum([$rawBatch["Rekap3!D62:E62"][0][0] ?? 0] ?? []) ?: 0, 'sir3wf' => $cleanNum([$rawBatch["Rekap3!D62:E62"][0][1] ?? 0] ?? []) ?: 0 ],
             'sudah_bayar' => [ 'sir20' => $cleanNum([$rawBatch["Rekap3!I20:I20"][0][0] ?? 0] ?? []) ?: 0, 'rss' => $cleanNum([$rawBatch["Rekap3!I48:I48"][0][0] ?? 0] ?? []) ?: 0, 'sir3l' => $cleanNum([$rawBatch["Rekap3!D72:E72"][0][0] ?? 0] ?? []) ?: 0, 'sir3wf' => $cleanNum([$rawBatch["Rekap3!D72:E72"][0][1] ?? 0] ?? []) ?: 0 ],
@@ -339,6 +367,7 @@ class DashboardController extends Controller
             'bahan_baku'  => [ 'sir20' => $cleanNum([$rawBatch["Rekap3!I27:I27"][0][0] ?? 0] ?? []) ?: 0, 'rss' => 0, 'sir3l' => 0, 'sir3wf' => 0 ]
         ];
 
+        // UTILITAS GUDANG
         $processWarehouse = function($rLabel, $rStock, $rCap, $rPct) use ($rawBatch, $cleanNum) {
             $labels = $rawBatch[$rLabel] ?? [];
             $stocks = $rawBatch[$rStock] ?? [];
@@ -374,6 +403,7 @@ class DashboardController extends Controller
             'IPMG RSS' => $processWarehouse("Rekap3!K44:K46", "Rekap3!T44:T46", "Rekap3!U44:U46", "Rekap3!V44:V46"),
         ];
 
+        // HARGA RATA-RATA
         $processPriceRow = function($rangeKey) use ($rawBatch, $cleanNum) {
             $row = $rawBatch[$rangeKey][0] ?? []; 
             return [

@@ -6,6 +6,8 @@ use App\Services\GoogleSheetService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache; // [BARU] Import Cache
 
 class ListKontrakController extends Controller
 {
@@ -14,6 +16,26 @@ class ListKontrakController extends Controller
     public function __construct(GoogleSheetService $googleSheetService)
     {
         $this->googleSheetService = $googleSheetService;
+    }
+
+    // --- [BARU] HELPER CACHE ---
+    // Fungsi untuk mendapatkan nama key cache yang unik per tahun sheet
+    private function getCacheKey()
+    {
+        return 'list_kontrak_data_' . Str::slug($this->getSheetName());
+    }
+
+    // Fungsi untuk menghapus cache agar data realtime
+    private function clearRelatedCaches()
+    {
+        // 1. Hapus cache tabel list kontrak ini
+        Cache::forget($this->getCacheKey());
+        
+        // 2. Hapus cache dashboard (PENTING)
+        // Karena Dashboard mungkin mengambil angka summary dari data ini
+        $year = session('selected_year') ?? date('Y');
+        Cache::forget('dashboard_raw_data_' . $year);
+        Cache::forget('dashboard_raw_data_default');
     }
 
     private function sanitizeInput($value)
@@ -33,16 +55,31 @@ class ListKontrakController extends Controller
         return 'List Kontrak ' . $year;
     }
 
+    // ==========================================================
+    // 1. INDEX (READ DENGAN CACHE)
+    // ==========================================================
     public function index(Request $request)
     {
         $sheetName = $this->getSheetName();
-        
-        try {
-            $allData = $this->googleSheetService->getData(null, $sheetName, 'A:AZ');
-        } catch (\Exception $e) {
-            $allData = [];
-        }
+        $cacheKey = $this->getCacheKey();
 
+        // [BARU] FITUR PAKSA REFRESH
+        if ($request->has('refresh')) {
+            $this->clearRelatedCaches();
+            return redirect()->route('list-kontrak.index')->with('success', 'Data berhasil di-refresh dari Server Google.');
+        }
+        
+        // [BARU] LOGIKA CACHING (30 MENIT)
+        // Data disimpan di RAM/Database Cache agar loading super cepat
+        $allData = Cache::remember($cacheKey, 1800, function () use ($sheetName) {
+            try {
+                return $this->googleSheetService->getData(null, $sheetName, 'A:AZ');
+            } catch (\Exception $e) {
+                return [];
+            }
+        });
+
+        // --- FILTERING (Dilakukan di Server PHP) ---
         $filteredData = [];
         
         $search = strtolower($request->input('search'));
@@ -55,7 +92,7 @@ class ListKontrakController extends Controller
         $startFilter = $startDate ? Carbon::parse($startDate)->startOfDay() : null;
         $endFilter   = $endDate   ? Carbon::parse($endDate)->endOfDay() : null;
 
-        // --- HELPER PARSING TANGGAL ---
+        // Helper Parsing Tanggal
         $parseDate = function($val) {
             if(empty($val)) return null;
             $val = trim($val);
@@ -74,7 +111,6 @@ class ListKontrakController extends Controller
 
             $tglKontrakRaw = $row[5] ?? '';
             $tglKontrakObj = $parseDate($tglKontrakRaw);
-            
             $jatuhTempoRaw = $row[31] ?? '';
             $jatuhTempoObj = $parseDate($jatuhTempoRaw);
 
@@ -120,11 +156,9 @@ class ListKontrakController extends Controller
             $filteredData[] = $item;
         }
 
-        // Sorting Logic
         usort($filteredData, function($a, $b) use ($sort, $direction) {
             $valA = $a[$sort] ?? null;
             $valB = $b[$sort] ?? null;
-
             if ($sort === 'tgl_kontrak') {
                 $dateA = $a['tgl_obj'] ? $a['tgl_obj']->timestamp : 0;
                 $dateB = $b['tgl_obj'] ? $b['tgl_obj']->timestamp : 0;
@@ -162,11 +196,10 @@ class ListKontrakController extends Controller
     }
 
     // ==========================================================
-    // STORE (TAMBAH DATA) - SUDAH DIAMANKAN
+    // 2. STORE (TAMBAH DATA) - CACHE DIHAPUS OTOMATIS
     // ==========================================================
     public function store(Request $request)
     {
-        // 1. VALIDASI DATA
         $request->validate([
             'no_kontrak' => 'required|string|max:100',
             'pembeli'    => 'required|string|max:255',
@@ -178,7 +211,6 @@ class ListKontrakController extends Controller
         $sheetName = $this->getSheetName();
 
         try {
-            // Cari Baris Kosong di Kolom X (Nomor Kontrak)
             $colData = $this->googleSheetService->getData(null, $sheetName, 'X:X');
             
             $targetRow = null;
@@ -195,7 +227,6 @@ class ListKontrakController extends Controller
                 if ($targetRow < 5) $targetRow = 5;
             }
 
-            // 2. MAPPING & SANITASI INPUT
             $inputs = [
                 'F'  => $this->formatDateForSheet($request->tgl_kontrak),
                 'G'  => $request->pembeli,
@@ -221,13 +252,16 @@ class ListKontrakController extends Controller
             $updates = [];
             foreach ($inputs as $col => $val) {
                 if ($val !== null) {
-                    // Terapkan Sanitasi
                     $cleanVal = $this->sanitizeInput($val);
                     $updates["'{$sheetName}'!{$col}{$targetRow}"] = $cleanVal;
                 }
             }
 
             $this->googleSheetService->batchUpdate($updates);
+
+            // [BARU] 🔥 HAPUS CACHE AGAR REALTIME UPDATE
+            $this->clearRelatedCaches();
+
             return back()->with('success', "Data berhasil ditambahkan di baris {$targetRow}");
 
         } catch (\Exception $e) {
@@ -236,59 +270,42 @@ class ListKontrakController extends Controller
     }
 
     // ==========================================================
-    // UPDATE (EDIT DATA) - SUDAH DIAMANKAN
+    // 3. UPDATE (EDIT DATA) - CACHE DIHAPUS OTOMATIS
     // ==========================================================
     public function update(Request $request)
     {
         $row = $request->input('row_index');
         if (!$row) return back()->with('error', 'Row index hilang.');
-        
-        // Validasi
         $request->validate(['no_kontrak' => 'required|string']);
 
         $sheetName = $this->getSheetName();
 
         try {
-            // Mapping Key Request -> Kolom Excel
             $map = [
-                'tgl_kontrak' => 'F',
-                'pembeli' => 'G',
-                'kategori' => 'H',
-                'mutu' => 'I',
-                'bln_kontrak' => 'J',
-                'bln_shipment' => 'K',
-                'kuantum' => 'L',
-                'simbol' => 'M',
-                'penetapan' => 'R',
-                'harga_usd' => 'S',
-                'nilai_usd' => 'T',
-                'kurs' => 'U',
-                'harga_rp' => 'V',
-                'nilai_rp' => 'W',
-                'no_kontrak' => 'X',
-                'no_sap' => 'Y',
-                'lokal_ekspor' => 'AE',
-                'jatuh_tempo' => 'AF',
-                'eudr' => 'AI'
+                'tgl_kontrak' => 'F', 'pembeli' => 'G', 'kategori' => 'H', 'mutu' => 'I',
+                'bln_kontrak' => 'J', 'bln_shipment' => 'K', 'kuantum' => 'L', 'simbol' => 'M',
+                'penetapan' => 'R', 'harga_usd' => 'S', 'nilai_usd' => 'T', 'kurs' => 'U',
+                'harga_rp' => 'V', 'nilai_rp' => 'W', 'no_kontrak' => 'X', 'no_sap' => 'Y',
+                'lokal_ekspor' => 'AE', 'jatuh_tempo' => 'AF', 'eudr' => 'AI'
             ];
 
             $updates = [];
             foreach ($map as $reqKey => $col) {
                 if ($request->has($reqKey)) {
                     $val = $request->input($reqKey);
-                    
-                    // Format khusus tanggal sebelum disimpan
                     if (($reqKey == 'tgl_kontrak' || $reqKey == 'jatuh_tempo') && $val) {
                         $val = $this->formatDateForSheet($val);
                     }
-
-                    // Terapkan Sanitasi
                     $cleanVal = $this->sanitizeInput($val ?? '');
                     $updates["'{$sheetName}'!{$col}{$row}"] = $cleanVal;
                 }
             }
 
             $this->googleSheetService->batchUpdate($updates);
+
+            // [BARU] 🔥 HAPUS CACHE AGAR REALTIME UPDATE
+            $this->clearRelatedCaches();
+
             return back()->with('success', 'Data berhasil diperbarui.');
 
         } catch (\Exception $e) {
@@ -296,11 +313,18 @@ class ListKontrakController extends Controller
         }
     }
 
+    // ==========================================================
+    // 4. DESTROY (HAPUS DATA) - CACHE DIHAPUS OTOMATIS
+    // ==========================================================
     public function destroy($row)
     {
         $sheetName = $this->getSheetName();
         try {
             $this->googleSheetService->deleteData($row, $sheetName);
+
+            // [BARU] 🔥 HAPUS CACHE AGAR REALTIME UPDATE
+            $this->clearRelatedCaches();
+
             return back()->with('success', 'Data berhasil dihapus.');
         } catch (\Exception $e) {
             return back()->with('error', 'Hapus gagal: ' . $e->getMessage());

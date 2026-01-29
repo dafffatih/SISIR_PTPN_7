@@ -83,6 +83,13 @@
                   @endforeach
               </select> 
           </form>
+
+            {{-- [BARU] Tombol Sync / Refresh --}}
+            <a href="{{ route('kontrak', ['refresh' => 1]) }}" class="k-btn-icon" title="Sync Data Terbaru" style="text-decoration:none; display:flex; align-items:center; justify-content:center; background:#f8fafc; border:1px solid #e2e8f0; width:auto; padding:0 12px; gap:6px; height: 38px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                <span style="font-size:13px; font-weight:600; color:#64748b;">Sync</span>
+            </a>
+
             @if(auth()->user()->role !== 'viewer')
                 <button class="k-btn-add" id="btnOpenTambah"><span>＋</span> Tambah Data</button>
             @endif

@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ArrayExport;
+use Illuminate\Support\Facades\Cache; // [BARU] Import Cache
+use Illuminate\Support\Facades\Artisan; // [BARU] Untuk Sync
 
 class SheetController extends Controller
 {
@@ -19,6 +21,20 @@ class SheetController extends Controller
     {
         $this->googleSheetService = $googleSheetService;
     }
+
+    // --- [BARU] HELPER UNTUK MENGHAPUS CACHE AGAR REAL-TIME ---
+    private function clearRelatedCaches()
+    {
+        // 1. Hapus Cache Tabel Kontrak ini
+        Cache::forget('sheet_kontrak_data_main');
+
+        // 2. Hapus Cache Dashboard (Karena angka di dashboard tergantung data ini)
+        // Agar grafik dashboard langsung berubah begitu kita input data di sini
+        $year = session('selected_year', 'default');
+        Cache::forget('dashboard_raw_data_' . $year);
+        Cache::forget('dashboard_raw_data_default');
+    }
+
     private function sanitizeInput($value)
     {
         if (is_string($value)) {
@@ -41,8 +57,23 @@ class SheetController extends Controller
         $startDate  = $request->input('start_date');
         $endDate    = $request->input('end_date');
 
-        // Ambil Data Mentah dari Google Sheet
-        $allData = $sheetService->getData();
+        // [BARU] FITUR PAKSA REFRESH
+        if ($request->has('refresh')) {
+            $this->clearRelatedCaches();
+            return redirect()->route('kontrak')->with('success', 'Data berhasil disinkronisasi dari Google Sheet.');
+        }
+
+        // [BARU] SMART CACHING (30 MENIT)
+        // Jika belum ada di cache, ambil dari Google. Jika ada, ambil dari RAM (Cepat).
+        $allData = Cache::remember('sheet_kontrak_data_main', 1800, function () use ($sheetService) {
+            try {
+                return $sheetService->getData();
+            } catch (\Exception $e) {
+                Log::error("Gagal mengambil data sheet: " . $e->getMessage());
+                return [];
+            }
+        });
+
         $filteredData = [];
 
         // Helper untuk parsing tanggal format Indonesia (Jan, Mei, Agt, dll)
@@ -192,11 +223,11 @@ class SheetController extends Controller
     }
 
     // ========================================================================
-    // 2. STORE (SIMPAN DATA BARU) - AMAN DARI SERANGAN
+    // 2. STORE (SIMPAN DATA BARU) - CACHE DIHAPUS OTOMATIS
     // ========================================================================
     public function store(Request $request, GoogleSheetService $sheetService)
     {
-        // 1. VALIDASI: Pastikan data wajib terisi
+        // 1. VALIDASI
         $request->validate([
             'nomor_kontrak' => 'required|string|max:100',
             'nama_pembeli'  => 'required|string|max:255',
@@ -226,7 +257,6 @@ class SheetController extends Controller
             Log::info("Menyimpan data di baris: " . $targetRow);
 
             // 2. MAPPING & SANITASI INPUT
-            // Kita petakan input dari form ke kolom Excel secara manual
             $sheetName = 'SC Sudah Bayar';
             $updates = [];
 
@@ -253,13 +283,15 @@ class SheetController extends Controller
             ];
 
             foreach ($map as $col => $val) {
-                // Terapkan fungsi sanitizeInput() agar rumus tidak rusak
                 $cleanVal = $this->sanitizeInput($val ?? ""); 
                 $updates["'{$sheetName}'!{$col}{$targetRow}"] = $cleanVal;
             }
 
             // Kirim ke Google Sheet
             $sheetService->batchUpdate($updates);
+
+            // [BARU] 🔥 HAPUS CACHE AGAR DATA BARU LANGSUNG MUNCUL
+            $this->clearRelatedCaches();
 
             return back()->with('success', 'Data Berhasil Ditambahkan di Baris ' . $targetRow);
 
@@ -270,7 +302,7 @@ class SheetController extends Controller
     }
 
     // ========================================================================
-    // 3. UPDATE (EDIT DATA) - AMAN DARI SERANGAN
+    // 3. UPDATE (EDIT DATA) - CACHE DIHAPUS OTOMATIS
     // ========================================================================
     public function update(Request $request, GoogleSheetService $sheetService)
     {
@@ -287,8 +319,6 @@ class SheetController extends Controller
             $updates = [];
 
             // 2. Mapping Input ke Kolom Excel
-            // Key sebelah kiri = name="" di modal-edit.blade.php
-            // Value sebelah kanan = Kolom Excel
             $columnMap = [
                 'loex'          => 'H', 'nomor_kontrak' => 'I', 'nama_pembeli'  => 'J',
                 'tgl_kontrak'   => 'K', 'volume'        => 'L', 'harga'         => 'M',
@@ -310,6 +340,9 @@ class SheetController extends Controller
 
             $sheetService->batchUpdate($updates);
 
+            // [BARU] 🔥 HAPUS CACHE
+            $this->clearRelatedCaches();
+
             return back()->with('success', 'Data Berhasil Diperbarui');
         } catch (\Exception $e) {
             return back()->with('error', 'Update gagal: ' . $e->getMessage());
@@ -317,12 +350,16 @@ class SheetController extends Controller
     }
 
     // ========================================================================
-    // 4. DESTROY (HAPUS DATA)
+    // 4. DESTROY (HAPUS DATA) - CACHE DIHAPUS OTOMATIS
     // ========================================================================
     public function destroy($row, GoogleSheetService $sheetService)
     {
         try {
             $sheetService->deleteData($row);
+            
+            // [BARU] 🔥 HAPUS CACHE
+            $this->clearRelatedCaches();
+
             return back()->with('success', 'Data Berhasil Dihapus');
         } catch (\Exception $e) {
             return back()->with('error', 'Hapus gagal: ' . $e->getMessage());
@@ -337,6 +374,10 @@ class SheetController extends Controller
         try {
             Log::info('Starting manual sync');
             $exitCode = Artisan::call('sync:drive-folder');
+            
+            // Meskipun sync background, tidak ada salahnya clear cache
+            $this->clearRelatedCaches();
+
             if ($exitCode === 0) return back()->with('success', 'Sinkronisasi berhasil');
             return back()->with('error', 'Sinkronisasi peringatan');
         } catch (\Exception $e) {
@@ -345,7 +386,7 @@ class SheetController extends Controller
     }
 
     // ========================================================================
-    // 6. EXPORT DATA
+    // 6. EXPORT DATA (TIDAK PERLU CACHE KARENA EXPORT = REALTIME)
     // ========================================================================
     public function exportDetailKontrak(Request $request, GoogleSheetService $sheetService)
     {

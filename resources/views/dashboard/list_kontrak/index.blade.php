@@ -6,7 +6,7 @@
 @section('content')
 <style>
     /* CSS Styling tetap sama */
-    .k-container { padding: 20px; font-family: 'Inter', sans-serif; }
+    .k-container { padding: 22px; font-family: 'Inter', sans-serif; }
     .k-header { margin-bottom: 24px; }
     .k-title { font-size: 24px; font-weight: 700; color: #0F172A; margin: 0; }
     .k-subtitle { font-size: 14px; color: #64748B; margin-top: 4px; }
@@ -49,7 +49,6 @@
         <p class="k-subtitle">Kelola data list kontrak tahunan</p>
     </div>
 
-    {{-- FIX: Mengubah route('kontrak.index') menjadi route('kontrak') agar sesuai web.php --}}
     <div class="nav-tabs">
         <a href="{{ route('kontrak') }}" class="nav-item">List DO</a>
         <a href="{{ route('list-kontrak.index') }}" class="nav-item active">List Kontrak</a>
@@ -84,6 +83,12 @@
                 </select>
                 <button type="submit" style="display:none"></button>
             </form>
+
+            {{-- [BARU] Tombol Sync / Refresh List Kontrak --}}
+            <a href="{{ route('list-kontrak.index', ['refresh' => 1]) }}" class="k-btn-icon" title="Sync Data Terbaru" style="text-decoration:none; display:flex; align-items:center; justify-content:center; background:#f8fafc; border:1px solid #e2e8f0; width:auto; padding:0 12px; gap:6px; height: 38px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                <span style="font-size:13px; font-weight:600; color:#64748b;">Sync</span>
+            </a>
 
             {{-- SECURITY UI: Tombol Tambah HANYA jika bukan Viewer --}}
             @if(auth()->user()->role !== 'viewer')

@@ -1,8 +1,8 @@
-    @extends('layouts.app')
+@extends('layouts.app')
 
-    @section('title', 'Dashboard Overview')
+@section('title', 'Dashboard Overview')
 
-    @section('content')
+@section('content')
     {{-- BLOK PHP: INITIALIZATION DATA --}}
     @php
         // Inisialisasi Data Top 5 untuk Tampilan Awal (PHP Render)
@@ -33,6 +33,34 @@
             stroke-linejoin: round;
             font-weight: 800 !important;
             filter: drop-shadow(0px 0px 1px rgba(0,0,0,0.2));
+        }
+        
+        /* [BARU] Style untuk Tombol Sync */
+        .btn-sync {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.2s;
+            margin-left: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            vertical-align: top; /* Sejajar dengan form select */
+        }
+        .btn-sync:hover {
+            background-color: #f8fafc;
+            color: #0f172a;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+        .btn-sync svg {
+            color: #f97316; /* Warna oranye agar mencolok dikit */
         }
     </style>
 
@@ -67,7 +95,6 @@
 
                     {{-- DROPDOWN START (DEFAULT: 1 / JANUARI) --}}
                     <select name="start_month" id="month-start" class="dashboard-select" style="min-width: 100px;" onchange="document.getElementById('filterForm').submit()">
-                        {{-- Opsi 'Seluruhnya' DIHAPUS --}}
                         @foreach(range(1,12) as $m)
                             <option value="{{ $m }}" {{ request('start_month', 1) == $m ? 'selected' : '' }}>
                                 {{ DateTime::createFromFormat('!m', $m)->format('F') }}
@@ -79,7 +106,6 @@
                     
                     {{-- DROPDOWN END (DEFAULT: 12 / DESEMBER) --}}
                     <select name="end_month" id="month-end" class="dashboard-select" style="min-width: 100px;" onchange="document.getElementById('filterForm').submit()">
-                        {{-- Opsi 'Seluruhnya' DIHAPUS --}}
                         @foreach(range(1,12) as $m)
                             <option value="{{ $m }}" {{ request('end_month', 12) == $m ? 'selected' : '' }}>
                                 {{ DateTime::createFromFormat('!m', $m)->format('F') }}
@@ -87,6 +113,18 @@
                         @endforeach
                     </select>
                 </form>
+
+                {{-- [BARU] TOMBOL SYNC DATA (REALTIME FETCH) --}}
+                {{-- Ini akan memanggil controller dengan parameter refresh=1 untuk menghapus cache --}}
+                <a href="{{ url()->current() }}?refresh=1" class="btn-sync" title="Paksa ambil data terbaru dari Google Sheet">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 4v6h-6"></path>
+                        <path d="M1 20v-6h6"></path>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    <span>Sync Data</span>
+                </a>
+
             </div>
         </div>
 
