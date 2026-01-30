@@ -1,0 +1,12 @@
+/node_modules
+/vendor
+/storage/*.key
+/storage/logs
+/tests
+/.git
+/.env
+/app/Http/Controllers/backup
+/phpunit.xml
+/README.md
+/LICENSE
+/isir-backend-baru
