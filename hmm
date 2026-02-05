@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "sisir-483602",
+  "private_key_id": "f0b49e5fa6d36735e5f972d3513c3617dae81d11",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQChweTyYULMp76Y\n0wjnrGXO68Ji8tSw3+v8UaYuTBpTGyGYHTcEZZBubj+B3oRFmPhB8KQ4lBSGSTSh\n2MVfkvSkCval1hZ54HczJnMjHJ/1Bh+b2XS/mSDfuCrHV3cUadOVa4GRo+7Elf0E\nNTsMwVRVT2aiiPhAiTYz/ceQUI6mFwI34h8nuQEwX6kZx2KjyJy96EXIfEs6rHey\nqIFEAutRvtQVzWqd9iBCrlsElNnlubfS98vGIH0zSTL+pNHWmnhuYU7PwMYJrSno\n0neQvQheca341gLwEdvhj8tLGpAywGSFk8cEVgH70SRC8YhoXAy2FeyQn85Ow9+q\nOJlEdSMnAgMBAAECggEABWi17rL46F4Nng+kgxa9Osugbu2e1iFOw1u5ml+6G6BT\nIcKMVe3NhBvUrNOTib5BQvc4jpnJC+qDw4u7oeQIoTmqoMYFb2LlqYS2IezxnmBr\niysc39FPi5uddpgCp+CYDi2Poh6gu9smIE9lX5pRZx7mGDZLUuEjul5Yn4dKFdyu\ne4YbjG5wn2QYdu35BsrIxI91Ku120gBfCTR1XKrm8Ej/hVE8CkADKa3y4VbVY5IG\nO5tyU0bGZDpGMSndRJHAku+YCzPcwzp6JzDRFV9a8yfAwADIBgTByNnpGSSnUOsZ\n1tErO9UXEDO6Nub4XgTYW4BFBBHN4TGbBRzY+8GYAQKBgQDUdnkujrUHIkP3b11o\ndRZo9Gw7OrqF4hfHE79CAtRZKZCHhzlFBdH0enSAOci6p1nrp2zY1R3N1YS6B8Ey\nLHRRDTxo4ElbVZh9b/hF7L8kW68OqW6Mym6QzBWVNHYvo8kIfBKa/wwjvBTReQjK\nEcR3JOrPO/6BnRzBlBQQ7wT4AQKBgQDC53snjfpVTq5uM7y+7SBpA7DBrLKOVIdA\neDAHdfORJGRKTPUPwG+zu3rp4tYVRGZ6niz6rv+R3sUuy0+CpNTkbCndfXdN1uwJ\nNBw4grTm7g9wb/3qhKJSx/KnRp+mo5gCKFfBT16sZKxyQVS1HHOtlytnldV2oXnE\nspLLbotbJwKBgA7e1+59SIheSpmH7ua/wzjHWsfufV2fjIB/jlRldE1lTlteCJEf\nLinJZFwRL055Jh8LUd//Up20gxyuLESBvgZqQb8pa5j77bdh3eOvBVXbIO6Kx1UN\nWh3CWwRdbqQ493ojjP3SOhxKLr7WlNnn0nNwXwrwLQkPYRLfdWQWBqgBAoGAEadF\n0F9bvT5TLkghYGm59ckPyXsK8TlWxtAcCZD1bsANFW3DBJo5g94HVAfnvCVl4tVQ\n3aPcIio7UfG4Uez8G3Rwlk827yX4Wx0NMVElcYU+gMCkDwnUagsSP3R2IXHP4uIk\nkK3PtW2o8PBZ682X7LE0jT1VCFm33ckO4r4wgSECgYEAgAh1FKo+AfEJDu5KZST7\n6PLPVxWv/htOCdosNAVXeZg4EeOUxK/03SK0C02uQAG9Pyimnq/18mrVydbiYxz2\naQnlS53xcwUPKmgN1wa7smTCHiOwKbDgUIUVjzlRO5E0Dtio0QtVxPdeyrK8lfLb\nKdYOzUsFHhIVD5dyUIBcEqE=\n-----END PRIVATE KEY-----\n",
+  "client_email": "sisir-682@sisir-483602.iam.gserviceaccount.com",
+  "client_id": "110995376546935658118",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/sisir-682%40sisir-483602.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
