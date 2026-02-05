@@ -17,7 +17,7 @@
       alt=""
       class="absolute inset-0 w-full h-full object-cover object-center
          select-none pointer-events-none
-         blur-[1px] scale-100"
+         blur-[0px] scale-100"
       draggable="false"
     />
 
@@ -36,7 +36,7 @@
         <div class="hidden lg:flex items-center justify-center">
           <div class="flex flex-col items-center text-center">
             <img
-              src="{{ asset('images/SisirWordmark.png') }}"
+              src="{{ asset('images/SisirLogo.png') }}"
               alt="Logo SISIR"
               class="w-[420px] h-auto object-contain"
               draggable="false"
