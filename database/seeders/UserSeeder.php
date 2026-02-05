@@ -16,8 +16,8 @@ class UserSeeder extends Seeder
         // Data Admin
         User::create([
             'name'     => 'Administrator SISIR',
-            'username' => 'admin',
-            'password' => Hash::make('admin123'),
+            'username' => 'pemasaran.reg7',
+            'password' => Hash::make('teukuumar300'),
             'role'     => 'admin',
         ]);
 
