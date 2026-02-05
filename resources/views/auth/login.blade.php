@@ -122,7 +122,7 @@
                 Develop By
             </p>
             <p class="text-sm font-bold text-orange-200/70 tracking-wide">
-                Wahyu SAP, DMF, Zaky t 
+                Wahyu SAP, Dafffatih, Zaky t 
             </p> <!-- JIKA KALIAN MELANJUTKAN PROJEK INI, SILAHKAN TAMBAHKAN NAMA KALIAN DI SINI, NAMA KAMI JANGAN DIHAPUS. -->
         </div>
     </div>
